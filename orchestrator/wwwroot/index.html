@@ -6,6 +6,7 @@
 <title>ACA Sandboxes — Research Agent Swarm</title>
 <style>
   :root {
+    color-scheme: dark;
     --bg-primary: #0d1117;
     --bg-secondary: #161b22;
     --bg-tertiary: #1c2333;
@@ -20,6 +21,26 @@
     --accent-purple: #bc8cff;
     --accent-cyan: #39d353;
     --card-hover: #1f2937;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      color-scheme: light;
+      --bg-primary: #f6f8fa;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #eef1f4;
+      --border: #d0d7de;
+      --text-primary: #1f2328;
+      --text-secondary: #59636e;
+      --text-muted: #6e7781;
+      --accent: #0969da;
+      --accent-green: #1a7f37;
+      --accent-yellow: #9a6700;
+      --accent-red: #cf222e;
+      --accent-purple: #8250df;
+      --accent-cyan: #087f5b;
+      --card-hover: #f3f4f6;
+    }
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -164,25 +185,6 @@
 
   .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
   .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-  .hint-banner {
-    display: none;
-    margin: 0 0 1rem;
-    padding: 0.8rem 1rem;
-    border-radius: 8px;
-    border: 1px solid rgba(210, 153, 34, 0.45);
-    background: rgba(210, 153, 34, 0.12);
-    color: #f9d88a;
-  }
-  .hint-banner.visible { display: block; }
-  .hint-banner strong { color: #ffe59a; }
-  .hint-banner .hint-meta {
-    margin-top: 0.4rem;
-    color: var(--text-secondary);
-    font-family: 'Cascadia Code', 'Fira Code', monospace;
-    font-size: 0.72rem;
-    white-space: pre-wrap;
-  }
 
   /* ── Agent grid ─────────────────────────────────────────── */
   .section-title {
@@ -354,6 +356,25 @@
   .report-box code { background: var(--bg-tertiary); padding: 0.1rem 0.35rem; border-radius: 3px; font-size: 0.85em; }
   .report-box blockquote { border-left: 3px solid var(--accent-purple); padding-left: 1rem; color: var(--text-secondary); margin: 0.5rem 0; }
   .report-box hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+  .markdown-table-scroll { overflow-x: auto; margin: 0.75rem 0 1rem; }
+  .markdown-table {
+    width: 100%;
+    min-width: 640px;
+    border-collapse: collapse;
+    line-height: 1.45;
+  }
+  .markdown-table th, .markdown-table td {
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+  }
+  .markdown-table th {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+  .markdown-table tbody tr:nth-child(even) { background: var(--bg-tertiary); }
 
   /* ── Event log ──────────────────────────────────────────── */
   .log-header {
@@ -443,8 +464,6 @@
         <button class="btn btn-primary" id="research-btn" onclick="startResearch()">🔍 Research</button>
       </div>
 
-      <div id="hint-banner" class="hint-banner"></div>
-
       <div id="empty-state" class="empty-state">
         <div class="icon">🧠</div>
         <p>Enter a research topic above. The orchestrator will decompose it into sub-questions, spawn a sandbox per question, and synthesize a final report.</p>
@@ -480,10 +499,18 @@
     </div>
   </div>
 
+<script src="/vendor/markdown-it.min.js"></script>
 <script>
 let ws = null;
 const agents = {};
-const hintAgents = new Set();
+const markdownRenderer = window.markdownit({
+  html: false,
+  linkify: true,
+  typographer: false,
+});
+markdownRenderer.renderer.rules.table_open = () =>
+  '<div class="markdown-table-scroll"><table class="markdown-table">';
+markdownRenderer.renderer.rules.table_close = () => '</table></div>';
 
 function connect() {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -491,12 +518,12 @@ function connect() {
 
   ws.onopen = () => {
     document.getElementById('ws-status').textContent = '● Connected';
-    document.getElementById('ws-status').style.color = '#3fb950';
+    document.getElementById('ws-status').style.color = 'var(--accent-green)';
   };
 
   ws.onclose = () => {
     document.getElementById('ws-status').textContent = '● Disconnected';
-    document.getElementById('ws-status').style.color = '#f85149';
+    document.getElementById('ws-status').style.color = 'var(--accent-red)';
     setTimeout(connect, 3000);
   };
 
@@ -523,8 +550,9 @@ function handleMessage(msg) {
     case 'log':
       addLog(msg.message, msg.level);
       break;
-    case 'hint':
-      showHint(msg);
+    case 'pipeline_error':
+      addLog(msg.message, 'error');
+      document.getElementById('research-btn').disabled = false;
       break;
     case 'sandbox_info_changed':
       refreshSandboxInfo();
@@ -544,9 +572,6 @@ function startResearch() {
   document.getElementById('report-section').classList.remove('visible');
   document.getElementById('report-content').innerHTML = '';
   document.getElementById('research-btn').disabled = true;
-  hideHint();
-  hintAgents.clear();
-
   ws.send(JSON.stringify({ type: 'research', topic }));
   addLog(`Starting research: "${topic}"`, 'info');
 }
@@ -602,42 +627,8 @@ function showResult(msg) {
   }
   html += `<button class="answer-toggle" onclick="toggleAnswer(${msg.index})">Show more ▾</button>`;
 
-  if (msg.simulated) {
-    html += `<div style="margin-top:0.5rem; color: var(--accent-yellow); font-size:0.75rem;">⚠ Simulated fallback used</div>`;
-  }
-
   answerDiv.innerHTML = html;
   answerDiv.classList.add('visible', 'collapsed');
-}
-
-function showHint(msg) {
-  if (hintAgents.has(msg.agentIndex)) return;
-  hintAgents.add(msg.agentIndex);
-
-  const el = document.getElementById('hint-banner');
-  const title = escapeHtml(msg.title || 'Sandbox warning');
-  const message = escapeHtml(msg.message || 'One or more agents returned fallback output.');
-  const diagnostics = (msg.diagnostics || '').trim();
-
-  el.innerHTML = `
-    <strong>${title}</strong><br>
-    ${message}
-    <div class="hint-meta">
-Likely checks:
-- Managed identity has Cognitive Services OpenAI User on the AOAI account
-- AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_DEPLOYMENT match a real deployment
-- Sandbox egress can reach *.cognitiveservices.azure.com
-${diagnostics ? `\nDiagnostics:\n${escapeHtml(diagnostics.slice(0, 900))}` : ''}
-    </div>
-  `;
-  el.classList.add('visible');
-}
-
-function hideHint() {
-  const el = document.getElementById('hint-banner');
-  if (!el) return;
-  el.classList.remove('visible');
-  el.textContent = '';
 }
 
 function toggleAnswer(index) {
@@ -665,55 +656,7 @@ function addLog(message, level = 'info') {
 
 // ── Simple markdown → HTML converter ──────────────────────
 function simpleMarkdown(text) {
-  if (!text) return '';
-  let html = escapeHtml(text);
-
-  // Code blocks
-  html = html.replace(/```[\s\S]*?```/g, m =>
-    '<pre><code>' + m.slice(3, -3).replace(/^\w*\n/, '') + '</code></pre>');
-
-  // Headings
-  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-
-  // Bold and italic
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-
-  // Inline code
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-  // Blockquotes
-  html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
-
-  // Unordered lists
-  html = html.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
-  html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
-
-  // Ordered lists
-  html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
-
-  // Horizontal rules
-  html = html.replace(/^---$/gm, '<hr>');
-
-  // Paragraphs (double newlines)
-  html = html.replace(/\n\n/g, '</p><p>');
-  html = '<p>' + html + '</p>';
-
-  // Clean up empty paragraphs
-  html = html.replace(/<p>\s*<\/p>/g, '');
-  html = html.replace(/<p>(<h[1-3]>)/g, '$1');
-  html = html.replace(/(<\/h[1-3]>)<\/p>/g, '$1');
-  html = html.replace(/<p>(<ul>)/g, '$1');
-  html = html.replace(/(<\/ul>)<\/p>/g, '$1');
-  html = html.replace(/<p>(<hr>)<\/p>/g, '$1');
-  html = html.replace(/<p>(<blockquote>)/g, '$1');
-  html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
-  html = html.replace(/<p>(<pre>)/g, '$1');
-  html = html.replace(/(<\/pre>)<\/p>/g, '$1');
-
-  return html;
+  return text ? markdownRenderer.render(text) : '';
 }
 
 function escapeHtml(text) {

@@ -97,6 +97,7 @@ def _traceparent_env() -> dict[str, str]:
 # ── Region map (parity with the .NET version) ──────────────────────────────
 
 REGIONS: dict[str, str] = {
+    "westus":         "West US",
     "westus2":        "West US 2",
     "westus3":        "West US 3",
     "westcentralus":  "West Central US",
@@ -138,9 +139,6 @@ class AgentResult:
     answer: str
     sources: list[str] = field(default_factory=list)
     confidence: float = 0.0
-    simulated: bool = False
-    hint: str | None = None
-    diagnostics: str | None = None
 
 
 # ── SandboxManager ──────────────────────────────────────────────────────────
@@ -176,7 +174,7 @@ class SandboxManager:
 
         # Azure OpenAI passthrough for the research agent.
         self.openai_endpoint   = os.environ.get("AZURE_OPENAI_ENDPOINT")
-        self.openai_deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-5-mini")
+        self.openai_deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-5.6-luna")
 
         # Foundry project endpoint (for the researcher's hosted web search tool).
         self.foundry_project_endpoint = os.environ.get("FOUNDRY_PROJECT_ENDPOINT")
@@ -747,7 +745,7 @@ class SandboxManager:
                     seen.add(pattern)
                     host_rules.append(EgressHostRule(pattern=pattern, action="Allow"))
 
-        # AOAI data-plane host (model inference + AOAI fallback path).
+        # AOAI data-plane host for model inference.
         _allow(self.openai_endpoint)
         # Foundry project host (hosted web search / grounding via FoundryChatClient).
         _allow(self.foundry_project_endpoint)
@@ -914,9 +912,6 @@ class SandboxManager:
             answer=d["answer"],
             sources=list(d.get("sources", []) or []),
             confidence=float(d.get("confidence", 0.0)),
-            simulated=bool(d.get("simulated", False)),
-            hint=d.get("hint"),
-            diagnostics=d.get("diagnostics"),
         )
 
     # ── Egress diagnostics ────────────────────────────────────────────────
@@ -992,8 +987,6 @@ class SandboxManager:
             try:
                 res = await self.get_result(sandbox_id)
                 agent_result = {
-                    "simulated": res.simulated,
-                    "hint": res.hint,
                     "sources": res.sources[:5],
                     "answer_preview": (res.answer or "")[:200],
                 }

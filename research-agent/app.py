@@ -5,8 +5,8 @@ Uses Microsoft Agent Framework with Foundry's hosted web-search tool to research
 a question from the RESEARCH_QUESTION env var. Exposes results via Flask API.
 
 Web search runs server-side in the Foundry project, so this sandbox only needs
-egress to the Foundry endpoint (no search-engine egress). Falls back to a direct
-Azure OpenAI call (model knowledge only) if Foundry is not configured.
+egress to the Foundry endpoint (no search-engine egress). Research fails
+explicitly if grounded Foundry search is unavailable.
 """
 
 import asyncio
@@ -99,9 +99,6 @@ state = {
     "sources": [],
     "confidence": 0.0,
     "error": None,
-    "simulated": False,
-    "hint": None,
-    "diagnostics": None,
 }
 state_lock = threading.Lock()
 
@@ -124,7 +121,7 @@ async def _run_agent_research(question: str) -> dict:
 
     project_endpoint = os.environ["FOUNDRY_PROJECT_ENDPOINT"]
     token = os.environ.get("AZURE_AI_TOKEN", "")
-    model = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-5-mini")
+    model = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-5.6-luna")
 
     # The token is minted by the orchestrator's managed identity for the
     # https://ai.azure.com audience and forwarded into this sandbox. Wrap it in
@@ -187,105 +184,14 @@ async def _run_agent_research(question: str) -> dict:
             raw = raw[:-3]
         raw = raw.strip()
 
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        return {
-            "answer": raw,
-            "sources": [],
-            "confidence": 0.7,
-        }
-
-
-def _call_openai_direct(question: str) -> dict:
-    """Fallback: direct Azure OpenAI call using the model's own knowledge.
-
-    Used when the Foundry project (hosted web search) is unavailable. No web
-    search is performed here, keeping the sandbox within its AOAI-only egress.
-    """
-    import httpx
-    from openai import AzureOpenAI
-
-    endpoint = os.environ["AZURE_OPENAI_ENDPOINT"]
-    token = os.environ.get("AZURE_OPENAI_TOKEN", "")
-    deployment = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-5-mini")
-
-    # ADC egress proxy does TLS interception — use custom httpx client with verify=False.
-    # Keyless auth: AZURE_OPENAI_TOKEN is an AAD bearer token forwarded by the orchestrator.
-    http_client = httpx.Client(verify=False)
-    client = AzureOpenAI(
-        azure_endpoint=endpoint,
-        azure_ad_token=token,
-        api_version="preview",
-        http_client=http_client,
-    )
-
-    system_prompt = (
-        "You are a research assistant. Answer the question thoroughly and "
-        "factually using your own knowledge.\n\n"
-        "Return your answer as JSON with these fields:\n"
-        '  "answer": "<detailed answer in markdown>",\n'
-        '  "sources": ["<url1>", "<url2>", ...],\n'
-        '  "confidence": <float 0-1>\n'
-        "Return ONLY valid JSON, no extra text."
-    )
-
-    # gpt-5-mini is a reasoning model: it rejects a non-default `temperature`
-    # and uses `max_completion_tokens` (which also covers reasoning tokens),
-    # not the deprecated `max_tokens`.
-    response = client.chat.completions.create(
-        model=deployment,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": question},
-        ],
-        max_completion_tokens=4000,
-        reasoning_effort="low",
-    )
-
-    raw = response.choices[0].message.content.strip()
-    if raw.startswith("```"):
-        raw = raw.split("\n", 1)[1] if "\n" in raw else raw[3:]
-        if raw.endswith("```"):
-            raw = raw[:-3]
-        raw = raw.strip()
-
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        # Model returned prose or JSON with an invalid escape. Degrade
-        # gracefully rather than failing the whole research task.
-        return {
-            "answer": raw,
-            "sources": [],
-            "confidence": 0.6,
-        }
-
-
-def _simulate_research(
-    question: str,
-    reason: str = "AI call unavailable in sandbox",
-    diagnostics: str | None = None,
-) -> dict:
-    """Return a canned result after a short delay (no Azure OpenAI)."""
-    time.sleep(8)
-    return {
-        "answer": (
-            f"## Simulated Research Results\n\n"
-            f"This is a **simulated** answer for the question:\n\n"
-            f"> {question}\n\n"
-            f"### Key Findings\n"
-            f"1. Finding one — placeholder insight.\n"
-            f"2. Finding two — supporting evidence.\n"
-            f"3. Finding three — additional context.\n\n"
-            f"*Note: Simulated — no Azure OpenAI endpoint configured.*"
-        ),
-        "sources": ["Simulated Source A", "Simulated Source B"],
-        "confidence": 0.65,
-        "simulated": True,
-        "hint": reason,
-        "diagnostics": diagnostics,
-    }
+    result = json.loads(raw)
+    if not isinstance(result, dict):
+        raise ValueError("Research agent response must be a JSON object")
+    if not isinstance(result.get("answer"), str) or not result["answer"].strip():
+        raise ValueError("Research agent response is missing a non-empty answer")
+    if not isinstance(result.get("sources"), list):
+        raise ValueError("Research agent response is missing a sources array")
+    return result
 
 
 # ── network connectivity test ──────────────────────────────────────────
@@ -385,9 +291,6 @@ def _do_research(question: str):
             state["answer"] = result.get("answer", "")
             state["sources"] = result.get("sources", [])
             state["confidence"] = result.get("confidence", 0.0)
-            state["simulated"] = bool(result.get("simulated", False))
-            state["hint"] = result.get("hint")
-            state["diagnostics"] = result.get("diagnostics")
 
     except Exception as exc:
         with state_lock:
@@ -396,51 +299,32 @@ def _do_research(question: str):
             state["error"] = traceback.format_exc()
 
 
-def _run_research_with_retries(question: str, max_retries: int = 1, conn_info: str = "") -> dict:
-    """Try AI research with retries (egress policy may be applied after startup)."""
-    if not os.environ.get("AZURE_OPENAI_ENDPOINT"):
-        return _simulate_research(
-            question,
-            reason="AZURE_OPENAI_ENDPOINT is missing in the sandbox environment",
-            diagnostics="Endpoint not configured",
-        )
+def _run_research_with_retries(question: str, max_retries: int = 3, conn_info: str = "") -> dict:
+    """Run grounded Foundry research, retrying transient failures."""
+    if not os.environ.get("FOUNDRY_PROJECT_ENDPOINT"):
+        raise RuntimeError("FOUNDRY_PROJECT_ENDPOINT is missing in the sandbox environment")
 
     errors = [f"CONNECTIVITY: {conn_info}"]
     for attempt in range(max_retries):
         with state_lock:
             state["progress"] = f"Research attempt {attempt + 1}/{max_retries}..."
 
-        # Primary: Agent Framework + Foundry hosted web search (if configured)
-        if os.environ.get("FOUNDRY_PROJECT_ENDPOINT"):
-            try:
-                return asyncio.run(_run_agent_research(question))
-            except Exception as af_err:
-                errors.append(f"Foundry attempt {attempt+1}: {type(af_err).__name__}: {af_err}")
-
-        # Fallback: direct Azure OpenAI call (model knowledge only, no web search)
         try:
-            return _call_openai_direct(question)
-        except Exception as oai_err:
-            errors.append(f"OpenAI attempt {attempt+1}: {type(oai_err).__name__}: {oai_err}")
+            return asyncio.run(_run_agent_research(question))
+        except Exception as foundry_error:
+            errors.append(
+                f"Foundry attempt {attempt + 1}: "
+                f"{type(foundry_error).__name__}: {foundry_error}"
+            )
 
         # Wait before retry (egress might not be ready yet)
         if attempt < max_retries - 1:
+            delay = 5 * (attempt + 1)
             with state_lock:
-                state["progress"] = f"Retrying in 5s (attempt {attempt + 1} failed)..."
-            time.sleep(5)
+                state["progress"] = f"Retrying in {delay}s (attempt {attempt + 1} failed)..."
+            time.sleep(delay)
 
-    # All retries exhausted — fall back to simulated
-    with state_lock:
-        state["progress"] = "Using simulated research (AI unavailable)..."
-        state["error"] = "\n".join(errors)
-    return _simulate_research(
-        question,
-        reason=(
-            "Azure OpenAI request failed inside sandbox. "
-            "Most common causes: missing/expired token, deployment mismatch, or egress/DNS restrictions."
-        ),
-        diagnostics="\n".join(errors),
-    )
+    raise RuntimeError("Grounded Foundry research failed:\n" + "\n".join(errors))
 
 
 # ── Flask routes ────────────────────────────────────────────────────────
@@ -461,8 +345,6 @@ def debug():
             "has_openai_token": bool(os.environ.get("AZURE_OPENAI_TOKEN")),
             "has_openai_deployment": bool(os.environ.get("AZURE_OPENAI_DEPLOYMENT")),
             "question": state["question"][:50] if state["question"] else None,
-            "simulated": state.get("simulated", False),
-            "hint": state.get("hint"),
         })
 
 
@@ -474,9 +356,6 @@ def status():
             "progress": state["progress"],
             "error": state.get("error"),
             "has_openai": bool(os.environ.get("AZURE_OPENAI_ENDPOINT")),
-            "simulated": state.get("simulated", False),
-            "hint": state.get("hint"),
-            "diagnostics": state.get("diagnostics"),
         })
 
 
@@ -494,9 +373,6 @@ def result():
             "answer": state["answer"],
             "sources": state["sources"],
             "confidence": state["confidence"],
-            "simulated": state.get("simulated", False),
-            "hint": state.get("hint"),
-            "diagnostics": state.get("diagnostics"),
         })
 
 

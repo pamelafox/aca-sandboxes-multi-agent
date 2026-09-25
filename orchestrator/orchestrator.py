@@ -90,18 +90,6 @@ def _extract_text(value: object) -> str | None:
     return None
 
 
-def _fallback_report(topic: str) -> str:
-    return (
-        f"## Research Summary: {topic}\n\n"
-        "The workflow completed and researcher outputs were collected, but the "
-        "final synthesis step did not return markdown content.\n\n"
-        "### Next Steps\n"
-        "- Re-run the same query to verify transient model behavior.\n"
-        "- Inspect synthesizer executor payload/logs for output schema drift.\n"
-        "- Keep researcher outputs as source material for manual review.\n"
-    )
-
-
 # ── App + lifespan ──────────────────────────────────────────────────────────
 
 async def _prewarm_disk_image(mgr: SandboxManager) -> None:
@@ -424,12 +412,7 @@ async def _run_research_pipeline(ws: WebSocket, topic: str) -> None:
             await emit({"type": "report", "markdown": final_report})
             await emit({"type": "log", "message": "Research complete!", "level": "success"})
         else:
-            await emit({"type": "report", "markdown": _fallback_report(topic)})
-            await emit({
-                "type": "log",
-                "message": "Workflow completed but synthesis returned no markdown; emitted fallback report.",
-                "level": "warn",
-            })
+            raise RuntimeError("Workflow completed without a synthesized report")
 
         # Notify the UI that disk-image / stats panels should refresh.
         # NOTE: We deliberately do NOT delete the disk image here — it is
@@ -439,7 +422,7 @@ async def _run_research_pipeline(ws: WebSocket, topic: str) -> None:
 
     except Exception as ex:
         logger.exception("[Pipeline] %s", ex)
-        await emit({"type": "log", "message": f"Pipeline error: {ex}", "level": "error"})
+        await emit({"type": "pipeline_error", "message": f"Pipeline error: {ex}"})
 
 
 # ── Static UI (mounted last) ────────────────────────────────────────────────

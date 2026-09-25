@@ -1,0 +1,10 @@
+{
+  "name": "aca-sandboxes-agents-ui",
+  "private": true,
+  "scripts": {
+    "build:vendor": "mkdir -p wwwroot/vendor && cp node_modules/markdown-it/dist/browser/markdown-it.umd.min.js wwwroot/vendor/markdown-it.min.js"
+  },
+  "dependencies": {
+    "markdown-it": "15.0.1"
+  }
+}

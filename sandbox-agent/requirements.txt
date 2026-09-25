@@ -1,0 +1,7 @@
+agent-framework-core==1.13.0
+agent-framework-openai==1.12.0
+agent-framework-tools==1.0.0b260730
+azure-containerapps-sandbox
+azure-identity==1.19.0
+dotenv-azd==0.3.0
+openai>=2.25.0,<3

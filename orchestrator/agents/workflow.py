@@ -9,7 +9,7 @@ Shape::
             ↓
     [Researcher_0] [Researcher_1] ... [Researcher_N]   ← fan-out
             ↓        ↓                    ↓
-            └────────┴───── fan-in ──────┘
+            └────────┴── dynamic collector ───────────┘
                             ↓
                   [SynthesizeExecutor]
                             ↓
@@ -57,6 +57,12 @@ class ResearchInput:
     topic: str
 
 
+@dataclass
+class ResearchPlan:
+    """Number of researcher responses the collector should await."""
+    expected_responses: int
+
+
 # ── Stage 1: Decompose ──────────────────────────────────────────────────────
 
 class DecomposeExecutor(Executor):
@@ -73,17 +79,25 @@ class DecomposeExecutor(Executor):
     async def decompose(
         self,
         payload: ResearchInput,
-        ctx: WorkflowContext[AgentExecutorRequest, list[str]],
+        ctx: WorkflowContext[AgentExecutorRequest | ResearchPlan, list[str]],
     ) -> None:
         # 1) Ask the LLM to decompose
         result = await self._agent.run(payload.topic)
         raw = (result.text or "").strip()
-        questions = _parse_questions(raw, fallback_topic=payload.topic)
+        questions = _parse_questions(raw)
         # Cap at MAX_RESEARCHERS; researchers list is built to match this size
         questions = questions[:MAX_RESEARCHERS]
 
         # Surface the questions as a workflow output (events) so the UI gets them
         await ctx.yield_output(questions)
+
+        # Tell the collector how many branches were actually dispatched. This
+        # avoids a fixed fan-in barrier when the decomposer returns fewer than
+        # MAX_RESEARCHERS questions.
+        await ctx.send_message(
+            ResearchPlan(expected_responses=len(questions)),
+            target_id="research_collector",
+        )
 
         # 2) Dispatch one request per question. The framework will route
         # successive sends in the same handler invocation across the fan-out
@@ -119,7 +133,49 @@ def _build_researcher_executors(
     return pool
 
 
-# ── Stage 3: Synthesize (fan-in) ────────────────────────────────────────────
+# ── Stage 3: Collect dynamically ────────────────────────────────────────────
+
+class ResearchCollector(Executor):
+    """Release researcher responses once the dispatched branch count arrives."""
+
+    def __init__(self, id: str = "research_collector"):
+        super().__init__(id=id)
+        self._expected_responses: int | None = None
+        self._responses: list[AgentExecutorResponse] = []
+        self._released = False
+
+    async def _release_if_ready(
+        self,
+        ctx: WorkflowContext[list[AgentExecutorResponse]],
+    ) -> None:
+        if (
+            not self._released
+            and self._expected_responses is not None
+            and len(self._responses) >= self._expected_responses
+        ):
+            self._released = True
+            await ctx.send_message(list(self._responses))
+
+    @handler
+    async def set_plan(
+        self,
+        plan: ResearchPlan,
+        ctx: WorkflowContext[list[AgentExecutorResponse]],
+    ) -> None:
+        self._expected_responses = plan.expected_responses
+        await self._release_if_ready(ctx)
+
+    @handler
+    async def collect_response(
+        self,
+        response: AgentExecutorResponse,
+        ctx: WorkflowContext[list[AgentExecutorResponse]],
+    ) -> None:
+        self._responses.append(response)
+        await self._release_if_ready(ctx)
+
+
+# ── Stage 4: Synthesize ─────────────────────────────────────────────────────
 
 class SynthesizeExecutor(Executor):
     """
@@ -175,14 +231,15 @@ def build_research_workflow(
     emit: EmitFn,
 ) -> Workflow:
     """
-    Construct the full fan-out/fan-in workflow:
-        decomposer → [researcher_0..N-1] → synthesizer
+    Construct the full fan-out/dynamic-collection workflow:
+        decomposer → [researcher_0..N-1] → collector → synthesizer
 
     The workflow is built per request so each researcher's tool closes over
     the right WebSocket emit callback.
     """
     decomposer  = DecomposeExecutor()
     researchers = _build_researcher_executors(sandbox_mgr, emit)
+    collector   = ResearchCollector()
     synthesizer = SynthesizeExecutor()
 
     # NOTE: We use individual edges (decomposer → researcher_i) instead of a
@@ -192,9 +249,11 @@ def build_research_workflow(
     # serializes the LLM calls for all 6 researchers. Using 6 separate edge
     # runners lets MAF parallelize them via `asyncio.gather` in the runner.
     builder = WorkflowBuilder(start_executor=decomposer)
+    builder = builder.add_edge(decomposer, collector)
     for r in researchers:
         builder = builder.add_edge(decomposer, r)
-    wf = builder.add_fan_in_edges(list(researchers), synthesizer).build()
+        builder = builder.add_edge(r, collector)
+    wf = builder.add_edge(collector, synthesizer).build()
     return wf
 
 
@@ -225,19 +284,14 @@ def _strip_code_fences(text: str) -> str:
     return _FENCE_RE.sub("", text).strip()
 
 
-def _parse_questions(raw: str, fallback_topic: str) -> list[str]:
+def _parse_questions(raw: str) -> list[str]:
     raw = _strip_code_fences(raw)
     try:
         data = json.loads(raw)
-        if isinstance(data, list) and all(isinstance(q, str) for q in data):
-            return data
-    except json.JSONDecodeError:
-        logger.warning("[Decompose] Could not parse LLM response: %r", raw[:200])
-    # Fallback simulation
-    return [
-        f"What is the current state of {fallback_topic}?",
-        f"What are the key challenges facing {fallback_topic}?",
-        f"What recent breakthroughs have occurred in {fallback_topic}?",
-        f"How does {fallback_topic} compare to alternative approaches?",
-        f"What is the future outlook for {fallback_topic}?",
-    ]
+    except json.JSONDecodeError as exc:
+        raise ValueError("Decomposer returned invalid JSON") from exc
+    if not isinstance(data, list) or not 4 <= len(data) <= MAX_RESEARCHERS:
+        raise ValueError("Decomposer must return an array of 4-6 questions")
+    if not all(isinstance(question, str) and question.strip() for question in data):
+        raise ValueError("Decomposer questions must be non-empty strings")
+    return data

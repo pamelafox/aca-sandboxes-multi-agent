@@ -186,6 +186,319 @@ The lesson for me was simple. A swarm is not six copies of the same prompt. It i
 
 Build those pieces together and the concurrency becomes the easy part.
 
+## Model Deployment Quota
+
+The model deployment defaults to capacity `750`. The requested capacity must fit
+the available quota for the model, SKU, subscription, and region. Configure it
+for the selected azd environment before provisioning:
+
+```bash
+azd env set AZURE_OPENAI_CAPACITY 750
+azd up
+```
+
+If less quota is available, select a lower supported capacity. Higher capacity
+requires sufficient quota; lower capacity may cause throttling during parallel
+research runs. The model region is controlled by `AZURE_OPENAI_LOCATION`, not
+`AZURE_LOCATION`, which controls the other resources. Only change the model
+region after checking model availability and quota there.
+
+## Create a Single Sandbox
+
+Use [create_sandbox.py](create_sandbox.py) to create one sandbox directly through
+the SDK, without starting the orchestrator or research workflow. It requires an
+existing sandbox group and an identity with permission to create sandboxes in it.
+
+Install the launcher dependencies in your Python environment:
+
+```bash
+python -m pip install azure-containerapps-sandbox azure-identity dotenv-azd==0.3.0
+```
+
+For local CLI authentication, use an isolated Azure CLI profile:
+
+```bash
+export AZURE_CONFIG_DIR="$HOME/.local/state/aca-sandbox-cli"
+az login
+
+export SUBSCRIPTION_ID="<subscription-id>"
+export RESOURCE_GROUP="<resource-group>"
+export SANDBOX_GROUP="<sandbox-group-name>"
+export DEFAULT_REGION="westus2"
+
+python create_sandbox.py
+```
+
+Use the sandbox group name from the deployment's `sandboxGroupName` output and
+its region. These settings can also be supplied with `--subscription-id`,
+`--resource-group`, `--sandbox-group`, and `--region`.
+
+The launcher uses `dotenv-azd` to load the selected azd environment from the
+current project before parsing arguments. After `azd up`, you can omit the
+manual exports above: it recognizes `AZURE_SUBSCRIPTION_ID` (or `subscriptionId`),
+`AZURE_RESOURCE_GROUP` (or `resourceGroupName`), `sandboxGroupName`, and
+`AZURE_LOCATION`. It also maps `openAiEndpoint` and `openAiDeployment` to the
+agent's model settings. Explicit CLI arguments take precedence over environment
+defaults; existing exported values are not overwritten by the loader. If azd
+is unavailable or no environment is selected, manual configuration still works.
+It does not load the orchestrator's `.env` file.
+
+With no image configured, it uses the built-in `ubuntu` image, 0.5 vCPU, 1 GiB memory, no
+exposed ports, and deny-all egress. It prints the sandbox ID and connection
+settings and leaves the sandbox available, with auto-suspend set to 300 seconds.
+**Auto-suspend is not deletion.** For a disposable command run, request cleanup:
+
+```bash
+python create_sandbox.py --command "uname -a" --delete-after-run
+```
+
+To use an existing custom disk image:
+
+```bash
+python create_sandbox.py --disk-id "<sandbox-disk-image-id>"
+```
+
+`--disk-id` must be an actual sandbox disk-image ID, not the ACR image reference
+stored in the orchestrator's `DISK_IMAGE_ID` setting. To prepare a disk image
+from a published OCI reference instead, pass `--image`. Without `--prompt`,
+the script does not forward model credentials. A custom
+image still runs its own configured startup command.
+
+### Run a Single Agent With Sandbox Tools
+
+The same script can run an autonomous [harness agent](https://learn.microsoft.com/en-us/agent-framework/concepts/harness?pivots=programming-language-python)
+entirely inside ACA. It uses `LocalShellTool` through `shell_executor`, with
+`ShellEnvironmentProviderOptions(probe_tools=("git", "python"))`. "Local" here
+means local to the sandbox, not your computer. No commands require approval.
+
+The runtime is in [sandbox-agent/](sandbox-agent/), with its own Dockerfile and
+requirements. The `postprovision` hook builds and pushes both the research-agent
+and sandbox-agent images during `azd up` or `azd provision`. It uses
+[sandbox-agent/build.sh](sandbox-agent/build.sh) on macOS/Linux and
+[sandbox-agent/build.ps1](sandbox-agent/build.ps1) on Windows. The scripts need
+an authenticated Azure CLI, but not local Docker. Windows uses PowerShell and
+does not require Bash.
+
+To rebuild only the sandbox-agent after changing its code, run from the
+repository root on macOS/Linux:
+
+```bash
+bash sandbox-agent/build.sh
+```
+
+On Windows:
+
+```powershell
+pwsh -NoProfile -File sandbox-agent/build.ps1
+```
+
+The research-agent build is also available independently through
+[research-agent/build.sh](research-agent/build.sh) on macOS/Linux or
+[research-agent/build.ps1](research-agent/build.ps1) on Windows:
+
+```bash
+bash research-agent/build.sh
+```
+
+```powershell
+pwsh -NoProfile -File research-agent/build.ps1
+```
+
+Both research-agent scripts read the selected azd environment and build
+`research-agent:latest`. The postprovision hook runs the research-agent build
+first and stops if either image build fails.
+
+After a successful build, the script stores `SANDBOX_AGENT_IMAGE` in the selected
+azd environment. The launcher loads it automatically through `dotenv-azd`.
+
+The script uses `azd env get-value` to read each missing
+setting from the selected azd environment (`AZURE_SUBSCRIPTION_ID`,
+`AZURE_RESOURCE_GROUP`, and `acrName`). Explicit `SUBSCRIPTION_ID`,
+`RESOURCE_GROUP`, and `ACR_NAME` values take precedence. The lookup uses your
+current directory's azd project context.
+
+To override the deployment settings, or run without azd, supply all three:
+
+```bash
+export SUBSCRIPTION_ID="<subscription-id>"
+export RESOURCE_GROUP="<resource-group>"
+export ACR_NAME="<registry-name>"
+
+SANDBOX_AGENT_IMAGE=$(bash sandbox-agent/build.sh)
+echo "$SANDBOX_AGENT_IMAGE"
+```
+
+The script sends build logs to stderr and prints the image reference to stdout
+only after a successful build and, when an azd environment is selected, a
+successful save. A failed build leaves the stored image unchanged. Without azd
+or a selected environment, it prints a notice to stderr and you can pass the
+returned image to `--image`. Set `IMAGE_TAG` to override the default `latest`
+tag. It resolves the registry login server from Azure and builds for Linux amd64.
+With all three settings supplied explicitly, it can be invoked from any directory
+using its full path.
+
+The returned reference identifies an OCI image. Pass it to the launcher's
+`--image` option to prepare a sandbox disk image automatically.
+To build with local Docker instead:
+
+```bash
+docker build --platform linux/amd64 \
+  -t <registry>/sandbox-agent:latest ./sandbox-agent
+docker push <registry>/sandbox-agent:latest
+```
+
+The launcher calls `SandboxGroupClient.begin_create_disk_image` and waits up to
+four minutes for `Ready` before creating a sandbox. For private ACR, use
+`--registry-auth azure-cli` when the sandbox compute plane rejects managed-identity
+pulls with `RegistryAuthFailed`, even with the client ID configured. The existing
+orchestrator uses explicit registry credentials for this limitation.
+
+The launcher obtains an ACR token using `az acr login --expose-token` under your
+current Azure CLI profile and the launcher's subscription. Your signed-in CLI
+identity must have registry pull permissions. The token is passed as
+`registryCredentials` to disk-image preparation; it is not printed, stored in azd,
+or placed in the sandbox environment. This option supports `*.azurecr.io` images
+and does not require Docker or an ACR admin password. Live compatibility with the
+sandbox service must still be verified in your deployment.
+
+For services supporting managed-identity pulls, the default mode uses the
+client ID of a managed identity attached to the sandbox group with `AcrPull`
+on that registry, through `SANDBOX_GROUP_UAMI_CLIENT_ID` or
+`--image-identity-client-id`. The disk-image API expects `managedIdentityClientId`,
+not the identity's resource ID or principal ID. The launcher bridges the installed
+SDK's missing client-ID field while retaining its readiness poller. Public images
+do not need this setting. The older resource-ID option remains a fallback, but
+does not authenticate pulls on services requiring the client-ID field.
+
+The infrastructure outputs `SANDBOX_GROUP_UAMI_RESOURCE_ID` and
+`SANDBOX_GROUP_UAMI_CLIENT_ID`, so `azd up` or
+`azd provision` stores the existing sandbox group identity in the azd environment.
+For an environment provisioned before this output was added, rerun provisioning
+to populate it. No manual identity lookup or environment-variable export is needed:
+
+```bash
+azd provision
+```
+
+If the resource ID is already stored, populate just the client ID without
+reprovisioning or rebuilding images:
+
+```bash
+IDENTITY_CLIENT_ID=$(az identity show \
+  --ids "$(azd env get-value SANDBOX_GROUP_UAMI_RESOURCE_ID)" \
+  --query clientId --output tsv) && \
+azd env set SANDBOX_GROUP_UAMI_CLIENT_ID "$IDENTITY_CLIENT_ID"
+```
+
+Use the sandbox subscription, resource group, group name, and region configured
+above. With the image and identity stored in azd, and the model outputs from
+`azd up`, run without manual exports:
+
+```bash
+python -m pip install -r sandbox-agent/requirements.txt
+
+python create_sandbox.py --registry-auth azure-cli --prompt \
+  "Create a Bash script in /workspace that writes a CSV of the squares of 1 through 10. Run it, inspect the CSV, and report its contents." \
+  --delete-after-run
+```
+
+Progress goes to stderr, and the launcher prints `disk_image_id` alongside
+`sandbox_id`. A later run can pass that ID via `--disk-id` to skip preparation.
+`--disk`, `--disk-id`, and `--image` are mutually exclusive.
+Any explicit source overrides `SANDBOX_AGENT_IMAGE`; use `--disk ubuntu` to
+create a plain sandbox even when an agent image is configured. Without azd,
+export the launcher and model settings and pass `--image "$SANDBOX_AGENT_IMAGE"`
+as before.
+
+Digest-pinned references (`registry/image@sha256:...`) reuse a matching `Ready`
+disk image. Mutable tags, including `latest`, create a new disk image on every
+launch so a rebuilt image is not silently ignored. Unlike the orchestrator, this
+launcher does not resolve tags to ACR digests or prune old disk images.
+`--delete-after-run` deletes only the sandbox, not its prepared disk image.
+The plain Ubuntu disk and research-agent disk do not contain this harness runtime.
+
+Use the sandbox configuration and authentication from the preceding section.
+Your local identity also needs permission to invoke the Azure OpenAI deployment
+(for example, the Cognitive Services OpenAI User role).
+
+The launcher acquires a short-lived Cognitive Services token, passes it and the
+task into the sandbox, and invokes the agent there. **The harness, model connection,
+shell, and filesystem operations all run inside the sandbox.** The agent does not
+receive your local Azure CLI credentials. It starts its shell with a clean
+environment rather than automatically inheriting the model token.
+
+- The agent uses Bash to list, read, create, and edit files and run installed programs.
+- `LocalShellTool` uses `approval_mode="never_require"` and `acknowledge_unsafe=True`.
+  There is no interactive input loop; ACA provides the execution isolation.
+- The persistent Bash session starts in `/workspace`. Shell state persists across
+  calls, subject to the shell tool's working-directory confinement behavior.
+  Commands have a 30-second timeout and a 64-KiB output cap; the agent run has a
+  five-minute timeout.
+- Egress is denied except for the configured model endpoint. Package downloads
+  and other external HTTP calls remain blocked; bake dependencies into the image.
+- File memory, hosted web search, and plan/execute mode switching are disabled.
+  The harness retains todo tracking and session history.
+- `--delete-after-run` removes the sandbox and its files when the run finishes or
+  raises an error. Omit it to keep the sandbox and artifacts for inspection.
+
+The forwarded token is not refreshed inside the sandbox. Start a new run to get
+a fresh token. `--prompt` and `--command` are mutually exclusive. No orchestrator
+or researcher service is started. Do not run the agent module directly on your
+computer; its entry point checks the sandbox-image runtime marker.
+
+## Production Smoke Tests
+
+These opt-in scripts call your deployed services, real models, and real sandbox
+tools. They replace the mock-heavy launcher, harness, and build-script tests.
+They do not run during `azd up`, ordinary test discovery, or with `--help`.
+Each requires `--run` to acknowledge Azure/model usage and resource creation.
+Use the intended Azure CLI profile and selected azd environment from the
+repository root. Prefer a dedicated validation environment when available.
+
+```bash
+python -m pip install -r scripts/requirements-smoke.txt
+
+python scripts/smoke_standalone.py --run --registry-auth azure-cli
+python scripts/smoke_swarm.py --run
+```
+
+The standalone smoke uses the launcher's configuration and image-preparation
+helpers. It runs the packaged agent in a fresh sandbox and unique workspace,
+reads back the actual CSV, checks every square from 1 through 10, then removes
+the CSV and reruns the agent-written Bash script to verify it recreates the
+correct output. An agent claiming success is not enough. Omit
+`--registry-auth azure-cli` to test managed-identity pulls, or pass `--disk-id`
+to test an already-prepared image (which skips registry-pull coverage).
+
+The standalone script allows four minutes for image preparation, three minutes
+for sandbox readiness, 330 seconds for the remote agent process, and two minutes
+for deletion polling. These are stage deadlines, not a hard wall-clock deadline
+for all SDK networking and retries. It attempts sandbox deletion in `finally`
+and waits for the sandbox to disappear. If creation fails before returning an
+ID, it looks up only sandboxes with this run's unique labels for cleanup.
+Prepared disk images are retained, never pruned; the recorded disk ID can be
+reused. If the process is killed, a network call fails, or a resource appears
+after the failure lookup, cleanup may require manual attention.
+
+The swarm smoke connects to `orchestratorUrl` from azd (override with `--url`),
+submits a brief research task, and requires at least two decomposed questions,
+a successful answer with sources from every researcher, and a nonempty final
+report with no reported pipeline errors. It checks the operational workflow,
+not factual correctness or citation quality. Its default WebSocket deadline is
+900 seconds (`--timeout` overrides it). The server owns researcher cleanup;
+disconnecting or timing out does not cancel server work. The smoke script does
+not delete shared disk images or other users' sandboxes, and does not claim to
+verify server-side deletion. Inspect deployed logs if the run fails or times out.
+
+Both scripts print a temporary artifacts directory and exit nonzero on failure.
+Standalone artifacts include resource IDs/labels, agent stdout/stderr, the CSV,
+and the generated Bash script. Swarm artifacts include streamed events (with
+researcher sandbox IDs) and the final report when available. Treat these as
+potentially sensitive application outputs; credentials are not deliberately
+recorded. A successful CLI/syntax check is not a successful production smoke run.
+
+The pre-existing local workflow tests under `orchestrator/tests` are unchanged.
+
 ## Next Steps
 
 1. **Try it:** Deploy the sample with `azd up`.

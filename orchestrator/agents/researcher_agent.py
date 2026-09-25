@@ -14,13 +14,11 @@ Notes:
   output — we do NOT ask the LLM to re-summarize, so the cost stays low and
   the trace remains faithful to what the sandbox produced.
 """
-from __future__ import annotations
-
 import asyncio
 import json
 import logging
 import uuid
-from typing import Any, Awaitable, Callable
+from typing import Awaitable, Callable
 
 from agent_framework import Agent
 from pydantic import Field
@@ -85,13 +83,7 @@ def build_researcher_agent(
             logger.exception("[%s] create_sandbox failed", agent_id)
             await agent_status("error")
             await log(f"Failed to create sandbox: {ex}", "error")
-            return json.dumps({
-                "question": question,
-                "answer": f"Sandbox creation failed: {ex}",
-                "sources": [],
-                "confidence": 0.0,
-                "error": str(ex),
-            })
+            raise RuntimeError(f"Sandbox creation failed: {ex}") from ex
 
         await agent_status("researching")
         await log(f"Sandbox {sandbox_id} running", "success")
@@ -113,13 +105,9 @@ def build_researcher_agent(
                     await log(
                         f"Agent {index + 1} timed out after {POLL_TIMEOUT_SECONDS}s", "error"
                     )
-                    return json.dumps({
-                        "question": question,
-                        "answer": f"Research timed out after {POLL_TIMEOUT_SECONDS}s.",
-                        "sources": [],
-                        "confidence": 0.0,
-                        "error": "timeout",
-                    })
+                    raise TimeoutError(
+                        f"Research timed out after {POLL_TIMEOUT_SECONDS}s"
+                    )
                 try:
                     status = await sandbox_mgr.get_status(sandbox_id)
                     consecutive_errors = 0
@@ -134,13 +122,7 @@ def build_researcher_agent(
                         await log(
                             f"Agent {index + 1} error: sandbox unreachable ({ex})", "error"
                         )
-                        return json.dumps({
-                            "question": question,
-                            "answer": f"Sandbox became unreachable: {ex}",
-                            "sources": [],
-                            "confidence": 0.0,
-                            "error": str(ex),
-                        })
+                        raise RuntimeError(f"Sandbox became unreachable: {ex}") from ex
                     continue
                 if status.status == "done":
                     try:
@@ -154,24 +136,14 @@ def build_researcher_agent(
                             await log(
                                 f"Agent {index + 1} error: result unreachable ({ex})", "error"
                             )
-                            return json.dumps({
-                                "question": question,
-                                "answer": f"Sandbox result unreachable: {ex}",
-                                "sources": [],
-                                "confidence": 0.0,
-                                "error": str(ex),
-                            })
+                            raise RuntimeError(f"Sandbox result unreachable: {ex}") from ex
                         continue
                 if status.status == "error":
                     await agent_status("error")
                     await log(f"Agent {index + 1} error: {status.progress}", "error")
-                    return json.dumps({
-                        "question": question,
-                        "answer": f"Sandbox error: {status.progress}",
-                        "sources": [],
-                        "confidence": 0.0,
-                        "error": status.error or status.progress,
-                    })
+                    raise RuntimeError(
+                        f"Sandbox research failed: {status.error or status.progress}"
+                    )
                 heartbeat += 1
                 if heartbeat % 5 == 0:
                     await log(f"Agent {index + 1} still researching...", "info")
@@ -182,25 +154,11 @@ def build_researcher_agent(
                 pass
 
         await agent_status("done")
-        if result.simulated:
-            hint = result.hint or (
-                "Sandbox fell back to simulated output because Azure OpenAI was unavailable."
-            )
-            await log(f"Agent {index + 1} used simulated fallback: {hint}", "warn")
-            await emit({
-                "type": "hint",
-                "severity": "warn",
-                "agentIndex": index,
-                "title": "Simulated fallback detected",
-                "message": hint,
-                "diagnostics": result.diagnostics or "",
-            })
         await emit({
             "type": "result",
             "index": index,
             "answer": result.answer,
             "sources": result.sources,
-            "simulated": result.simulated,
         })
         await log(f"Agent {index + 1} completed research", "success")
 
@@ -209,9 +167,6 @@ def build_researcher_agent(
             "answer": result.answer,
             "sources": result.sources,
             "confidence": result.confidence,
-            "simulated": result.simulated,
-            "hint": result.hint,
-            "diagnostics": result.diagnostics,
         })
 
     return Agent(

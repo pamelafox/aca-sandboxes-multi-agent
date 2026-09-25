@@ -1,0 +1,37 @@
+Azure Container Apps combines isolated agent workspaces, persistent state, rapid startup, and serverless model hosting. A voice-connected multi-agent application exercises sandbox creation, connectors, network controls, snapshots, and resume; Auger's supply-chain platform combines agentic data integration with a shared world model and business context.
+
+00:08 - Welcome and session goals
+01:06 - From agent prototypes to production
+02:04 - Runtime risks behind agent failures
+03:02 - Five runtime failure modes
+05:34 - Five requirements for an agent runtime
+08:18 - Voice-connected multi-agent architecture
+10:20 - Coding, personal-assistant, and SRE agents
+14:44 - Serverless GPUs and application monitoring
+16:25 - Sandboxes and inherited group settings
+17:34 - Resume with disk and memory state
+18:57 - Create a sandbox and launch authenticated Copilot CLI
+20:25 - Network isolation and enterprise connectors
+21:43 - Expose the generated game's port
+22:31 - Snapshot and clone an agent workspace
+24:09 - Phone access through the Twilio call gateway
+26:19 - Mapping runtime requirements to Container Apps capabilities
+27:17 - Sandboxes public preview and Container Apps Express
+28:35 - SitecoreAI and EdChat use cases
+29:49 - Six sandbox workload patterns
+31:05 - Auger and autonomous supply chains
+31:57 - The complexity of a pen's supply chain
+33:48 - Ontology, AI-native design, and context
+34:43 - Data silos and bespoke integration
+35:28 - Agentic data integration and human approval
+37:04 - Shared world models and deterministic tools
+38:34 - Context and real-time simulation workflows
+40:12 - Auger's deployment scale
+40:56 - Runtime takeaways and public preview
+41:46 - Product resources and demo code
+42:30 - Q&A: returning to the code resources
+42:54 - Q&A: when to use Express versus Sandboxes
+44:26 - Q&A: AUSCO's object-oriented implementation
+
+Source: https://www.youtube.com/watch?v=4VPLRt25bec
+Timing: transcript_timed.txt, matched against the supplied Word transcript in transcript.txt. Chapter markers identify discussion starts, not frame-verified slide transitions.

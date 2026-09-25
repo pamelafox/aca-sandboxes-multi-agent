@@ -2,8 +2,6 @@
 Synthesizer Agent — MAF agent that combines per-question findings into a
 single coherent markdown research report.
 """
-from __future__ import annotations
-
 from agent_framework import Agent
 
 from .chat_client import build_chat_client

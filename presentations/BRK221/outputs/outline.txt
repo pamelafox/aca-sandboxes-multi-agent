@@ -1,0 +1,35 @@
+1. The title introduces production-ready agents on an AI-native runtime with Devanshi Joshi, Simon Jakesch, and Gopi Prashanth.
+2. The agenda covers runtime failures, a live multi-agent application, Container Apps capabilities, and Auger's autonomous supply chains.
+3. A Gartner June 2025 forecast of agentic project cancellations frames the importance of runtime reliability.
+4. The repeated forecast page emphasizes runtime failure rather than model reasoning as the session's focus.
+5. Five runtime risks are runaway spending, unsafe local code execution, cold starts, lost workspaces, and manually connected tooling.
+6. The repeated risk page reinforces how restarts and fragmented tooling disrupt agent workflows.
+7. Five runtime requirements are fast startup and resume, safe tool execution, persistent state, per-task isolation, and security by default.
+8. The repeated requirements page emphasizes persistent work and security enforced at the runtime boundary.
+9. The voice application connects a broker, Whisper and Kokoro, browser and Twilio phone access, Copilot CLI sandboxes Aria and Nova, and Azure SRE Agent.
+10. The runtime recap maps startup, isolation, persistence, scaling, cost, GPU, and deployment needs to Container Apps features.
+11. The repeated recap connects these capabilities into one platform for applications, MCP tools, and ephemeral compute.
+12. Azure Container Apps Sandboxes enter public preview as fast, isolated, stateful compute underlying other Microsoft services.
+13. SitecoreAI and EdChat quotations describe governed agent execution and potential isolated student workspaces, respectively.
+14. Six use cases cover agent workflows, generated-code execution, platform building, bursts, multi-tenant compute, and interactive sessions.
+15. The customer introduction identifies Gopi Prashanth, Chief Scientist - AI & Agents at Auger Inc.
+16. The repeated customer introduction leads into Auger's autonomous supply-chain architecture.
+17. An illustrative pen supply chain spans 50 actors, eight tiers, and 17 countries to show the limits of downstream-only visibility.
+18. Auger's three pillars are the AUSCO ontology, AI-native agents sharing a world model, and context-driven decisions.
+19. Data silos, lost unstructured knowledge, bespoke deployments, and late edge cases make integration expensive and hard to reuse.
+20. Agentic Data Integration profiles and maps data, builds pipelines with human approval, and deploys to Microsoft Fabric with validation and monitoring.
+21. Without a shared world model, customer-specific schemas and conflicting terminology prevent agent composition and consistent auditing.
+22. AUSCO unifies entities, actions, functions, models, workflows, and knowledge while preserving customer terminology through aliases.
+23. Grounded context replaces improvised KPI logic and irrelevant history with shared functions, validated memory, and bounded context packets.
+24. A context pipeline retrieves over AUSCO, memory, skills, and global signals, routes known or novel questions, and returns grounded answers with provenance.
+25. Four learning loops feed AUSCO through integration, context, execution outcomes, and global signals, alongside customer-reported performance figures.
+26. The takeaways combine Apps, Sandboxes, Express, and serverless GPUs with the Sandboxes public-preview announcement and named adoption examples.
+27. The repeated takeaways reinforce the combined runtime and June 2026 availability context.
+28. Product-blog and code-sample resources link to the Container Apps Build announcements and multi-agent demo.
+29. Three starting points link to Sandboxes, Express, and the Sandboxes Portal.
+30. The closing page points to session resources and the Build evaluation form.
+
+Ground truth: slide_ascii.md plus individual visual inspection of all 30 slide images.
+Repeated page pairs: 3/4, 5/6, 7/8, 10/11, 15/16, 26/27.
+Visual caveats: slide 14 has a visible launch-blog QR placeholder; slides 28 and 30 have hidden placeholder text in extraction but visible QR artwork. Resource links use printed URLs, not inferred QR destinations.
+Timing caveat: slide discussion anchors come from transcript_timed.txt, not frame-verified page transitions. Repeated pages share their topic anchor; closing material can link to the recorded closing discussion.

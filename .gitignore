@@ -1,0 +1,39 @@
+# macOS
+.DS_Store
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# JavaScript
+node_modules/
+
+# Local configuration and secrets
+.env
+.env.*
+!**/.env.example
+
+# Azure Developer CLI state
+.azure/
+
+# Logs
+*.log

@@ -6,6 +6,7 @@
 #        - Provisions infra/main.bicep (ACR, AOAI, ACA env, sandbox group, orchestrator app, role assignments)
 #        - Builds & pushes the orchestrator image to ACR (server-side via `az acr build`)
 #        - Builds & pushes the research-agent image to ACR (via the postprovision hook)
+#        - Builds & pushes the sandbox-agent image and stores its reference in azd
 #        - Deploys the orchestrator image to the Container App
 #
 #   2. First request to the orchestrator
@@ -37,7 +38,7 @@ services:
       registry: ${AZURE_CONTAINER_REGISTRY_ENDPOINT}
 
 hooks:
-  # After infra is provisioned, build & push the research-agent image to ACR.
+  # After infra is provisioned, build & push the research-agent and sandbox-agent images to ACR.
   # The orchestrator image is built+pushed automatically by `azd deploy` because
   # it's listed under `services` above.
   postprovision:
@@ -45,31 +46,12 @@ hooks:
       shell: sh
       run: |
         set -e
-        ACR_NAME=$(azd env get-values | sed -n 's/^acrName="\(.*\)"/\1/p')
-        RG_NAME=$(azd env get-values | sed -n 's/^AZURE_RESOURCE_GROUP="\(.*\)"/\1/p')
-        if [ -z "$ACR_NAME" ]; then
-          echo "ERROR: acrName not found in azd env. Did 'azd provision' succeed?" >&2
-          exit 1
-        fi
-        echo "▸ Building research-agent image into $ACR_NAME (rg=$RG_NAME)..."
-        if [ -n "$RG_NAME" ]; then
-          az acr build --registry "$ACR_NAME" --resource-group "$RG_NAME" --image research-agent:latest ./research-agent
-        else
-          az acr build --registry "$ACR_NAME" --image research-agent:latest ./research-agent
-        fi
+        bash research-agent/build.sh
+        bash sandbox-agent/build.sh
     windows:
       shell: pwsh
       run: |
-        # Use --no-logs to avoid the colorama/cp1252 charmap UnicodeEncodeError
-        # when az CLI streams build logs through Windows console encoding.
-        $vals = azd env get-values
-        $acrName = ($vals | Select-String '^acrName="(.*)"').Matches.Groups[1].Value
-        $rg = ($vals | Select-String '^AZURE_RESOURCE_GROUP="(.*)"').Matches.Groups[1].Value
-        if (-not $acrName) { throw "acrName not found in azd env. Did 'azd provision' succeed?" }
-        # Pass -g explicitly so the registry lookup ignores any stale `az` default group.
-        $acrArgs = @('acr','build','--registry',$acrName,'--image','research-agent:latest','--no-logs')
-        if ($rg) { $acrArgs += @('--resource-group',$rg) }
-        Write-Host "Building research-agent image into $acrName (rg=$rg)..."
-        az @acrArgs ./research-agent
-        if ($LASTEXITCODE -ne 0) { throw "az acr build failed with exit code $LASTEXITCODE" }
-        Write-Host "research-agent image built successfully."
+        pwsh -NoProfile -File research-agent/build.ps1
+        if ($LASTEXITCODE -ne 0) { throw "research-agent build failed with exit code $LASTEXITCODE" }
+        pwsh -NoProfile -File sandbox-agent/build.ps1
+        if ($LASTEXITCODE -ne 0) { throw "sandbox-agent build failed with exit code $LASTEXITCODE" }

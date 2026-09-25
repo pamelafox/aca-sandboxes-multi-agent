@@ -1,7 +1,7 @@
 // ============================================================================
 // ACA Sandboxes — Research Agent Swarm Infrastructure
 // ============================================================================
-// Deploys: Azure OpenAI (GPT-4o), ACR, ACA Environment + Orchestrator app,
+// Deploys: Azure OpenAI, ACR, ACA Environment + Orchestrator app,
 //          and a Microsoft.App/sandboxGroups resource for the research swarm.
 //
 // Sandboxes themselves are dynamic: the orchestrator creates them at runtime
@@ -25,14 +25,15 @@ param prefix string = 'aca-sandboxes-agents'
 @description('Azure region for deployment')
 param location string = resourceGroup().location
 
-@description('Azure region for the Azure OpenAI account. Defaults to westus3 because gpt-5-mini (a reasoning model required for the newest Agent Framework) is not available in every region.')
+@description('Azure region for the Azure OpenAI account. Defaults to westus3 because gpt-5.6-luna is not available in every region.')
 param openAiLocation string = 'westus'
 
-@description('gpt-5-mini model version. Leave empty to use the regional default version.')
-param gpt5MiniModelVersion string = ''
+@description('gpt-5.6-luna model version.')
+param openAiModelVersion string = '2026-07-09'
 
-@description('gpt-5-mini deployment capacity (TPM in thousands). 6 parallel researchers plus reasoning tokens; 50 gives safe headroom.')
-param gpt5MiniCapacity int = 50
+@description('gpt-5.6-luna deployment capacity. Must fit the available quota for the model, SKU, and region.')
+@minValue(1)
+param openAiModelCapacity int = 750
 
 @description('Container image for the orchestrator. Pass empty on first deploy; update after pushing the image. AZD/setup.sh sets this automatically.')
 param orchestratorImage string = ''
@@ -45,6 +46,9 @@ param azdServiceName string = 'orchestrator'
 
 @description('Tag value used by `azd` to identify the environment.')
 param azdEnvName string = ''
+
+@description('Microsoft Entra object ID supplied by azd. Grants the data-plane roles needed to run the orchestrator locally.')
+param principalId string = ''
 
 @description('ACR SKU')
 @allowed(['Basic', 'Standard', 'Premium'])
@@ -154,21 +158,19 @@ resource openAi 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
   }
 }
 
-resource gpt5Deployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
+resource openaiModelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
   parent: openAi
-  name: 'gpt-5-mini'
+  name: 'gpt-5.6-luna'
   sku: {
     name: 'GlobalStandard'
-    capacity: gpt5MiniCapacity
+    capacity: openAiModelCapacity
   }
   properties: {
-    model: union(
-      {
-        format: 'OpenAI'
-        name: 'gpt-5-mini'
-      },
-      empty(gpt5MiniModelVersion) ? {} : { version: gpt5MiniModelVersion }
-    )
+    model: {
+      format: 'OpenAI'
+      name: 'gpt-5.6-luna'
+      version: openAiModelVersion
+    }
   }
 }
 
@@ -281,7 +283,7 @@ resource orchestratorApp 'Microsoft.App/containerApps@2024-03-01' = {
             // OpenAI User' (granted below) and acquires bearer tokens at runtime.
             { name: 'AZURE_CLIENT_ID',         value: orchestratorUami.properties.clientId }
             { name: 'AZURE_OPENAI_ENDPOINT',   value: openAi.properties.endpoint }
-            { name: 'AZURE_OPENAI_DEPLOYMENT', value: gpt5Deployment.name }
+            { name: 'AZURE_OPENAI_DEPLOYMENT', value: openaiModelDeployment.name }
             { name: 'FOUNDRY_PROJECT_ENDPOINT', value: foundryProjectEndpoint }
             { name: 'SUBSCRIPTION_ID',         value: subscription().subscriptionId }
             { name: 'RESOURCE_GROUP',          value: resourceGroup().name }
@@ -372,13 +374,51 @@ resource sandboxGroupAcrPull 'Microsoft.Authorization/roleAssignments@2022-04-01
   }
 }
 
+// Optional local developer access. Keep the parameter empty for deployments
+// that do not need to run the orchestrator outside Azure Container Apps.
+resource localDeveloperAcrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(principalId)) {
+  name: guid(acr.id, principalId, acrPullRoleId)
+  scope: acr
+  properties: {
+    principalId: principalId
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleId)
+  }
+}
+
+resource localDeveloperOpenAiUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(principalId)) {
+  name: guid(openAi.id, principalId, cognitiveServicesOpenAIUserId)
+  scope: openAi
+  properties: {
+    principalId: principalId
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', cognitiveServicesOpenAIUserId)
+  }
+}
+
+resource localDeveloperFoundryUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(principalId)) {
+  name: guid(openAi.id, principalId, foundryUserRoleId)
+  scope: openAi
+  properties: {
+    principalId: principalId
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', foundryUserRoleId)
+  }
+}
+
+resource localDeveloperSandboxDataOwner 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(principalId)) {
+  name: guid(sandboxGroupResourceId, principalId, sandboxGroupDataOwnerRoleId)
+  scope: sandboxGroup
+  properties: {
+    principalId: principalId
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', sandboxGroupDataOwnerRoleId)
+  }
+}
+
 // ── Outputs ─────────────────────────────────────────────────────────────────
 
 output acrLoginServer                  string = acr.properties.loginServer
 output acrName                         string = acr.name
 output AZURE_CONTAINER_REGISTRY_ENDPOINT string = acr.properties.loginServer
 output openAiEndpoint          string = openAi.properties.endpoint
-output openAiDeployment        string = gpt5Deployment.name
+output openAiDeployment        string = openaiModelDeployment.name
 output foundryProjectEndpoint  string = foundryProjectEndpoint
 output acaEnvironmentName      string = acaEnvironment.name
 output orchestratorAppName     string = orchestratorApp.name
@@ -387,6 +427,8 @@ output orchestratorUrl         string = 'https://${orchestratorApp.properties.co
 output orchestratorPrincipalId string = orchestratorUami.properties.principalId
 output sandboxGroupName        string = sandboxGroup.name
 output sandboxGroupId          string = sandboxGroup.id
+output SANDBOX_GROUP_UAMI_RESOURCE_ID string = sandboxGroupUami.id
+output SANDBOX_GROUP_UAMI_CLIENT_ID string = sandboxGroupUami.properties.clientId
 output resourceGroupName       string = resourceGroup().name
 output subscriptionId          string = subscription().subscriptionId
 output applicationInsightsName string = appInsights.name

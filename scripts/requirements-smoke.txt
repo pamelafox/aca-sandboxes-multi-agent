@@ -1,0 +1,2 @@
+-r ../sandbox-agent/requirements.txt
+websockets>=14,<16
