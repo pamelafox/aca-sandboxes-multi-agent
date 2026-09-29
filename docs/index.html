@@ -1713,7 +1713,7 @@ RUN mkdir -p /workspace
 WORKDIR /workspace
 CMD ["sleep", "infinity"]
 							</code></pre>
-							<p class="code-example-link"><a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/sandbox-agent/Dockerfile">📎 sandbox-agent/Dockerfile</a></p>
+							<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/sandbox-agent/Dockerfile">📎 sandbox-agent/Dockerfile</a></p>
 						</div>
 						<div class="img-flow" style="flex: 0.95;" role="img" aria-label="Four steps. Same as any container: build your image with docker build, then push it to a registry such as Azure Container Registry. Sandboxes: import it into the sandbox group as a disk image with begin_create_disk_image, then create sandboxes from it with begin_create_sandbox and the disk image ID.">
 							<p class="flow-group">Same as any container</p>
@@ -1752,7 +1752,7 @@ CMD ["sleep", "infinity"]
 						<div class="cfg-row" role="row"><code class="cfg-code" role="cell">&nbsp;&nbsp;&nbsp;&nbsp;volumes=[workspace_volume],</code><span class="cfg-arrow" aria-hidden="true">⟶</span><span class="cfg-what" role="cell">What data it keeps</span></div>
 						<div class="cfg-row"><code class="cfg-code">).result()</code></div>
 					</div>
-					<p class="code-example-link" style="margin-top: 10px;"><a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/create_sandbox.py">📎 create_sandbox.py</a></p>
+					<p class="code-example-link" style="margin-top: 10px;"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/create_sandbox.py">📎 create_sandbox.py</a></p>
 					<aside class="notes">
 						Everything about a sandbox is set when you create it. This one call is a map of what's coming: we just covered the image, and the sizes (cpu/memory) came up in the portal demo; next is lifecycle (auto_suspend_seconds), then the rest one at a time.
 						disk_id replaces disk="ubuntu" now that we have our own image. cpu/memory default to 1000m and 2048Mi (the M size). auto_suspend_seconds defaults to 300; auto_suspend_mode picks Memory or Disk.
@@ -1856,7 +1856,7 @@ policy = EgressPolicy(
     rules=[github_rule])
 group.begin_create_sandbox(..., egress_policy=policy)
 							</code></pre>
-							<p class="code-example-link"><a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/sandbox/egress">📎 Control egress</a> · <a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/create_sandbox.py">📎 create_sandbox.py</a></p>
+							<p class="code-example-link"><a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/sandbox/egress">📎 Control egress</a> · <a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/create_sandbox.py">📎 create_sandbox.py</a></p>
 						</div>
 						<div class="egress-flow" role="img" aria-label="Outbound request path. Code inside the sandbox sends all outbound traffic through the egress proxy outside the sandbox. The proxy inspects host, path, and method, matches rules in order with the first match winning, applies the default Deny when nothing matches, and adds auth headers for Transform rules. GET requests to api.github.com are allowed; everything else is blocked, and every decision is logged to the network audit.">
 							<div class="eg-box eg-sandbox">
@@ -1920,7 +1920,7 @@ policy = EgressPolicy(..., rules=[model_rule, github_rule])
 AsyncOpenAI(base_url=endpoint + &quot;/openai/v1/&quot;,
             api_key=&quot;injected-by-egress-proxy&quot;)
 							</code></pre>
-							<p class="code-example-link"><a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/identity">📎 Sandbox identity</a> · <a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/create_sandbox.py">📎 create_sandbox.py</a></p>
+							<p class="code-example-link"><a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/identity">📎 Sandbox identity</a> · <a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/create_sandbox.py">📎 create_sandbox.py</a></p>
 						</div>
 						<div class="egress-flow" role="img" aria-label="Keyless request path. Inside the sandbox group are the sandbox and the group's managed identity. Code in the sandbox calls the model with a placeholder key. The egress proxy, outside the sandbox group, matches the Transform rule for the model host, gets a Microsoft Entra token for the group's managed identity, and sets the Authorization header. Azure OpenAI checks the identity's role assignment and allows the call. The real token never exists inside the sandbox.">
 							<div class="mi-group">
@@ -2185,7 +2185,7 @@ restored.set_egress_policy(policy)
 							<p class="auth-foot">Restore took under a second. One snapshot can start many sandboxes.</p>
 						</div>
 					</div>
-					<p class="code-example-link"><a target="_blank" href="https://learn.microsoft.com/azure/container-apps/sandboxes-snapshots-state-management">📎 Lifecycle and snapshots</a> · <a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/create_sandbox.py">📎 create_sandbox.py</a></p>
+					<p class="code-example-link"><a target="_blank" href="https://learn.microsoft.com/azure/container-apps/sandboxes-snapshots-state-management">📎 Lifecycle and snapshots</a> · <a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/create_sandbox.py">📎 create_sandbox.py</a></p>
 					<aside class="notes">
 						Files inside a sandbox are private to it and gone when it's deleted. Two ways to keep an agent's work, both tried with the standalone agent in this repo.
 						Volume: create_sandbox.py --volume agent-output mounts a group volume at /workspace/out, and the agent is told to save final deliverables there. Delete the sandbox, then mount the same volume in a new one (even plain Ubuntu) and the report is there. It's Azure Blob storage mounted with blobfuse; a read-only mount really rejects writes. Volumes are the deliberate way to share data across the boundary.
@@ -2223,7 +2223,7 @@ with ExitStack() as stack:
     if args.delete_after_run:
         stack.callback(sandbox.delete)  # remote sandbox
 							</code></pre>
-							<p class="code-example-link"><a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/create_sandbox.py">📎 create_sandbox.py</a> (simplified)</p>
+							<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/create_sandbox.py">📎 create_sandbox.py</a> (simplified)</p>
 						</div>
 					</div>
 					<div class="callout">Compute caps don't cap model tokens or external API spend.</div>
@@ -2327,7 +2327,7 @@ return Agent(
 )
 							</code></pre>
 							<p class="small" style="margin-top: 14px;">The agent can request sandbox execution only because the app registers that tool. Registering it doesn't create a sandbox.</p>
-							<p class="code-example-link"><a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/orchestrator/agents/researcher_agent.py">📎 orchestrator/agents/researcher_agent.py</a></p>
+							<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/orchestrator/agents/researcher_agent.py">📎 orchestrator/agents/researcher_agent.py</a></p>
 						</div>
 						<div class="fragment" data-fragment-index="2">
 							<p class="label">Implement the tool</p>
@@ -2347,7 +2347,7 @@ async def run_in_sandbox(question: str) -> str:
     return json.dumps({"question": result.question,
                        "answer": result.answer, ...})
 							</code></pre>
-							<p class="code-example-link"><a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/orchestrator/agents/researcher_agent.py">📎 researcher_agent.py</a> (simplified: timeouts, retries, errors, and UI events omitted)</p>
+							<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/orchestrator/agents/researcher_agent.py">📎 researcher_agent.py</a> (simplified: timeouts, retries, errors, and UI events omitted)</p>
 						</div>
 					</div>
 					<aside class="notes">
@@ -2391,7 +2391,7 @@ wf = builder.add_edge(collector, synthesizer).build()
 						</div>
 					</div>
 					<p class="small" style="margin-top: 18px;">Separate edges per researcher let the branches run concurrently. The collector releases results once every dispatched branch has returned.</p>
-					<p class="code-example-link"><a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/orchestrator/agents/workflow.py">📎 orchestrator/agents/workflow.py</a></p>
+					<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/orchestrator/agents/workflow.py">📎 orchestrator/agents/workflow.py</a></p>
 					<aside class="notes">
 						Map back to the architecture arrows. The decomposer also sends a ResearchPlan to the collector so it knows how many responses to await.
 						Full deployment adds an ACA environment and orchestrator Container App: azd up with azure.yaml provisions, builds images, and deploys. Don't run it on stage.
@@ -2419,7 +2419,7 @@ def _traceparent_env() -> dict[str, str]:
 
 environment.update(_traceparent_env())
 							</code></pre>
-							<p class="code-example-link"><a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/orchestrator/sandbox_manager.py">📎 sandbox_manager.py</a></p>
+							<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/orchestrator/sandbox_manager.py">📎 sandbox_manager.py</a></p>
 						</div>
 						<div>
 							<p class="label">Sandbox: extract</p>
@@ -2434,7 +2434,7 @@ _PARENT_CTX = extract({
 tracer.start_as_current_span(
     "research-agent.run", context=_PARENT_CTX)
 							</code></pre>
-							<p class="code-example-link"><a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/research-agent/app.py">📎 research-agent/app.py</a> (simplified)</p>
+							<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/research-agent/app.py">📎 research-agent/app.py</a> (simplified)</p>
 						</div>
 					</div>
 					<p class="small" style="margin-top: 16px;">One trace: separate provisioning time from research/model time, find the slow or failed branch, and verify cleanup.</p>
@@ -2547,7 +2547,7 @@ tracer.start_as_current_span(
 					</div>
 					<p class="label" style="margin-top: 30px;">Get started with one sandbox, no swarm required</p>
 					<ul class="tight small">
-						<li>Sample repo: <a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes">github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes</a></li>
+						<li>Sample repo: <a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent">github.com/pamelafox/aca-sandboxes-multi-agent</a></li>
 						<li>Docs: <a target="_blank" href="https://learn.microsoft.com/azure/container-apps/sandboxes-overview">Sandboxes overview</a> · latest details: <a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/">sandboxes.azure.com/docs</a></li>
 						<li>Agent Skill: <a target="_blank" href="https://learn.microsoft.com/azure/container-apps/sandboxes-quickstart-agent-skills?tabs=copilot">Sandboxes Agent Skill quickstart</a></li>
 						<li>Try it: <a target="_blank" href="https://portal.azure.com">portal.azure.com</a></li>
@@ -2560,7 +2560,7 @@ tracer.start_as_current_span(
 				<!-- 38 -->
 				<section class="heading-only">
 					<h2>Questions?</h2>
-					<p style="font-size: 0.8em; margin-top: 18px;">Repo: <a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes">github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes</a></p>
+					<p style="font-size: 0.8em; margin-top: 18px;">Repo: <a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent">github.com/pamelafox/aca-sandboxes-multi-agent</a></p>
 					<p style="font-size: 0.8em;">Portal: <a target="_blank" href="https://portal.azure.com">portal.azure.com</a></p>
 					<p style="font-size: 0.7em; margin-top: 24px;">Pamela Fox · <a target="_blank" href="https://pamelafox.org">pamelafox.org</a> · <a target="_blank" href="https://github.com/pamelafox">github.com/pamelafox</a></p>
 					<aside class="notes">
