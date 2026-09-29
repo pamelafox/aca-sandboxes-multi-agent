@@ -77,9 +77,7 @@ var foundryUserRoleId             = '53ca6127-db72-4b80-b1b0-d745d6d5456d'
 // Built-in role: Container Apps SandboxGroup Data Owner
 var sandboxGroupDataOwnerRoleId   = 'c24cf47c-5077-412d-a19c-45202126392c'
 
-// Resource IDs computed as strings (force runtime resolution; works around Bicep
-// symbolic-name codegen that strips `identity` from preview-API resources).
-var orchestratorAppResourceId = resourceId('Microsoft.App/containerApps', orchestratorAppName)
+// Resource ID computed as a string (forces runtime resolution for the preview API).
 var sandboxGroupResourceId    = resourceId('Microsoft.App/sandboxGroups', sandboxGroupName)
 
 // ── User-Assigned Managed Identities ────────────────────────────────────────
@@ -131,7 +129,12 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = {
   location: location
   sku: { name: acrSku }
   properties: {
-    adminUserEnabled: true
+    adminUserEnabled: false
+    policies: {
+      azureADAuthenticationAsArmPolicy: {
+        status: 'enabled'
+      }
+    }
   }
 }
 
@@ -233,6 +236,11 @@ resource sandboxGroup 'Microsoft.App/sandboxGroups@2026-02-01-preview' = {
 resource orchestratorApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: orchestratorAppName
   location: location
+  dependsOn: [
+    orchestratorAcrPull
+    sandboxGroupAcrPull
+    orchestratorSandboxDataOwner
+  ]
   // Tags consumed by `azd` to wire `azd deploy <service>` to this resource.
   tags: union(
     { 'azd-service-name': azdServiceName },
@@ -247,15 +255,7 @@ resource orchestratorApp 'Microsoft.App/containerApps@2024-03-01' = {
   properties: {
     managedEnvironmentId: acaEnvironment.id
     configuration: {
-      secrets: [
-        // ACR admin credentials for disk-image pulls. The sandbox compute plane
-        // cannot yet authenticate ACR pulls with a managed identity, so the
-        // disk-image create call passes registry credentials explicitly. This is
-        // scoped to the orchestrator's internal bootstrap; sandbox egress stays
-        // keyless and default-deny.
-        { name: 'acr-username', value: acr.listCredentials().username }
-        { name: 'acr-password', value: acr.listCredentials().passwords[0].value }
-      ]
+      secrets: []
       ingress: {
         external: true
         targetPort: 5000
@@ -264,8 +264,7 @@ resource orchestratorApp 'Microsoft.App/containerApps@2024-03-01' = {
       registries: [
         {
           server: acr.properties.loginServer
-          username: acr.listCredentials().username
-          passwordSecretRef: 'acr-password'
+          identity: orchestratorUami.id
         }
       ]
     }
@@ -292,8 +291,6 @@ resource orchestratorApp 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'SANDBOX_GROUP_UAMI_CLIENT_ID', value: sandboxGroupUami.properties.clientId }
             { name: 'DEFAULT_REGION',          value: location }
             { name: 'ACR_LOGIN_SERVER',        value: acr.properties.loginServer }
-            { name: 'ACR_USERNAME',            secretRef: 'acr-username' }
-            { name: 'ACR_PASSWORD',            secretRef: 'acr-password' }
             { name: 'DISK_IMAGE_ID',           value: !empty(researchAgentImage) ? researchAgentImage : '${acr.properties.loginServer}/research-agent:latest' }
             // OpenTelemetry → Application Insights. Drives agent-run / tool-call /
             // sandbox spans. The same connection string is forwarded into each
@@ -339,6 +336,19 @@ resource sandboxGroupOpenAiRole 'Microsoft.Authorization/roleAssignments@2022-04
   }
 }
 
+// Sandbox group identity → Foundry User (Azure AI User) on the AOAI/Foundry account.
+// The egress proxy mints ai.azure.com tokens for this identity and injects them
+// into the swarm researchers' Foundry requests (hosted web search).
+resource sandboxGroupFoundryUserRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(openAi.id, sandboxGroupUami.id, foundryUserRoleId)
+  scope: openAi
+  properties: {
+    principalId: sandboxGroupUami.properties.principalId
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', foundryUserRoleId)
+    principalType: 'ServicePrincipal'
+  }
+}
+
 // Orchestrator → Cognitive Services OpenAI User on the AOAI account
 resource orchestratorOpenAiRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(openAi.id, orchestratorUami.id, cognitiveServicesOpenAIUserId)
@@ -346,19 +356,6 @@ resource orchestratorOpenAiRole 'Microsoft.Authorization/roleAssignments@2022-04
   properties: {
     principalId: orchestratorUami.properties.principalId
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', cognitiveServicesOpenAIUserId)
-    principalType: 'ServicePrincipal'
-  }
-}
-
-// Orchestrator → Foundry User (Azure AI User) on the AOAI/Foundry account
-// REQUIRED so the orchestrator can mint an ai.azure.com-scoped token that the
-// researcher uses (via FoundryChatClient) to call the project's hosted web search.
-resource orchestratorFoundryUserRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(openAi.id, orchestratorUami.id, foundryUserRoleId)
-  scope: openAi
-  properties: {
-    principalId: orchestratorUami.properties.principalId
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', foundryUserRoleId)
     principalType: 'ServicePrincipal'
   }
 }

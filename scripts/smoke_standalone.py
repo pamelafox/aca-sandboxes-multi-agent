@@ -13,7 +13,7 @@ from azure.containerapps.sandbox import endpoint_for_region
 from azure.identity import DefaultAzureCredential
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from create_sandbox import RegistryIdentitySandboxGroupClient, model_egress_policy, parse_args, prepare_disk_image
+from create_sandbox import RegistryIdentitySandboxGroupClient, agent_egress_policy, parse_args, prepare_disk_image
 
 
 def verify_csv(text: str) -> None:
@@ -35,7 +35,6 @@ def smoke(args, artifacts: Path, workdir: str) -> None:
                 print("Stage: prepare published image", flush=True)
                 disk_id = prepare_disk_image(
                     group, args.image, args.image_identity_resource_id, args.image_identity_client_id,
-                    registry_auth=args.registry_auth, subscription_id=args.subscription_id,
                 )
             metadata = {
                 "subscription_id": args.subscription_id, "resource_group": args.resource_group,
@@ -53,7 +52,7 @@ def smoke(args, artifacts: Path, workdir: str) -> None:
                 sandbox = group.begin_create_sandbox(
                     disk=None, disk_id=disk_id, cpu="500m", memory="1Gi", auto_suspend_seconds=300,
                     labels=labels, polling_timeout=180, polling_interval=2,
-                    egress_policy=model_egress_policy(endpoint, args.image_identity_resource_id),
+                    egress_policy=agent_egress_policy(endpoint, args.image_identity_resource_id),
                     environment={
                         "AGENT_PROMPT": args.prompt,
                         "AZURE_OPENAI_ENDPOINT": endpoint,
@@ -107,7 +106,7 @@ def smoke(args, artifacts: Path, workdir: str) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, epilog="Additional options are passed to create_sandbox.py (for example --registry-auth azure-cli or --disk-id).")
+    parser = argparse.ArgumentParser(description=__doc__, epilog="Additional options are passed to create_sandbox.py (for example --disk-id).")
     parser.add_argument("--run", action="store_true", help="Confirm creation of real Azure resources and model usage.")
     options, launcher_args = parser.parse_known_args()
     if not options.run:

@@ -120,21 +120,19 @@ async def _run_agent_research(question: str) -> dict:
     from azure.core.pipeline.transport import AioHttpTransport
 
     project_endpoint = os.environ["FOUNDRY_PROJECT_ENDPOINT"]
-    token = os.environ.get("AZURE_AI_TOKEN", "")
     model = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-5.6-luna")
 
-    # The token is minted by the orchestrator's managed identity for the
-    # https://ai.azure.com audience and forwarded into this sandbox. Wrap it in
-    # a credential shim so no outbound IMDS/AAD call is made from inside the
-    # egress-locked sandbox.
-    class _ForwardedTokenCredential:
+    # No credential lives in this sandbox. The SDK requires one, so hand it a
+    # placeholder; the egress proxy replaces the Authorization header with an
+    # Entra token for the sandbox group's managed identity.
+    class _ProxyInjectedCredential:
         async def get_token(self, *scopes: str, **kwargs: object) -> AccessToken:
-            return AccessToken(token, int(_time.time()) + 3000)
+            return AccessToken("injected-by-egress-proxy", int(_time.time()) + 3600)
 
         async def close(self) -> None:
             return None
 
-        async def __aenter__(self) -> "_ForwardedTokenCredential":
+        async def __aenter__(self) -> "_ProxyInjectedCredential":
             return self
 
         async def __aexit__(self, *exc: object) -> None:
@@ -144,7 +142,7 @@ async def _run_agent_research(question: str) -> dict:
     # the AIProjectClient transport and the OpenAI (Responses) client it builds.
     project_client = AIProjectClient(
         endpoint=project_endpoint,
-        credential=_ForwardedTokenCredential(),
+        credential=_ProxyInjectedCredential(),
         transport=AioHttpTransport(connection_verify=False),
     )
     _orig_get_openai_client = project_client.get_openai_client
@@ -342,7 +340,6 @@ def debug():
             "progress": state["progress"],
             "error": state.get("error"),
             "has_openai_endpoint": bool(os.environ.get("AZURE_OPENAI_ENDPOINT")),
-            "has_openai_token": bool(os.environ.get("AZURE_OPENAI_TOKEN")),
             "has_openai_deployment": bool(os.environ.get("AZURE_OPENAI_DEPLOYMENT")),
             "question": state["question"][:50] if state["question"] else None,
         })

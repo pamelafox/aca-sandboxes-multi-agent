@@ -10,6 +10,15 @@ from agent_framework.tools import LocalShellTool, ShellEnvironmentProviderOption
 from openai import AsyncOpenAI
 
 
+OUTPUT_MOUNT = "/workspace/out"
+OUTPUT_VOLUME_INSTRUCTIONS = (
+    f" {OUTPUT_MOUNT} is a persistent volume; everything else is lost when this sandbox is deleted. "
+    f"Always save the final version of every deliverable in {OUTPUT_MOUNT}, "
+    "overwriting any earlier copy, and keep drafts and scratch files in /workspace."
+    if os.path.ismount(OUTPUT_MOUNT) else ""
+)
+
+
 def build_agent(shell: LocalShellTool, client: OpenAIChatClient) -> Agent:
     return create_harness_agent(
         client=client,
@@ -20,8 +29,10 @@ def build_agent(shell: LocalShellTool, client: OpenAIChatClient) -> Agent:
             "Work in /workspace and report the paths of files you create. "
             "Execute and verify your work; do not merely describe a plan. "
             "Check exit codes and output before claiming success. "
-            "Only the configured model endpoint is reachable over the network. "
-            "Do not launch background processes or try to bypass network restrictions."
+            "An egress policy outside this sandbox controls network access: you may attempt any "
+            "request, and blocked ones fail with HTTP 403. Report those results; "
+            "do not launch background processes or try to work around the policy."
+            + OUTPUT_VOLUME_INSTRUCTIONS
         ),
         shell_executor=shell,
         shell_environment_provider_options=ShellEnvironmentProviderOptions(

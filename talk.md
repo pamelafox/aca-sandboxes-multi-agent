@@ -62,13 +62,20 @@ An earlier run asked about "an electric version of the Forester" instead. That v
 
 Core story: **Agents need somewhere safe to act. ACA Sandboxes make that execution environment programmable, so a swarm can create one workspace per task and dispose of it when the work is done.**
 
-**Current count: 31 main slides, including 3 demo screenshot slides and Q&A, plus 1 optional demo slide (B1).** Each numbered heading below represents exactly one slide. Reveals/fragments do not add to the count. Speaker notes, code sources, and ASCII prototypes describe the slide; they are not additional slides.
+**Current count: 38 slides in the deck, including 4 section slides, 4 demo slides (one optional), and Q&A.** The slide numbers in the headings below predate the latest reordering; the deck is the source of truth for order. Each numbered heading below represents exactly one slide. Reveals/fragments do not add to the count. Speaker notes, code sources, and ASCII prototypes describe the slide; they are not additional slides.
 
 Use the research swarm as the running example, but make Sandboxes the subject. Connect architecture and security concepts to infrastructure definitions, SDK calls, and observed runtime behavior. Keep agent-framework mechanics brief.
 
 **Hour budget:** Slides 1-2: 3 minutes; 3-4: 7 minutes; 5: 2 minutes; 6-14: 12 minutes; 15-21: 13 minutes; 22-23: 5 minutes; 24-25: 4 minutes; 26-30: 6 minutes. Reserve 3 minutes for demo delays or optional slide B1, and 5 minutes for Q&A on slide 31. These are rehearsal targets, including live demo time, not equal time per slide.
 
 **Demo slide convention:** Slides 3, 16, 25, and optional B1 each show a large screenshot of the actual demo, with a short title. The screenshot is the presenter cue to switch to the live application, terminal, or portal. Keep the runbook in speaker notes. Screenshot descriptions below are capture requirements, not claims that assets already exist.
+
+**Section slides:** Four centered transition slides, each with "Part N of 4", a title, a one-line subtitle, and a roadmap of all four sections with the current one highlighted. Speaker notes hold the verbal transition.
+
+1. **Introducing the swarm** (after the title slide): one question, many parallel researchers.
+2. **Sandboxes 101** (before "What is a sandbox?"): create, configure, secure, and keep state.
+3. **Back to the swarm** (before "Swarm architecture, revisited"): sandboxes as a tool for parallel agents.
+4. **Wrapping up** (before the recap): recap, where else sandboxes fit, and takeaways.
 
 ### Slide 1. When One Agent Isn't Enough
 
@@ -341,6 +348,24 @@ Source: [portal lifecycle docs](https://sandboxes.azure.com/docs/sandboxes/sandb
 
 **Code slide:** Extract `_build_egress_policy` from [orchestrator/sandbox_manager.py](orchestrator/sandbox_manager.py), focusing on `EgressHostRule`, the allowed endpoint hosts, and `EgressPolicy(default_action="Deny", host_rules=host_rules)`. Show where that policy is attached during sandbox creation. Keep the longer telemetry-endpoint parsing logic in the editor, not on the slide.
 
+### Slide 15b. Outbound calls with credential injection
+
+**Main point:** A sandbox group can have a managed identity, just like other Azure resources, and its sandboxes can call Azure services with Entra tokens for that identity. You grant it roles with normal Azure RBAC.
+
+**On slide:** Code on the left, request flow on the right (same layout as the egress slide).
+
+* **Code:** The swarm's actual policy from [orchestrator/sandbox_manager.py](orchestrator/sandbox_manager.py): a `Transform` rule on the Foundry host whose `Authorization` header comes from `EgressManagedIdentityRef(identity_type="UserAssigned", resource="https://ai.azure.com", format="Bearer {value}")`. The orchestrator adds a second rule for the Azure OpenAI host (audience `https://cognitiveservices.azure.com`), and the standalone agent ([create_sandbox.py](create_sandbox.py)) uses the same pattern.
+* **Flow:** Sandbox (agent calls Foundry with a placeholder token) → egress proxy (match the Transform rule, get an Entra token for the group identity, set `Authorization`) → Foundry project (checks RBAC: the identity has Foundry User). Footer: "No key in the image, no token in the environment."
+
+**Speaker notes:**
+
+* Code inside the sandbox still needs an SDK credential object, so [research-agent/app.py](research-agent/app.py) hands it a placeholder; the proxy replaces the header after the request leaves the sandbox. The real token never exists inside the VM, and the proxy mints tokens as needed, so long-running agents don't hit expiry.
+* The group identity's roles in this repo: AcrPull (image pulls), Cognitive Services OpenAI User, and Foundry User. Separately, whoever creates sandboxes needs **Container Apps SandboxGroup Data Owner** on the group; that's management, not model access.
+* Identity exists only at the **sandbox group** level, so every sandbox in the group gets the same access. For narrower access, use separate sandbox groups per trust level, or an egress webhook that decides per `sandboxId` (webhooks can only return literal header values).
+* Header values can also come from a group [secret](https://sandboxes.azure.com/docs/sandboxes/secrets) (`secretRef`); group secrets are never exposed as environment variables.
+* Network rules decide reachability; authorization decides operations. You need both.
+* Contrast with the portal's Copilot and Claude templates, whose provider credentials do land inside the sandbox.
+
 ### Slide 16. Demo: allowed and blocked network requests
 
 **On slide:** Screenshot of the sandbox's **Network Audit** panel in the Azure portal, showing timestamped requests with their destination hosts marked ALLOWED or DENIED, next to the terminal that issued them. Include at least one denied request. No credentials visible.
@@ -364,39 +389,36 @@ Source: [portal lifecycle docs](https://sandboxes.azure.com/docs/sandboxes/sandb
 
 **On slide:** Separate the caller's sandbox-management permission from the group's registry-pull identity. Show the `orchestratorSandboxDataOwner` role assignment from [infra/main.bicep](infra/main.bicep), highlighting principal, role (the built-in **Container Apps SandboxGroup Data Owner**), and `scope: sandboxGroup`. For the standalone script, explain that its caller also needs sandbox-management authorization; outside Bicep, `aca sandboxgroup role create` grants the same role. Mention AcrPull only briefly; the registry Bicep was cut from the deck.
 
-### Slide 19. Keyless model access: what may the agent do?
+### Slide 19b. Suspend and resume: same sandbox, later
 
-* Separate permission to manage sandboxes from permission to call a model or access data. Explain Entra ID, managed identity, and scoped Azure RBAC assignments.
-* Show this repo's actual credential flow: the orchestrator acquires short-lived bearer tokens and forwards them into the researcher sandbox. Keyless does not mean credential-free.
-* Tokens carry the issuing identity's granted access. Managed identity exists only at the **sandbox group** level; there is no per-sandbox identity, so creating a separate sandbox does not create a separate, less-privileged identity for each researcher. For narrower access, use separate sandbox groups per trust level, or an egress webhook that decides per `sandboxId`.
-* Network rules decide whether a service is reachable. Authorization decides which operations the caller may perform there. Both are needed.
+**Main point:** Resume continues the same sandbox; a snapshot (next slide) creates a new one. The suspend mode decides what survives.
 
-**Visual / demo beat:** Draw the token flow and permission scopes without displaying token values. Emphasize that code inside the sandbox can use credentials supplied to it.
+**On slide:** One code strip (`begin_create_sandbox(..., auto_suspend_mode="Memory")`, `begin_stop()`, `begin_resume()`), then two panels. **Disk:** files ✓, running processes ✗ (restart them); resumed in 0.9 s; required with a data-disk volume. **Memory:** files ✓, running processes and memory ✓; resumed in 0.6 s; keeps in-process credentials too. Footer: stopped sandboxes have no compute charges and don't count against the cores quota. It's followed by an optional demo slide (screenshot placeholder); skip it if short on time.
 
-**Code:** Show token acquisition in `get_foundry_token` and the environment-variable handoff in `create_sandbox` from [orchestrator/sandbox_manager.py](orchestrator/sandbox_manager.py) as successive builds on this slide. Keep management permission and downstream service permission visually separate; show code, never token values.
+**Verified September 28 (westus group):** a background counter plus a file, then `begin_stop` and `begin_resume`. Memory mode: the counter continued from where it stopped. Disk mode: the file survived, the process didn't. Stopping in Memory mode took about 8 s versus about 1 s for Disk.
 
-**Final build: credential injection as the alternative.** An egress `Transform` rule can add an `Authorization` header to allowed outbound requests. The header value can come from a group secret (`secretRef`) or from a token minted for the **sandbox group's managed identity** (`managedIdentityRef` with a token `resource`), so Entra tokens work, not just stored secrets. Code running inside never sees the credential, while requests to the allowed host still authenticate. Contrast the two flows side by side:
+**Speaker notes:** The mode is set per sandbox (`auto_suspend_mode`) or in the lifecycle policy (`AutoSuspendPolicy(mode=...)`). The swarm never suspends; every researcher sandbox is deleted after its result is collected. Suspend fits long-lived agents that wait on people or events. CLI: `aca sandbox stop` / `aca sandbox start`.
 
-```text
-This repo today:       orchestrator --token in env var--> sandbox --request + token--> Foundry
-Credential injection:  sandbox --request--> egress proxy (adds group-identity token) --> Foundry
-```
+### Slide 20. Keep the agent's work: volumes and snapshots
 
-Present injection as the documented platform option that removes the slide 11 caveat about credentials placed inside the sandbox: give the group identity the Foundry role, add a `Transform` rule on the Foundry host, and the orchestrator stops forwarding tokens. Don't claim the sample uses it.
+**Main point:** Files in a sandbox are private and disappear when it's deleted. Volumes and snapshots are the two deliberate ways to keep work, shown with the standalone agent before returning to the swarm.
 
-**Speaker notes:** Transform rules are written in an egress YAML policy and applied with `aca sandbox egress apply --file egress.yaml`; the Python SDK example only shows host allow/deny rules. Group [secrets](https://sandboxes.azure.com/docs/sandboxes/secrets) are only referenced from egress transforms and telemetry auth; they're never exposed as environment variables. An egress webhook can go further and mint a per-sandbox token at request time, but it can only return literal header values. Contrast with the portal's Copilot and Claude templates (slide 9), whose provider credentials do land inside the sandbox.
+**On slide:** Two panels, each with code and verified outcomes.
 
-### Slide 20. Workspace data: what is private, shared, or retained?
+* **Volume: files outlive the sandbox.** `group.create_volume("agent-output")` and `volumes=[SandboxVolume(volume_name="agent-output", mountpoint="/workspace/out")]`. Sandbox A writes `report.md` and is deleted ✓; sandbox B mounts the volume and reads it ✓; a `read_only=True` mount rejects writes ✗. Footer: Azure Blob storage owned by the sandbox group, mounted like a folder.
+* **Snapshot: freeze and continue.** `begin_create_snapshot(name="first-draft")`, delete, `begin_create_sandbox(snapshot_id=...)`, `set_egress_policy(policy)`. Files ✓; running processes, memory, env vars ✓; egress policy ✗, set it again. Footer: restore took under a second; one snapshot can start many sandboxes.
 
-* Start with a task-local filesystem. Mounting a shared volume or copying results out deliberately crosses that boundary.
-* Treat disk images as trusted starting points: preload code and dependencies, not credentials or another task's private data.
-* Snapshots and persistent volumes can retain sensitive state beyond a process's lifetime. Memory snapshots can also preserve in-process credentials.
-* Stopping or deleting a sandbox is not a blanket retention policy for separately retained snapshots, volumes, exported results, or logs. Snapshots belong to the sandbox group and outlive their source sandbox; there's no automatic snapshot retention, so clean them up on a schedule. Deleting the sandbox group removes everything in it.
-* Retained state costs money: storage for custom disk images, snapshots (including the automatic ones taken when a sandbox stops), and volumes will be billed at Premium Blob ZRS rates (billing "coming soon").
+**Demo (optional):** [create_sandbox.py](create_sandbox.py) `--volume agent-output --snapshot-after-run first-draft --prompt "Write report.md: three bullets on why agents need sandboxes. Keep your outline in notes.md."`, then `--snapshot-id <id> --prompt "Add a fourth bullet about cost to the report."`, then `--disk ubuntu --volume agent-output --command "cat /workspace/out/report.md"` shows the four-bullet report.
 
-**Visual / demo beat:** Label task-local files, explicitly shared storage, and exported research results. Mark volumes and snapshots as platform options, not features demonstrated by the current disposable swarm.
+**Verified September 28 (westus group):**
 
-**Speaker notes:** Refer back to the image pipeline on slide 12 rather than adding another Dockerfile slide. Keep [research-agent/Dockerfile](research-agent/Dockerfile) and `prepare_disk_image` in [orchestrator/sandbox_manager.py](orchestrator/sandbox_manager.py) available for questions about the swarm's image caching.
+* The volume is Azure Blob mounted with blobfuse2; a sandbox with a volume was created in about 1 s; files survived deleting the writer.
+* The snapshot took about 1.6 s and a restore about 0.4 s. A background counter kept counting after restore, so memory and processes come back, not just disk; env vars too (so in-process credentials would come back).
+* A restore accepts no configuration (the SDK rejects labels, environment, egress policy, volumes, ports) and uses the snapshot's CPU and memory. **The egress policy isn't restored:** the restored sandbox reported `default_action='Allow'` and reached bing.com until `set_egress_policy` ran. Volumes mounted at snapshot time stayed mounted.
+
+**Speaker notes:** The docs list fanning out many sandboxes from one prepared snapshot; the swarm starts from a disk image instead. Snapshots belong to the group and outlive their source, with no automatic retention; deleting the group removes everything. Disk images should hold code and dependencies, not credentials or another task's data. Retained storage (disk images, snapshots including the automatic ones taken on stop, volumes) will be billed at Premium Blob ZRS rates (coming soon).
+
+**Ask the ACA team:** Is dropping the egress policy on restore intended? There's a window between restore and `set_egress_policy` where resumed processes have open egress.
 
 ### Slide 21. Resource and lifecycle limits: how much can it consume?
 
@@ -408,6 +430,12 @@ Present injection as the documented platform option that removes the slide 11 ca
 **Visual / demo beat:** Show the lifecycle with its concurrency cap, timeout, and cleanup points. Return to actual deletion and timing evidence in the observability section.
 
 **Code excerpt:** Reuse the resource and auto-suspend arguments from the configuration slide (slide 13), then show the cleanup path in [create_sandbox.py](create_sandbox.py). Explain the distinction between closing the client and deleting the remote sandbox: the script registers `group.close` and `sandbox.close` on an `ExitStack`, which only release local connections, and adds `sandbox.delete` only when `--delete-after-run` is passed. Without it, the sandbox keeps existing and relies on `auto_suspend_seconds=300` to stop, so a lifecycle policy with auto-delete is the backstop.
+
+### Slide 21b. Swarm architecture, revisited
+
+**On slide:** The slide 4 architecture diagram again, now with callouts that build one at a time beside the sandboxes: **Disk image** (research-agent, built from ACR), **Egress** (Deny, except Foundry + App Insights), **Identity** (group identity signs Foundry calls), **Lifecycle** (one per question, deleted after), and **No volumes or snapshots** (results return via the tool call).
+
+**Speaker notes:** Same picture as the start; now every piece on the right has a name. This is the transition from the Sandboxes deep dive back to the orchestration code.
 
 ### Slide 22. Turn compute into an agent tool
 
@@ -444,19 +472,6 @@ Present injection as the documented platform option that removes the slide 11 ca
 **On slide:** Screenshot of an Application Insights transaction trace with overlapping researcher spans and a sandbox span expanded.
 
 **Speaker notes:** Open Azure Monitor / Application Insights for the swarm run, inspect parallel branches and one sandbox's work, then verify deletion of the ephemeral sandboxes. Use a captured trace when telemetry ingestion is delayed. Optionally show the sandbox group's `RunningCores` metric in Azure Monitor rising during the fan-out and dropping back to zero after cleanup.
-
-### Slide 26. Beyond disposable tasks: suspend and resume
-
-**On slide:** A before/after visual explaining disk-only versus memory-and-disk suspend, resume, and snapshots for reusable starting points. This is a platform capability beyond the current create-and-delete swarm.
-
-**Speaker notes:** Stay conceptual in the main deck. Key facts:
-
-* **Suspend modes:** `Memory` preserves running processes and in-memory state; `Disk` preserves only the filesystem. Sandboxes with a data-disk volume support `Disk` only.
-* **Snapshots as starting points:** one snapshot can seed many new sandboxes (`aca sandbox create --snapshot <name>`), which inherit its CPU, memory, and disk size. That's a warm start for a fan-out: prepare once, then fork.
-* **Timing:** resume from stopped is sub-second, but creating from a snapshot "needs a short warm-up." Don't claim sub-second for snapshot restores.
-* **Security:** memory snapshots can capture in-process credentials (slide 20).
-
-Only jump to optional demo slide B1 if time remains; return to slide 27 afterward.
 
 ### Slide 27. Recap: where agent runtimes break
 
@@ -536,7 +551,7 @@ The orchestrator stays a standard Container App, not a Container Apps Express ap
 
 * Sandboxes are generally available, except the [triggers](https://sandboxes.azure.com/docs/sandboxes/triggers) feature, which remains in preview. Triggers wake or invoke a sandbox when a connector event fires, such as a new email or a SharePoint upload. Present the service as GA; the Python SDK is still beta (see question 12). If triggers come up (for example in Q&A), label them preview. Don't confuse triggers with the network-traffic resume on slide 14, which is part of the GA lifecycle. Treat the [current Sandboxes overview](https://learn.microsoft.com/en-us/azure/container-apps/sandboxes-overview) as the source for limitations, and recheck feature status before presenting.
 * Sub-second provisioning from prewarmed pools is not a promise of a sub-second research answer or first-time custom image preparation. Stopped sandboxes have no CPU/memory fees; avoid implying all storage or supporting services are free.
-* Keyless does not mean credential-free: this repo's orchestrator forwards short-lived Azure bearer tokens into the researcher sandbox. Explain the scope and exposure rather than suggesting every sandbox directly authenticates through managed identity.
+* Keyless here means no credential inside the sandbox at all: both the swarm and the standalone agent get Entra tokens for the sandbox group's managed identity injected by the egress proxy. Every sandbox in a group shares that identity's access.
 * Borrow the runtime requirements and lifecycle demonstrations from the [annotated BRK221 talk](presentations/BRK221/outputs/writeup.md), but leave its broader ACA/GPU tour and customer case study out of this talk. The swarm is the through-line here.
 * "ADC" is the old name for Sandboxes. Say "Sandboxes" or "Sandboxes data plane" on slides and in speaker notes, even where older code, docs, or package names still use ADC.
 
@@ -552,8 +567,8 @@ Docs checked (September 2026): [overview](https://learn.microsoft.com/azure/cont
    * **Status:** Answered ([portal egress docs](https://sandboxes.azure.com/docs/sandboxes/sandbox/egress), [egress webhook docs](https://sandboxes.azure.com/docs/sandboxes/sandbox/egress/webhook), [identity docs](https://sandboxes.azure.com/docs/sandboxes/identity)).
    * **Answer:** Yes, injection supports Entra tokens. A `Transform` rule's header value can come from a static value, a group secret (`secretRef`), or a `managedIdentityRef` with a `resource` (token audience) and `type` (for example `SystemAssigned`). The token comes from the **sandbox group's** managed identity, so the sandbox code never holds it. Advanced rules (path/method matches, transforms, rewrites) are written as a YAML policy file and applied with `aca sandbox egress apply --file egress.yaml`. The SDK example only shows `EgressHostRule(pattern=..., action=...)`.
    * **Beyond static rules:** An egress **webhook** (`hookRef` on a rule) lets your own endpoint decide, transform, or rewrite each matching request at runtime. It receives the `sandboxId`, so it can do "runtime token minting" per sandbox or tenant. Note that a webhook response can only return literal header values, not secret or identity references.
-   * **Slide 19 impact:** Present injection as a documented platform feature. The group identity has the Foundry role; a rule on the Foundry host adds `Authorization` with a `managedIdentityRef` token; the orchestrator stops forwarding tokens. Still don't claim the sample does this.
-   * **Still ask (low priority):** Does the Python SDK support `Transform` rules and `managedIdentityRef` directly, or only through the CLI policy file? Is there a Foundry or Azure OpenAI sample? Is `type: UserAssigned` supported in `managedIdentityRef`?
+   * **Slide 19 impact:** The repo now uses injection for both the swarm and the standalone agent. The group identity has the Foundry User and Cognitive Services OpenAI User roles; Transform rules on the Foundry and Azure OpenAI hosts add `Authorization` from a `managedIdentityRef` token; the orchestrator no longer forwards tokens.
+   * **Verified in this repo:** The Python SDK supports `Transform` rules and `EgressManagedIdentityRef` directly (no YAML policy needed), and `identity_type="UserAssigned"` works with `identity_resource_id`.
 2. **Per-sandbox managed identity (slide 19):** Can an individual sandbox get its own identity, or is identity only at the sandbox-group level? The plan currently says each researcher does not get a separate, less-privileged identity.
    * **Status:** Answered ([identity docs](https://sandboxes.azure.com/docs/sandboxes/identity)).
    * **Answer:** Identity is per sandbox group only: "Managed identity is the Azure trust anchor for a sandbox group." A group can have a system-assigned identity and user-assigned identities (`aca sandboxgroup identity assign --system-assigned` / `--user-assigned <id>`). There is no per-sandbox identity, so every sandbox in a group can obtain tokens with the group identity's permissions (through injection, not directly).
@@ -646,6 +661,7 @@ Docs checked (September 2026): [overview](https://learn.microsoft.com/azure/cont
 18. **Keyless registry pulls for disk images (slide 12 notes):** [infra/main.bicep](infra/main.bicep) grants `AcrPull` to the sandbox group identity. But it also passes ACR admin credentials (`ACR_USERNAME` / `ACR_PASSWORD`) to the orchestrator, with a comment saying the compute plane "cannot yet authenticate ACR pulls with a managed identity." [orchestrator/sandbox_manager.py](orchestrator/sandbox_manager.py) tries admin credentials first, so the deployed swarm never takes its keyless path. [create_sandbox.py](create_sandbox.py) defaults to managed identity. At GA, can disk-image creation reliably pull from ACR with the group's managed identity, so the admin credentials can go? Until this is settled, don't claim the swarm's image pulls are keyless.
     * **Update:** The [portal disk-image docs](https://sandboxes.azure.com/docs/sandboxes/disk-images) list **Managed identity** as a registry authentication option, alongside no authentication and username/token. So managed-identity pulls are supported by the service.
     * **Update ([microsoft/azure-container-apps#1839](https://github.com/microsoft/azure-container-apps/issues/1839)):** On the `2026-02-01-preview` data plane that the SDK uses, managed-identity disk-image conversion (`managedIdentityClientId` / `managedIdentityResourceId`) still returns 401 `RegistryAuthFailed`. Only `2026-09-01-preview` (`POST {group}/diskimages` with `source.authentication.identity {type: UserAssigned, identityResourceId}`) honors a user-assigned identity, and no Python SDK targets that version yet. So the Bicep comment is accurate for SDK users today, and the admin-credential fallback has to stay until a newer SDK ships (or the repo calls the `2026-09-01-preview` REST API directly). Slide 14 should present keyless pulls as the target design, with admin credentials as a temporary fallback.
+    * **Resolved (from Jan's upstream fix):** The disk-image API's **v2** endpoint (`PUT {group}/diskimages/v2` with `source: {kind: "registry", imageUrl, managedIdentityClientId}`) accepts managed-identity pulls. The repo now uses it in both the orchestrator and `create_sandbox.py`, and ACR admin credentials are disabled. Verified with a full swarm run and a standalone agent run.
     * **Still ask:** Whether group-level `imageRegistryCredentials` should apply to disk-image pulls automatically.
 19. **GA API version (slides 8 and 18):** Both the repo and the docs use `Microsoft.App/sandboxGroups@2026-02-01-preview`. Is there a GA API version to switch to before the talk?
     * **Status:** Answered. Per [microsoft/azure-container-apps#1839](https://github.com/microsoft/azure-container-apps/issues/1839), the ARM control plane is stable at `Microsoft.App/sandboxGroups@2026-07-01`. The data plane is at `2026-09-01-preview`, but the SDKs still target `2026-02-01-preview`.

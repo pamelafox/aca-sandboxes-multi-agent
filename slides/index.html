@@ -414,6 +414,29 @@
 		.reveal .auth-who { flex: 1; font-size: 0.52em; }
 		.reveal .auth-foot { margin: 12px 0 0; font-size: 0.46em; color: var(--deck-muted); }
 
+		/* Suspend and resume */
+		.reveal pre.resume-code { margin: 0 0 18px; box-shadow: none; }
+		.reveal .resume-foot { margin: 16px 0 0; font-size: 0.5em; font-weight: 700; color: var(--deck-heading); }
+
+		/* Back to the swarm */
+		.reveal .arch.arch-recall { grid-template-columns: 1fr 120px 0.85fr 1fr; grid-template-rows: 40px repeat(5, auto); row-gap: 8px; max-width: 1180px; column-gap: 0; margin-bottom: 22px; }
+		.reveal .arch.arch-recall .box { padding: 5px 10px; font-size: 0.5em; }
+		.reveal .arch.arch-recall .box small { font-size: 0.85em; }
+		.reveal .arch.arch-recall .arrow { font-size: 0.44em; }
+		.reveal .arch.arch-recall .zone-title { padding: 10px 14px 0; font-size: 0.4em; white-space: nowrap; }
+		.reveal .arch.arch-recall .recall { grid-column: 4; align-self: center; margin-left: 14px; padding: 6px 12px; border-left: 4px solid var(--deck-violet); border-radius: 8px; background: #f6f2ff; font-size: 0.46em; line-height: 1.3; }
+		.reveal .arch.arch-recall .recall strong { display: block; font-family: 'Outfit', sans-serif; color: var(--deck-heading); }
+		.reveal .arch.arch-recall .recall span { color: var(--deck-ink); }
+
+		/* Keyless model access */
+		.reveal .mi-group { padding: 5px 10px 8px; border: 2px dashed var(--deck-border); border-radius: 14px; background: rgba(255, 255, 255, 0.6); }
+		.reveal .mi-group-title { margin: 0 0 4px 4px; font-size: 0.44em; font-weight: 700; color: var(--deck-muted); }
+		.reveal .mi-row { display: flex; align-items: stretch; gap: 10px; }
+		.reveal .mi-row .eg-sandbox { flex: 1; }
+		.reveal .mi-box { flex: 1; border: 2px solid var(--deck-accent); background: var(--deck-accent-bg); }
+		.reveal .mi-target { border: 2px solid var(--deck-sandbox); background: var(--deck-sandbox-bg); }
+		.reveal .mi-foot { margin: 6px 0 0; font-size: 0.48em; font-weight: 700; color: var(--deck-heading); }
+
 		/* Create your first sandbox */
 		.reveal .portal-pair {
 			display: flex;
@@ -569,6 +592,14 @@
 			background: #000;
 		}
 
+		/* Section slides */
+		.reveal section.section-slide .section-kicker { margin: 0 0 6px; font-size: 0.6em; font-weight: 700; color: var(--deck-accent); }
+		.reveal section.section-slide h2 { font-size: 1.9em; margin: 0; }
+		.reveal section.section-slide .section-sub { margin: 18px 0 0; font-size: 0.75em; color: var(--deck-ink); }
+		.reveal section.section-slide .section-roadmap { display: flex; gap: 12px; justify-content: center; margin-top: 48px; }
+		.reveal section.section-slide .section-roadmap span { padding: 8px 18px; border: 2px solid var(--deck-border); border-radius: 999px; background: rgba(255, 255, 255, 0.8); font-size: 0.48em; color: var(--deck-muted); }
+		.reveal section.section-slide .section-roadmap span.current { border-color: var(--deck-accent); background: var(--deck-accent); color: #fff; font-weight: 700; }
+
 		/* Layout helpers */
 		.reveal .cols {
 			display: flex;
@@ -602,8 +633,6 @@
 		.reveal .label {
 			font-size: 0.6em;
 			font-weight: 700;
-			letter-spacing: 0.04em;
-			text-transform: uppercase;
 			color: var(--deck-muted);
 			margin: 0 0 6px;
 		}
@@ -1020,16 +1049,18 @@
 			background: #f5f9fc;
 		}
 
-		.reveal .label,
 		.reveal .zone-title {
 			font-family: 'Space Mono', monospace;
 			color: var(--deck-accent);
 		}
 
-		.reveal .label::before {
-			content: "// ";
-			color: var(--deck-sandbox);
+		.reveal .label {
+			font-family: 'Atkinson Hyperlegible', sans-serif;
+			font-size: 0.5em;
+			color: var(--deck-heading);
 		}
+
+		.reveal pre + .label { margin-top: 16px; }
 
 		.reveal .callout {
 			border: 1px solid rgba(71, 215, 255, 0.4);
@@ -1244,6 +1275,20 @@
 				</section>
 
 				<!-- 2 -->
+				<section class="heading-only section-slide">
+					<p class="section-kicker">Part 1 of 4</p>
+					<h2>Introducing the swarm</h2>
+					<p class="section-sub">One question, many parallel researchers</p>
+					<div class="section-roadmap" aria-label="Talk sections">
+						<span class="current">Introducing the swarm</span>
+						<span>Sandboxes 101</span>
+						<span>Back to the swarm</span>
+						<span>Wrapping up</span>
+					</div>
+					<aside class="notes">First the problem and a working demo: one question fanned out to parallel researchers, each in its own sandbox.</aside>
+				</section>
+
+				<!-- 3 -->
 				<section class="fit-sm">
 					<h3>One question, several independent research tasks</h3>
 					<div class="callout" style="font-size: 0.72em; margin-top: 0;">
@@ -1268,7 +1313,7 @@
 					</aside>
 				</section>
 
-				<!-- 3 -->
+				<!-- 4 -->
 				<section>
 					<h3>Demo: the research swarm</h3>
 					<div class="placeholder" role="img" aria-label="Screenshot placeholder: swarm UI with the gardening question and parallel researcher progress">
@@ -1283,7 +1328,7 @@
 					</aside>
 				</section>
 
-				<!-- 4 -->
+				<!-- 5 -->
 				<section>
 					<h3>Swarm architecture</h3>
 					<div class="arch-endpoint" style="margin-bottom: 8px;">User question ↓</div>
@@ -1319,7 +1364,21 @@
 					</aside>
 				</section>
 
-				<!-- 5 -->
+				<!-- 6 -->
+				<section class="heading-only section-slide">
+					<p class="section-kicker">Part 2 of 4</p>
+					<h2>Sandboxes 101</h2>
+					<p class="section-sub">Create, configure, secure, and keep state</p>
+					<div class="section-roadmap" aria-label="Talk sections">
+						<span>Introducing the swarm</span>
+						<span class="current">Sandboxes 101</span>
+						<span>Back to the swarm</span>
+						<span>Wrapping up</span>
+					</div>
+					<aside class="notes">Now underneath the swarm: what a sandbox is, how to create one, and the controls that matter for agents: lifecycle, network, identity, and state. We'll use a single agent to keep it simple.</aside>
+				</section>
+
+				<!-- 7 -->
 				<section>
 					<h3>What is a sandbox?</h3>
 					<div class="zoom-frame">
@@ -1412,7 +1471,7 @@
 					</aside>
 				</section>
 
-				<!-- 6 -->
+				<!-- 8 -->
 				<section>
 					<h3 style="margin-top: 0;">Azure Container Apps Sandboxes</h3>
 					<p class="lead">Fast, isolated, and stateful compute infrastructure on demand.</p>
@@ -1441,7 +1500,7 @@
 					</aside>
 				</section>
 
-				<!-- 7 -->
+				<!-- 9 -->
 				<section>
 					<h3>Anatomy of a sandbox on Azure</h3>
 					<div class="sandbox-arch">
@@ -1459,7 +1518,7 @@
 					</aside>
 				</section>
 
-				<!-- 8 -->
+				<!-- 10 -->
 				<section class="no-code-badge">
 					<h3>Create a sandbox group</h3>
 					<div class="prog-grid group-code" style="grid-template-columns: 1.3fr 1fr;">
@@ -1510,7 +1569,7 @@ aca sandboxgroup role create \
 					</aside>
 				</section>
 
-				<!-- 9 -->
+				<!-- 11 -->
 				<section>
 					<h3>Create a sandbox from the portal</h3>
 					<div class="portal-pair">
@@ -1540,7 +1599,7 @@ aca sandboxgroup role create \
 					</aside>
 				</section>
 
-				<!-- 10 -->
+				<!-- 12 -->
 				<section class="no-code-badge">
 					<h3>Create a sandbox programmatically</h3>
 					<div class="prog-grid">
@@ -1594,7 +1653,7 @@ await groupClient.sandboxes.delete(sandbox.id);
 					</aside>
 				</section>
 
-				<!-- 11 -->
+				<!-- 13 -->
 				<section>
 					<h3>Inside a sandbox</h3>
 					<p class="lead" style="font-size: 0.7em;">Each sandbox runs as a hardware-isolated microVM with its <strong>own Linux kernel</strong>, <strong>own virtual hardware</strong>, and <strong>memory separation enforced by CPU virtualization</strong>.</p>
@@ -1631,7 +1690,7 @@ await groupClient.sandboxes.delete(sandbox.id);
 					</aside>
 				</section>
 
-				<!-- 12 -->
+				<!-- 14 -->
 				<section>
 					<h3>Bring your agent image</h3>
 					<div class="cols" style="gap: 32px;">
@@ -1674,13 +1733,13 @@ CMD ["sleep", "infinity"]
 						Building/pushing the OCI image, preparing a sandbox disk image, and creating the sandbox are three separate steps.
 						The container just sleeps; the agent is started later with sandbox.exec.
 						Pulling from a private registry: attach a managed identity to the sandbox group, point its image registry credentials at the registry, and grant that identity AcrPull on the registry (see infra/main.bicep). Attaching the identity alone doesn't authorize the pull.
-						If asked: the deployed swarm currently falls back to ACR admin credentials, because managed-identity disk-image conversion needs the 2026-09-01-preview data plane and the SDK targets 2026-02-01-preview (microsoft/azure-container-apps#1839).
+						The pull is fully keyless: ACR admin credentials are disabled, and the disk-image API's v2 endpoint authenticates with the group identity's client ID (source.managedIdentityClientId).
 						Two planes: Bicep/ARM provisions the group, registry, identity, and role assignments; disk images and sandboxes are data-plane objects, not Bicep resources.
 						Transition: now let's create a sandbox from this image, and look at everything else we can configure.
 					</aside>
 				</section>
 
-				<!-- 13 -->
+				<!-- 15 -->
 				<section class="no-code-badge">
 					<h3>Sandbox configuration</h3>
 					<div class="cfg-map" role="table" aria-label="begin_create_sandbox parameters and what each configures">
@@ -1704,7 +1763,7 @@ CMD ["sleep", "infinity"]
 					</aside>
 				</section>
 
-				<!-- 14 -->
+				<!-- 16 -->
 				<section>
 					<h3>Sandbox lifecycle</h3>
 					<svg class="lifecycle-svg" viewBox="0 0 1180 320" role="img" aria-label="Sandbox lifecycle. Create leads to Running. Inside the lifecycle policy, idle timeout or stop command moves Running to Stopped through stopping and snapshotting. Network traffic or start command moves Stopped back to Running by resuming. The auto-delete policy moves Stopped to Delete.">
@@ -1781,33 +1840,25 @@ CMD ["sleep", "infinity"]
 					</aside>
 				</section>
 
-				<!-- 15 -->
+				<!-- 17 -->
 				<section class="no-code-badge">
 					<h3>Network egress: Making outbound calls</h3>
 					<div class="cols egress-cols">
 						<div class="egress-code">
 							<pre class="code-tiny"><code class="language-python" data-trim>
+github_rule = EgressRule(
+    match=EgressRuleMatch(host=&quot;api.github.com&quot;,
+                          methods=[&quot;GET&quot;]),
+    action=EgressRuleAction(type=&quot;Allow&quot;))
 policy = EgressPolicy(
     default_action=&quot;Deny&quot;,
     traffic_inspection=&quot;Full&quot;,
-    host_rules=[
-        EgressHostRule(
-            pattern=&quot;*.cognitiveservices.azure.com&quot;,
-            action=&quot;Allow&quot;),
-    ],
-    rules=[EgressRule(
-        match=EgressRuleMatch(host=&quot;api.github.com&quot;,
-                              methods=[&quot;GET&quot;]),
-        action=EgressRuleAction(type=&quot;Transform&quot;, headers=[
-            EgressHeader(name=&quot;Authorization&quot;,
-                         value_ref=github_token)]),
-    )],
-)
-client.begin_create_sandbox(..., egress_policy=policy)
+    rules=[github_rule])
+group.begin_create_sandbox(..., egress_policy=policy)
 							</code></pre>
-							<p class="code-example-link"><a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/sandbox/egress">📎 Control egress</a> · <a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/orchestrator/sandbox_manager.py">📎 sandbox_manager.py</a></p>
+							<p class="code-example-link"><a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/sandbox/egress">📎 Control egress</a> · <a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/create_sandbox.py">📎 create_sandbox.py</a></p>
 						</div>
-						<div class="egress-flow" role="img" aria-label="Outbound request path. Code inside the sandbox sends all outbound traffic through the egress proxy outside the sandbox. The proxy inspects host, path, and method, matches rules in order with the first match winning, applies the default Deny when nothing matches, and injects secret headers for Transform rules. Requests to the model endpoint (*.cognitiveservices.azure.com) are allowed; GET requests to api.github.com are allowed with a token header added by the proxy; everything else is blocked, and every decision is logged to the network audit.">
+						<div class="egress-flow" role="img" aria-label="Outbound request path. Code inside the sandbox sends all outbound traffic through the egress proxy outside the sandbox. The proxy inspects host, path, and method, matches rules in order with the first match winning, applies the default Deny when nothing matches, and adds auth headers for Transform rules. GET requests to api.github.com are allowed; everything else is blocked, and every decision is logged to the network audit.">
 							<div class="eg-box eg-sandbox">
 								<p class="eg-title" style="margin: 0;">Sandbox</p>
 							</div>
@@ -1818,19 +1869,18 @@ client.begin_create_sandbox(..., egress_policy=policy)
 									<li><strong>Inspect</strong> host, path, method</li>
 									<li><strong>Match</strong> rules in order, first match wins</li>
 									<li><strong>No match →</strong> default action <code>Deny</code></li>
-									<li><strong>Inject</strong> secret headers <span class="eg-note">(never inside the sandbox)</span></li>
+									<li><strong>Inject</strong> auth headers <span class="eg-note">(never inside the sandbox)</span></li>
 									<li><strong>Record</strong> the decision in network audit logs</li>
 								</ol>
 							</div>
 							<div class="eg-out">
-								<div class="eg-result eg-allow">✓ <code>*.cognitiveservices.azure.com</code></div>
-								<div class="eg-result eg-allow">✓ <code>GET api.github.com</code> + token</div>
+								<div class="eg-result eg-allow">✓ <code>GET api.github.com</code></div>
 								<div class="eg-result eg-deny">✗ everything else</div>
 							</div>
 						</div>
 					</div>
 					<aside class="notes">
-						Left: a policy in code. Default Deny, Full inspection, and two ways out: the model endpoint (plain Allow), and GET requests to api.github.com via a Transform rule, which lets the request through and adds an Authorization header from a group secret. A POST to GitHub matches neither rule, so it gets the default Deny. Egress is opt-in: with no policy, outbound access is unrestricted.
+						Left: the standalone agent's actual policy (agent_egress_policy in create_sandbox.py). Default Deny, Full inspection, and read-only GitHub. The real policy has one more rule, for the model endpoint: a Transform rule that has the proxy add an Authorization header. That's the next slide. A POST to GitHub matches neither rule, so it gets the default Deny. Transform headers can also come from a group secret (secretRef), e.g. a GitHub token. Egress is opt-in: with no policy, outbound access is unrestricted.
 						Right: why it's hard to get around. The policy is enforced outside the sandbox, so code inside (even as root) can't edit or skip it. Changing proxy env vars or routes inside the VM doesn't help; all outbound traffic goes through the proxy. The VNet docs say so directly: VNet connections "do not change the egress proxy posture; outbound traffic still flows through the proxy." Under the hood each microVM has a single virtual NIC (confirmed by the ACA team; the boot log showed one eth0 on a private link).
 						Fails closed: no matching rule means the default action (Deny); an egress webhook that fails also defaults to Deny (failBehavior).
 						Secrets stay outside: Transform headers are added by the proxy after the request leaves the sandbox, so the token never exists inside it for code to steal.
@@ -1839,24 +1889,99 @@ client.begin_create_sandbox(..., egress_policy=policy)
 						Whoever creates the sandbox controls the policy (begin_create_sandbox even has skip_egress_proxy); code inside the sandbox doesn't.
 						More rule options: actions Allow, Deny, Transform (modify headers), Rewrite (change destination); inspection Full (blocks non-HTTP), Partial, None; path and method matches need Full.
 						CLI: aca sandbox egress set -l &lt;selector&gt; --default Deny --rule "*.github.com:Allow" --traffic-inspection Full, or a YAML policy with aca sandbox egress apply --file egress.yaml.
-						Swarm version (orchestrator/sandbox_manager.py): default Deny plus allow rules for the model endpoint, the Foundry project (hosted web search runs outside the sandbox), and Application Insights.
+						Swarm version (orchestrator/sandbox_manager.py): default Deny, Transform rules for the Foundry project and Azure OpenAI hosts that inject the group identity's token (next slide), and an allow rule for Application Insights. Hosted web search runs inside Foundry, so no search-engine egress is needed.
 						Sources: "outbound traffic still flows through the proxy" is in the VNet docs (sandboxes.azure.com/docs/sandboxes/sandbox/vnet); the single virtual NIC is confirmed by the ACA team but not in public docs, so say it rather than putting it on the slide.
 					</aside>
 				</section>
 
-				<!-- 16 -->
-				<section>
-					<h3>Demo: Allowed and blocked requests</h3>
-					<img class="demo-shot" src="images/demo-egress.png" alt="Browser terminal running curl commands next to the portal's Egress Network Traffic panel. GET api.github.com/zen and GET to the Azure OpenAI endpoint are ALLOWED; POST api.github.com/markdown, pypi.org, and example.com are DENIED. The panel shows 3 allowed and 5 denied requests with timestamps.">
+				<!-- 18 -->
+				<section class="no-code-badge">
+					<h3>Outbound calls with credential injection</h3>
+					<div class="cols egress-cols">
+						<div class="egress-code">
+							<p class="label">Egress rule: add a token for the group's identity</p>
+							<pre class="code-tiny"><code class="language-python" data-trim>
+group_identity_token = EgressHeaderValueRef(
+    managed_identity_ref=EgressManagedIdentityRef(
+        identity_type=&quot;UserAssigned&quot;,
+        identity_resource_id=group_identity_id,
+        resource=&quot;https://cognitiveservices.azure.com&quot;,
+        format=&quot;Bearer {value}&quot;))
+model_rule = EgressRule(
+    match=EgressRuleMatch(
+        host=&quot;myai.cognitiveservices.azure.com&quot;),
+    action=EgressRuleAction(type=&quot;Transform&quot;, headers=[
+        EgressHeader(name=&quot;Authorization&quot;,
+                     value_ref=group_identity_token)]))
+policy = EgressPolicy(..., rules=[model_rule, github_rule])
+							</code></pre>
+							<p class="label">Inside the sandbox: a placeholder key</p>
+							<pre class="code-tiny"><code class="language-python" data-trim>
+AsyncOpenAI(base_url=endpoint + &quot;/openai/v1/&quot;,
+            api_key=&quot;injected-by-egress-proxy&quot;)
+							</code></pre>
+							<p class="code-example-link"><a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/identity">📎 Sandbox identity</a> · <a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/create_sandbox.py">📎 create_sandbox.py</a></p>
+						</div>
+						<div class="egress-flow" role="img" aria-label="Keyless request path. Inside the sandbox group are the sandbox and the group's managed identity. Code in the sandbox calls the model with a placeholder key. The egress proxy, outside the sandbox group, matches the Transform rule for the model host, gets a Microsoft Entra token for the group's managed identity, and sets the Authorization header. Azure OpenAI checks the identity's role assignment and allows the call. The real token never exists inside the sandbox.">
+							<div class="mi-group">
+								<p class="mi-group-title">Sandbox group</p>
+								<div class="mi-row">
+									<div class="eg-box eg-sandbox">
+										<p class="eg-title">Sandbox</p>
+										<p>Sends a <strong>placeholder</strong> key</p>
+									</div>
+									<div class="eg-box mi-box">
+										<p class="eg-title">Managed identity</p>
+										<p>shared by its sandboxes</p>
+									</div>
+								</div>
+							</div>
+							<div class="eg-link"><span class="eg-arrow">↓</span><span class="eg-tag">request to the model host</span></div>
+							<div class="eg-box eg-proxy">
+								<p class="eg-title">Egress proxy <span class="eg-outside">outside the sandbox</span></p>
+								<ol>
+									<li><strong>Match</strong> the Transform rule</li>
+									<li><strong>Get</strong> an Entra token for the group's identity</li>
+									<li><strong>Set</strong> <code>Authorization</code></li>
+								</ol>
+							</div>
+							<div class="eg-link"><span class="eg-arrow">↓</span><span class="eg-tag">request + group identity's token</span></div>
+							<div class="eg-box mi-target">
+								<p class="eg-title">Azure OpenAI</p>
+								<p>Role: <strong>Cognitive Services OpenAI User</strong></p>
+							</div>
+							<p class="mi-foot">No key in the image, no token in the environment.</p>
+						</div>
+					</div>
 					<aside class="notes">
-						Demo sandbox: label name=egress-demo in aca-sandboxes-agents-sg-westus (default Deny, Full inspection; allow the model endpoint and GET api.github.com). Run in its browser terminal: curl https://api.github.com/zen (allowed), curl -X POST https://api.github.com/markdown (denied: only GET is allowed), curl https://example.com and curl https://pypi.org/simple/ (denied: no rule), curl the model endpoint (allowed; its 404 is the endpoint's own answer). Denied requests return HTTP 403 quickly and print nothing with plain curl -s; add -w '%{http_code}' to show it. Then open Egress Network Traffic in the portal.
-						Tie each entry to the rule that explains it. This demonstrates the rules, not universal protection against exfiltration.
-						Same data elsewhere: aca sandbox egress decisions -l &lt;selector&gt; -o json, sandbox.get_egress_decisions() in the SDK,
-						or exported continuously as NetworkEgressDecisions via telemetryConfig. Backup: captured panel screenshot.
+						The one thing to remember: a sandbox group can have a managed identity, just like other Azure resources, and requests from its sandboxes can carry Entra tokens for that identity. You grant it roles with normal Azure RBAC.
+						Left: the model rule from the previous slide, now with its value_ref spelled out (create_sandbox.py): a token for the group's user-assigned identity, audience https://cognitiveservices.azure.com. Below it, the agent's client in sandbox_agent.py, which only has a placeholder key. The swarm (orchestrator/sandbox_manager.py) does the same for its Foundry host with audience https://ai.azure.com, plus Azure OpenAI.
+						Right: code inside the sandbox needs an SDK credential object, so it hands over a placeholder; the proxy replaces the header after the request leaves the sandbox. The real token never exists inside the VM, so code there can't read or exfiltrate it. The proxy mints tokens as needed, so long-running agents don't hit token expiry.
+						The same identity pulls the image from ACR (AcrPull). Its roles here: AcrPull, Cognitive Services OpenAI User, Foundry User.
+						Separate permissions: whoever creates sandboxes needs Container Apps SandboxGroup Data Owner on the group. That's management, not model access.
+						Identity exists at the sandbox group level only, so every sandbox in the group gets the same access. For narrower access, use separate groups per trust level, or an egress webhook that decides per sandboxId (webhooks can only return literal header values).
+						Header values can also come from a group secret (secretRef) instead of an identity; group secrets are never exposed as environment variables.
+						Network rules decide reachability; authorization decides operations. You need both.
+						Contrast: the portal's Copilot and Claude templates put provider credentials inside the sandbox.
+						Next: the demo shows these egress rules and the audit log on a real sandbox.
 					</aside>
 				</section>
 
-				<!-- 17 -->
+				<!-- 19 -->
+				<section>
+					<h3>Demo: Allowed and blocked requests</h3>
+					<img class="demo-shot" src="images/demo-egress.png" alt="Backup screenshot: browser terminal running curl commands next to the portal's Egress Network Traffic panel. GET api.github.com/zen and GET to the Azure OpenAI endpoint are ALLOWED; POST api.github.com/markdown, pypi.org, and example.com are DENIED. The panel shows 3 allowed and 5 denied requests with timestamps.">
+					<aside class="notes">
+						Run the repo's standalone agent with the policy from the last two slides (agent_egress_policy in create_sandbox.py):
+						python create_sandbox.py --show-egress --prompt "Use Python to try these requests and report each HTTP status code in a table: GET https://api.github.com/zen, POST https://api.github.com/markdown with JSON {\"text\": \"hi\"}, GET https://pypi.org/simple/requests/, and GET https://example.com."
+						Expected: GitHub GET 200; the GitHub POST, pypi.org, and example.com 403 (the proxy answers fast, with an x-deny-reason header). The agent's own model calls work with no key in the sandbox: that's the injected identity token from the previous slide.
+						Then open the sandbox's Egress Network Traffic panel in the portal (or sandbox.get_egress_decisions(), aca sandbox egress decisions -l &lt;selector&gt; -o json). Tie each entry to the rule that explains it.
+						The audit log lags: the first allowed and denied entries show up within seconds, later ones can take minutes. --show-egress may print only part of the run; the portal fills in. The log can only be read while the sandbox is running (a stopped sandbox returns 409), and this sandbox auto-suspends after 5 idle minutes: open the panel right after the run, or resume the sandbox first. Backup: captured panel screenshot.
+						This demonstrates the rules, not universal protection against exfiltration. Decisions can also be exported continuously as NetworkEgressDecisions via telemetryConfig.
+					</aside>
+				</section>
+
+				<!-- 20 -->
 				<section>
 					<h3>Network ingress: exposing internal ports</h3>
 					<div class="cols egress-cols">
@@ -1903,7 +2028,7 @@ print(port.url)
 					</aside>
 				</section>
 
-				<!-- 18 -->
+				<!-- 21 -->
 				<section class="no-code-badge">
 					<h3>Network ingress: IP access control</h3>
 					<div class="cols egress-cols">
@@ -1941,7 +2066,7 @@ sandbox.add_port(8080, anonymous=True,
 					</aside>
 				</section>
 
-				<!-- 19 -->
+				<!-- 22 -->
 				<section class="no-code-badge">
 					<h3>Network ingress: Allowed users</h3>
 					<div class="auth-grid" role="img" aria-label="Two ports compared. Anonymous port: anyone with the URL can call it, including a teammate, a stranger, or a script, so your app must handle authentication. Entra ID port limited to pamela@contoso.com: that signed-in user is allowed, other Entra users are denied, and callers who aren't signed in are denied.">
@@ -1976,101 +2101,103 @@ sandbox.add_port(8080, email=&quot;pamela@contoso.com&quot;)
 					</aside>
 				</section>
 
-				<!-- 20 -->
+				<!-- 23 -->
 				<section class="no-code-badge">
-					<h3>Keyless model access: what may the agent do?</h3>
-					<div class="r-stack">
-						<div class="fragment fade-out" data-fragment-index="1">
-							<ul class="tight small">
-								<li>Permission to <em>manage sandboxes</em> ≠ permission to <em>call a model or read data</em>.</li>
-								<li>Entra ID + managed identity + scoped RBAC. This repo: the orchestrator gets short-lived bearer tokens and forwards them into the sandbox.</li>
-								<li><strong>Keyless doesn't mean credential-free.</strong> Code inside the sandbox can use what it's given.</li>
-								<li>Managed identity exists at the <strong>sandbox group</strong> level only. For narrower access: separate groups per trust level, or an egress webhook that decides per <code>sandboxId</code>.</li>
-								<li>Network rules decide <em>reachability</em>; authorization decides <em>operations</em>. You need both.</li>
-							</ul>
+					<h3>Suspend and resume: same sandbox, later</h3>
+					<pre class="code-tiny resume-code"><code class="language-python" data-trim>
+sandbox = group.begin_create_sandbox(..., auto_suspend_mode=&quot;Memory&quot;).result()  # or &quot;Disk&quot;
+sandbox.begin_stop().result()     # also happens after auto_suspend_seconds idle
+sandbox.begin_resume().result()   # or send it network traffic
+					</code></pre>
+					<div class="auth-grid" role="img" aria-label="What survives stop and resume in each suspend mode. Disk mode: files are kept, running processes are gone and must restart; resume took 0.9 seconds; required with a data-disk volume. Memory mode: files, running processes, and memory are kept, so a background counter kept counting; resume took 0.6 seconds; in-process credentials are kept too.">
+						<div class="auth-panel">
+							<p class="auth-title">Disk</p>
+							<div class="ipac-row"><span class="auth-who">Files</span><span class="eg-result eg-allow">✓</span></div>
+							<div class="ipac-row"><span class="auth-who">Running processes: <strong>restart them</strong></span><span class="eg-result eg-deny">✗</span></div>
+							<p class="auth-foot">Resumed in 0.9 s. Required with a data-disk volume.</p>
 						</div>
-						<div class="fragment fade-in-then-out" data-fragment-index="1">
-							<p class="label">Acquire a short-lived token</p>
-							<pre class="code-small"><code class="language-python" data-trim>
-async def get_foundry_token(self) -> str | None:
-    now = int(time.time())
-    if self._foundry_token and now &lt; self._foundry_token_expires_on - 60:
-        return self._foundry_token
-    access = await self._async_credential.get_token(
-        "https://ai.azure.com/.default"
-    )
-    self._foundry_token = access.token
-    self._foundry_token_expires_on = access.expires_on
-    return self._foundry_token
-							</code></pre>
-						</div>
-						<div class="fragment fade-in-then-out" data-fragment-index="2">
-							<p class="label">Hand it to the sandbox</p>
-							<pre class="code-small"><code class="language-python" data-trim>
-environment: dict[str, str] = {"RESEARCH_QUESTION": question}
-token = await self.get_aoai_token()
-if token:
-    environment["AZURE_OPENAI_TOKEN"] = token
-foundry_token = await self.get_foundry_token()
-if foundry_token:
-    environment["AZURE_AI_TOKEN"] = foundry_token
-							</code></pre>
-							<p class="code-example-link"><a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/orchestrator/sandbox_manager.py">📎 orchestrator/sandbox_manager.py</a></p>
-						</div>
-						<div class="fragment" data-fragment-index="3">
-							<p class="label">This repo today</p>
-							<div style="display: flex; align-items: center; gap: 10px;">
-								<div class="box app">Orchestrator</div>
-								<div class="arrow">token in env var →</div>
-								<div class="box sandbox">Sandbox</div>
-								<div class="arrow">request + token →</div>
-								<div class="box">Foundry</div>
-							</div>
-							<p class="label" style="margin-top: 30px;">Credential injection (platform option)</p>
-							<div style="display: flex; align-items: center; gap: 10px;">
-								<div class="box sandbox">Sandbox</div>
-								<div class="arrow">request →</div>
-								<div class="box" style="border-width: 3px;">Egress proxy<small>Transform rule adds group-identity token</small></div>
-								<div class="arrow">request + token →</div>
-								<div class="box">Foundry</div>
-							</div>
-							<p class="small" style="margin-top: 26px;">Header value from a group secret (<code>secretRef</code>) or a token for the group's managed identity (<code>managedIdentityRef</code>). <strong>Code inside never sees the credential.</strong></p>
+						<div class="auth-panel">
+							<p class="auth-title">Memory</p>
+							<div class="ipac-row"><span class="auth-who">Files</span><span class="eg-result eg-allow">✓</span></div>
+							<div class="ipac-row"><span class="auth-who">Running processes and memory</span><span class="eg-result eg-allow">✓</span></div>
+							<p class="auth-foot">Resumed in 0.6 s. Keeps in-process credentials too.</p>
 						</div>
 					</div>
+					<p class="resume-foot">Stopped sandboxes have no compute charges and don't count against your cores quota.</p>
 					<aside class="notes">
-						Two separate permissions: the caller (orchestrator or your script) needs Container Apps SandboxGroup Data Owner on the group to create and manage sandboxes, and the group's own identity needs AcrPull to pull your image. Neither lets code inside a sandbox call a model; that's this slide.
-						Show code, never token values. Build 1-2: the credential flow this repo uses today.
-						Final build: an egress Transform rule can add an Authorization header on allowed outbound requests, sourced from a group secret or a token
-						minted for the sandbox group's managed identity. Give the group identity the Foundry role, add a Transform rule on the Foundry host,
-						and the orchestrator stops forwarding tokens. Don't claim the sample uses it.
-						Transform rules are written in egress YAML and applied with aca sandbox egress apply --file egress.yaml; the Python SDK example only shows host rules.
-						Group secrets are never exposed as environment variables. A webhook can mint a per-sandbox token at request time but can only return literal header values.
-						Contrast: the portal's Copilot and Claude templates put provider credentials inside the sandbox.
+						Resume continues the same sandbox; a snapshot (next slide) creates a new one. Both bring local state forward.
+						Tested against our sandbox group: a background counter plus a file, then begin_stop and begin_resume. Memory mode: the counter kept counting from where it stopped, resume 0.6 s. Disk mode: the file was there but the process was gone, resume 0.9 s. Stopping in Memory mode took longer (about 8 s, versus about 1 s for Disk) because it captures memory.
+						The mode is set per sandbox at create time (auto_suspend_mode) or in the lifecycle policy (AutoSuspendPolicy(mode=...)); stop() uses it. Sandboxes with a data-disk volume can only use Disk mode.
+						The swarm doesn't suspend: every researcher sandbox is deleted after its result is collected. Suspend fits long-lived agents that wait on people or events.
+						CLI: aca sandbox stop / aca sandbox start. The next slide is an optional demo; skip it if short on time.
 					</aside>
 				</section>
 
-				<!-- 21 -->
+				<!-- 24 -->
 				<section>
-					<h3>Workspace data: private, shared, or retained?</h3>
-					<div class="grid3">
-						<div class="card" style="border-color: var(--deck-sandbox); background: var(--deck-sandbox-bg);"><h4>Task-local files</h4>Private to one sandbox. Gone when it's deleted.</div>
-						<div class="card"><h4>Explicitly shared</h4>Mounted volumes and exported results deliberately cross the boundary.</div>
-						<div class="card" style="border-style: dashed;"><h4>Retained state</h4>Snapshots and volumes <span class="muted">(platform options; not used by this swarm)</span></div>
+					<p class="label" style="margin-bottom: 0;">Optional</p>
+					<h3 style="margin-top: 0;">Demo: suspend and resume</h3>
+					<div class="placeholder" style="height: 460px;" role="img" aria-label="Screenshot placeholder: stateful process before suspension and after resuming">
+						<p><strong>Screenshot placeholder</strong></p>
+						<p>The same small stateful process before suspension and after resuming, with visible continuity of state.</p>
+						<p class="muted">Save as <code>images/demo-resume.png</code>.</p>
 					</div>
-					<ul class="tight small" style="margin-top: 22px;">
-						<li>Treat disk images as trusted starting points: code and dependencies, not credentials or another task's data.</li>
-						<li>Memory snapshots can preserve in-process credentials.</li>
-						<li>Snapshots belong to the group and <strong>outlive their source sandbox</strong>. No automatic retention; clean up on a schedule.</li>
-						<li>Retained storage (disk images, snapshots, volumes) will be billed at Premium Blob ZRS rates (coming soon).</li>
-					</ul>
 					<aside class="notes">
-						Stopping or deleting a sandbox isn't a blanket retention policy for snapshots, volumes, exported results, or logs.
-						Deleting the sandbox group removes everything in it. Automatic snapshots are taken when a sandbox stops, and those will be billed too.
-						For image caching questions, the swarm's prepare_disk_image in sandbox_manager.py reuses a Ready disk image.
+						Prepare and verify separately. Show what memory-preserving resume adds beyond retaining files.
+						Use up to the four-minute flex budget only if earlier delays didn't consume it; otherwise skip this slide.
 					</aside>
 				</section>
 
-				<!-- 22 -->
+				<!-- 25 -->
+				<section class="no-code-badge">
+					<h3>Keep the agent's work: volumes and snapshots</h3>
+					<div class="auth-grid" role="img" aria-label="Two ways to keep an agent's work. Volume: a sandbox group volume mounted at /workspace/out. Sandbox A writes report.md there and is deleted; sandbox B mounts the same volume and reads report.md. Snapshot: capture the sandbox after the agent's first draft, delete it, and create a new sandbox from the snapshot. The files, running processes and memory, and environment variables come back. The egress policy doesn't, so it must be set again.">
+						<div class="auth-panel">
+							<p class="auth-title">Volume: files outlive the sandbox</p>
+							<pre class="code-tiny"><code class="language-python" data-trim>
+group.create_volume(&quot;agent-output&quot;)
+sandbox = group.begin_create_sandbox(
+    disk_id=agent_disk.id,
+    volumes=[SandboxVolume(
+        volume_name=&quot;agent-output&quot;,
+        mountpoint=&quot;/workspace/out&quot;)],
+).result()
+							</code></pre>
+							<div class="ipac-row"><span class="auth-who">Sandbox A writes <code>report.md</code>, then is deleted</span><span class="eg-result eg-allow">✓</span></div>
+							<div class="ipac-row"><span class="auth-who">Sandbox B mounts the volume, reads it</span><span class="eg-result eg-allow">✓</span></div>
+							<div class="ipac-row"><span class="auth-who">Mount with <code>read_only=True</code>, try to write</span><span class="eg-result eg-deny">✗</span></div>
+							<p class="auth-foot">Azure Blob storage owned by the sandbox group, mounted like a folder.</p>
+						</div>
+						<div class="auth-panel">
+							<p class="auth-title">Snapshot: freeze and continue</p>
+							<pre class="code-tiny"><code class="language-python" data-trim>
+snap = sandbox.begin_create_snapshot(
+    name=&quot;first-draft&quot;).result()
+sandbox.delete()
+
+restored = group.begin_create_sandbox(
+    snapshot_id=snap.id).result()
+restored.set_egress_policy(policy)
+							</code></pre>
+							<div class="ipac-row"><span class="auth-who">Files in <code>/workspace</code></span><span class="eg-result eg-allow">✓</span></div>
+							<div class="ipac-row"><span class="auth-who">Running processes, memory, env vars</span><span class="eg-result eg-allow">✓</span></div>
+							<div class="ipac-row"><span class="auth-who">Egress policy: <strong>set it again</strong></span><span class="eg-result eg-deny">✗</span></div>
+							<p class="auth-foot">Restore took under a second. One snapshot can start many sandboxes.</p>
+						</div>
+					</div>
+					<p class="code-example-link"><a target="_blank" href="https://learn.microsoft.com/azure/container-apps/sandboxes-snapshots-state-management">📎 Lifecycle and snapshots</a> · <a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/create_sandbox.py">📎 create_sandbox.py</a></p>
+					<aside class="notes">
+						Files inside a sandbox are private to it and gone when it's deleted. Two ways to keep an agent's work, both tried with the standalone agent in this repo.
+						Volume: create_sandbox.py --volume agent-output mounts a group volume at /workspace/out, and the agent is told to save final deliverables there. Delete the sandbox, then mount the same volume in a new one (even plain Ubuntu) and the report is there. It's Azure Blob storage mounted with blobfuse; a read-only mount really rejects writes. Volumes are the deliberate way to share data across the boundary.
+						Snapshot: create_sandbox.py --snapshot-after-run first-draft captures the sandbox after the run; --snapshot-id resumes from it. In testing, the snapshot took about 1.6 s and the restore about 0.4 s. A background process kept counting after restore, so memory comes back, not just disk. That also means in-process credentials and environment variables come back.
+						The gotcha, verified: a restore accepts no configuration (no labels, environment, egress policy, volumes, or ports), and the egress policy isn't part of the snapshot. The restored sandbox came back with default Allow and could reach bing.com until set_egress_policy ran. Reapply it immediately; create_sandbox.py does. The volume mount did survive the restore.
+						Fan-out: the docs call out starting many sandboxes from one prepared snapshot instead of repeating setup. Our swarm starts from a disk image instead, but a snapshot is the way to fan out from a warmed-up state.
+						Snapshots belong to the group and outlive their source sandbox, with no automatic retention; clean them up. Disk images should be trusted starting points: code and dependencies, not credentials or another task's data. Retained storage (disk images, snapshots, volumes) will be billed at Premium Blob ZRS rates (coming soon).
+						Demo commands: python create_sandbox.py --volume agent-output --snapshot-after-run first-draft --delete-after-run --prompt "Write report.md: three bullets on why agents need sandboxes. Keep your outline in notes.md." Then: python create_sandbox.py --snapshot-id &lt;id&gt; --delete-after-run --prompt "Add a fourth bullet about cost to the report."
+					</aside>
+				</section>
+
+				<!-- 26 -->
 				<section>
 					<h3>Resource limits: how much can it consume?</h3>
 					<div class="cols">
@@ -2108,7 +2235,61 @@ with ExitStack() as stack:
 					</aside>
 				</section>
 
-				<!-- 23 -->
+				<!-- 27 -->
+				<section class="heading-only section-slide">
+					<p class="section-kicker">Part 3 of 4</p>
+					<h2>Back to the swarm</h2>
+					<p class="section-sub">Sandboxes as a tool for parallel agents</p>
+					<div class="section-roadmap" aria-label="Talk sections">
+						<span>Introducing the swarm</span>
+						<span>Sandboxes 101</span>
+						<span class="current">Back to the swarm</span>
+						<span>Wrapping up</span>
+					</div>
+					<aside class="notes">With every piece named, back to the swarm: how the orchestrator turns a sandbox into a tool, fans out, and traces the whole run.</aside>
+				</section>
+
+				<!-- 28 -->
+				<section class="no-code-badge">
+					<h3>Swarm architecture, revisited</h3>
+					<div class="arch arch-recall" role="img" aria-label="The swarm architecture again: the orchestrator container holds the decomposer, three researcher agents, and the collector and synthesizer; each researcher's tool call runs in its own sandbox. Callouts on the sandboxes: each boots from the research-agent disk image built from ACR; egress is denied except Foundry and Application Insights; the sandbox group's managed identity signs Foundry calls through the egress proxy; and each sandbox is created per question and deleted when the result is collected.">
+						<div class="zone-outline left"></div>
+						<div class="zone-outline right"></div>
+						<div class="zone-title left">Container · orchestrator</div>
+						<div class="zone-title right">Sandboxes</div>
+
+						<div class="cell left r2"><div class="box app">Decomposer</div></div>
+						<div class="cell left r3"><div class="box">↳ Researcher agent 1</div></div>
+						<div class="cell left r4"><div class="box">↳ Researcher agent 2</div></div>
+						<div class="cell left r5"><div class="box">↳ Researcher agent 3</div></div>
+						<div class="cell left r6"><div class="box app">Collector (fan-in) → Synthesizer</div></div>
+
+						<div class="mid r3 arrow">tool call →<br>← result</div>
+						<div class="mid r4 arrow">tool call →<br>← result</div>
+						<div class="mid r5 arrow">tool call →<br>← result</div>
+
+						<div class="cell right r3"><div class="box sandbox">Sandbox 1<small>Research process</small></div></div>
+						<div class="cell right r4"><div class="box sandbox">Sandbox 2<small>Research process</small></div></div>
+						<div class="cell right r5"><div class="box sandbox">Sandbox 3<small>Research process</small></div></div>
+
+						<div class="recall r2 fragment"><strong>Disk image</strong> <span>research-agent, built from ACR</span></div>
+						<div class="recall r3 fragment"><strong>Egress</strong> <span>Deny, except Foundry + App Insights</span></div>
+						<div class="recall r4 fragment"><strong>Identity</strong> <span>group identity signs Foundry calls</span></div>
+						<div class="recall r5 fragment"><strong>Lifecycle</strong> <span>one per question, deleted after</span></div>
+						<div class="recall r6 fragment"><strong>No volumes or snapshots</strong> <span>results return via the tool call</span></div>
+					</div>
+					<aside class="notes">
+						Same picture as the start of the talk; now every piece on the right has a name.
+						Disk image: the research-agent image in ACR becomes a sandbox disk image, pulled by the group's managed identity.
+						Egress: default Deny, Transform rules for Foundry and Azure OpenAI, and an allow rule for Application Insights. Web search runs inside Foundry, so the sandbox never talks to a search engine.
+						Identity: the proxy injects a token for the sandbox group's identity; no token is placed in the sandbox.
+						Lifecycle: the orchestrator creates one sandbox per research question and deletes it after collecting the result.
+						No volumes or snapshots: each researcher's result comes back through the tool call, so nothing needs to outlive the sandbox.
+						Next: how the orchestrator turns a sandbox into a tool, then fans out.
+					</aside>
+				</section>
+
+				<!-- 29 -->
 				<section class="no-code-badge">
 					<h3>Turn compute into an agent tool</h3>
 					<div class="r-stack">
@@ -2179,7 +2360,7 @@ async def run_in_sandbox(question: str) -> str:
 					</aside>
 				</section>
 
-				<!-- 24 -->
+				<!-- 30 -->
 				<section>
 					<h3>Wire the parallel swarm</h3>
 					<div class="cols">
@@ -2219,7 +2400,7 @@ wf = builder.add_edge(collector, synthesizer).build()
 					</aside>
 				</section>
 
-				<!-- 25 -->
+				<!-- 31 -->
 				<section>
 					<h3>Carry a trace across the sandbox boundary</h3>
 					<div class="cols">
@@ -2265,7 +2446,7 @@ tracer.start_as_current_span(
 					</aside>
 				</section>
 
-				<!-- 26 -->
+				<!-- 32 -->
 				<section>
 					<h3>Demo: follow the distributed trace</h3>
 					<div class="placeholder" role="img" aria-label="Screenshot placeholder: Application Insights transaction trace with overlapping researcher spans">
@@ -2280,51 +2461,21 @@ tracer.start_as_current_span(
 					</aside>
 				</section>
 
-				<!-- 28 + optional B1 (vertical) -->
-				<section>
-					<section>
-						<h3>Beyond disposable tasks: suspend and resume</h3>
-						<div class="cols" style="margin-top: 10px;">
-							<div class="card">
-								<h4>Disk suspend</h4>
-								<p style="margin: 4px 0;">Before: files + running processes</p>
-								<p style="margin: 4px 0;">After resume: <strong>files</strong> preserved, processes restart</p>
-								<p class="muted" style="margin: 4px 0;">Required with a data-disk volume</p>
-							</div>
-							<div class="card">
-								<h4>Memory + disk suspend</h4>
-								<p style="margin: 4px 0;">Before: files + running processes</p>
-								<p style="margin: 4px 0;">After resume: <strong>files and in-memory state</strong> preserved</p>
-								<p class="muted" style="margin: 4px 0;">Can also capture in-process credentials</p>
-							</div>
-						</div>
-						<div class="box app" style="margin-top: 24px; font-size: 0.66em; text-align: left;">
-							<strong>Snapshots as starting points:</strong> prepare once, then fork.
-							One snapshot can seed many new sandboxes, which inherit its CPU, memory, and disk size.
-						</div>
-						<p class="small" style="margin-top: 20px;">Resume from stopped is sub-second; creating from a snapshot needs a short warm-up.</p>
-						<aside class="notes">
-							A platform capability beyond this repo's create-and-delete swarm. Stay conceptual.
-							CLI: aca sandbox snapshot -l &lt;selector&gt; --name &lt;name&gt; and aca sandbox create --snapshot &lt;name&gt;.
-							Only go down to the optional demo slide if time remains; then return to the next slide.
-						</aside>
-					</section>
-					<section>
-						<p class="label" style="margin-bottom: 0;">Optional</p>
-						<h3 style="margin-top: 0;">Demo: suspend and resume</h3>
-						<div class="placeholder" style="height: 460px;" role="img" aria-label="Screenshot placeholder: stateful process before suspension and after resuming">
-							<p><strong>Screenshot placeholder</strong></p>
-							<p>The same small stateful process before suspension and after resuming, with visible continuity of state.</p>
-							<p class="muted">Save as <code>images/demo-resume.png</code>.</p>
-						</div>
-						<aside class="notes">
-							Prepare and verify separately. Show what memory-preserving resume adds beyond retaining files.
-							Use up to the four-minute flex budget only if earlier delays didn't consume it. Not part of the main slide count.
-						</aside>
-					</section>
+				<!-- 33 -->
+				<section class="heading-only section-slide">
+					<p class="section-kicker">Part 4 of 4</p>
+					<h2>Wrapping up</h2>
+					<p class="section-sub">Recap, where else sandboxes fit, and takeaways</p>
+					<div class="section-roadmap" aria-label="Talk sections">
+						<span>Introducing the swarm</span>
+						<span>Sandboxes 101</span>
+						<span>Back to the swarm</span>
+						<span class="current">Wrapping up</span>
+					</div>
+					<aside class="notes">The runtime problems we started with, where else sandboxes fit, and what to take away.</aside>
 				</section>
 
-				<!-- 28 -->
+				<!-- 34 -->
 				<section>
 					<h3>Recap: where agent runtimes break</h3>
 					<div class="grid5">
@@ -2340,7 +2491,7 @@ tracer.start_as_current_span(
 					</aside>
 				</section>
 
-				<!-- 29 -->
+				<!-- 35 -->
 				<section>
 					<h3>Where else Sandboxes fit</h3>
 					<table class="small" style="width: 100%;">
@@ -2361,7 +2512,7 @@ tracer.start_as_current_span(
 					</aside>
 				</section>
 
-				<!-- 30 -->
+				<!-- 36 -->
 				<section>
 					<h3>Choose the execution surface</h3>
 					<table class="small" style="width: 100%;">
@@ -2385,7 +2536,7 @@ tracer.start_as_current_span(
 					</aside>
 				</section>
 
-				<!-- 31 -->
+				<!-- 37 -->
 				<section>
 					<h3>Takeaways</h3>
 					<div class="grid3" style="grid-template-columns: repeat(4, 1fr);">
@@ -2406,7 +2557,7 @@ tracer.start_as_current_span(
 					</aside>
 				</section>
 
-				<!-- 32 -->
+				<!-- 38 -->
 				<section class="heading-only">
 					<h2>Questions?</h2>
 					<p style="font-size: 0.8em; margin-top: 18px;">Repo: <a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes">github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes</a></p>

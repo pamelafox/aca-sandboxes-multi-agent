@@ -15,7 +15,7 @@ SDK API surface used:
     - SandboxClient (sandbox-scoped instance returned by the LRO poller)
         .get() / .delete() / .exec()
     - Models: DiskImage, Sandbox, EgressPolicy, AddPortRequest, PortAuthConfig,
-      RegistryCredentials, endpoint_for_region.
+      endpoint_for_region.
 
 Tested against ``azure-containerapps-sandbox 0.1.0b1``
 (release ``python-sdk-v0.1.0b1-early-access``).
@@ -41,10 +41,15 @@ from azure.core.credentials_async import AsyncTokenCredential
 from azure.containerapps.sandbox import (
     AddPortRequest,
     DiskImage,
+    EgressHeader,
+    EgressHeaderValueRef,
     EgressHostRule,
+    EgressManagedIdentityRef,
     EgressPolicy,
+    EgressRule,
+    EgressRuleAction,
+    EgressRuleMatch,
     PortAuthConfig,
-    RegistryCredentials,
     Sandbox,
     SandboxClient,
     SandboxGroupClient,
@@ -160,18 +165,12 @@ class SandboxManager:
         )
         self.container_image = os.environ.get("DISK_IMAGE_ID", "")
 
-        # Optional registry credentials (only needed if image isn't pullable via SG MI)
-        self.registry_username = os.environ.get("ACR_USERNAME")
-        self.registry_token    = os.environ.get("ACR_PASSWORD")
-
-        # Sandbox group's user-assigned identity resource id. The disk-image
-        # creation request must name a managed identity (or explicit registry
-        # credentials) to authenticate the ACR pull; the group-level
-        # imageRegistryCredentials are not auto-applied to disk-image pulls.
-        self.sandbox_group_uami_resource_id = os.environ.get("SANDBOX_GROUP_UAMI_RESOURCE_ID")
-        # clientId of the same UAMI. The disk-image API authenticates the ACR
-        # pull with a managed identity named by its client id (keyless).
+        # clientId of the sandbox group's user-assigned identity, which holds
+        # AcrPull. The v2 disk-image API authenticates the ACR pull with it (keyless).
         self.sandbox_group_uami_client_id = os.environ.get("SANDBOX_GROUP_UAMI_CLIENT_ID")
+        # Resource ID of the same identity. The egress proxy mints model/Foundry
+        # tokens for it and injects them into researcher requests.
+        self.sandbox_group_uami_resource_id = os.environ.get("SANDBOX_GROUP_UAMI_RESOURCE_ID")
 
         # Azure OpenAI passthrough for the research agent.
         self.openai_endpoint   = os.environ.get("AZURE_OPENAI_ENDPOINT")
@@ -184,14 +183,6 @@ class SandboxManager:
         # each sandbox (so the in-VM research agent reports to the same trace)
         # and its ingestion endpoints are added to the sandbox egress allow-list.
         self.appinsights_conn = os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING")
-
-        # Cached AOAI bearer token (lazy)
-        self._aoai_token: str | None = None
-        self._aoai_token_expires_on: int = 0  # epoch seconds
-
-        # Cached Foundry (ai.azure.com) bearer token (lazy)
-        self._foundry_token: str | None = None
-        self._foundry_token_expires_on: int = 0  # epoch seconds
 
         # Concurrency throttle (max 10 concurrent sandbox creates)
         self._throttle = asyncio.Semaphore(10)
@@ -264,50 +255,6 @@ class SandboxManager:
         self._group_client_key = key
         return self._group_client
 
-    # ── AOAI bearer token (keyless) ────────────────────────────────────────
-
-    async def get_aoai_token(self) -> str | None:
-        """Acquire a Cognitive Services AAD bearer token. Cached until 60 s
-        before expiry. Forwarded to sandboxes as AZURE_OPENAI_TOKEN."""
-        if not self.openai_endpoint:
-            return None
-
-        if self._async_credential is None:
-            self._async_credential = build_async_credential()
-
-        now = int(time.time())
-        if self._aoai_token and now < self._aoai_token_expires_on - 60:
-            return self._aoai_token
-
-        access = await self._async_credential.get_token(
-            "https://cognitiveservices.azure.com/.default"
-        )
-        self._aoai_token = access.token
-        self._aoai_token_expires_on = access.expires_on
-        return self._aoai_token
-
-    async def get_foundry_token(self) -> str | None:
-        """Acquire an AAD bearer token for the Foundry project data plane
-        (audience https://ai.azure.com). Cached until 60 s before expiry.
-        Forwarded to sandboxes as AZURE_AI_TOKEN so the researcher's
-        FoundryChatClient can call the project's hosted web-search tool."""
-        if not self.foundry_project_endpoint:
-            return None
-
-        if self._async_credential is None:
-            self._async_credential = build_async_credential()
-
-        now = int(time.time())
-        if self._foundry_token and now < self._foundry_token_expires_on - 60:
-            return self._foundry_token
-
-        access = await self._async_credential.get_token(
-            "https://ai.azure.com/.default"
-        )
-        self._foundry_token = access.token
-        self._foundry_token_expires_on = access.expires_on
-        return self._foundry_token
-
     # ── Sandbox group ──────────────────────────────────────────────────────
 
     async def ensure_sandbox_group(self, region: str) -> None:
@@ -364,7 +311,7 @@ class SandboxManager:
     async def _acr_bearer_via_aad(self, registry: str, repo: str) -> str | None:
         """Exchange an AAD access token for an ACR bearer scoped to repo:pull.
 
-        Used when admin creds aren't configured. Returns None on failure.
+        Returns None on failure.
         """
         try:
             if self._async_credential is None:
@@ -403,8 +350,8 @@ class SandboxManager:
 
     async def resolve_oci_digest(self, image_ref: str | None = None) -> str:
         """
-        Resolve `registry/repo:tag` to the current `sha256:<hex>` manifest digest.
-        Tries ACR admin creds first; falls back to AAD token exchange.
+        Resolve `registry/repo:tag` to the current `sha256:<hex>` manifest digest,
+        authenticating with the orchestrator's Entra credential.
         """
         ref = image_ref or self.container_image
         registry, repo, tag = self._parse_image_ref(ref)
@@ -412,24 +359,8 @@ class SandboxManager:
         if "@sha256:" in ref:
             return ref.split("@", 1)[1]
 
-        token: str | None = None
-        if self.registry_username and self.registry_token:
-            basic = base64.b64encode(
-                f"{self.registry_username}:{self.registry_token}".encode()
-            ).decode()
-            token_url = (
-                f"https://{registry}/oauth2/token"
-                f"?service={registry}&scope=repository:{repo}:pull"
-            )
-            r = await self._http.get(
-                token_url, headers={"Authorization": f"Basic {basic}"}
-            )
-            r.raise_for_status()
-            token = r.json()["access_token"]
-        else:
-            # Fall back to AAD-based ACR auth (works when the orchestrator's MI
-            # has AcrPull on the registry — which it does, set by the bicep).
-            token = await self._acr_bearer_via_aad(registry, repo)
+        # The orchestrator's managed identity has AcrPull on the registry (bicep).
+        token = await self._acr_bearer_via_aad(registry, repo)
 
         accept = ", ".join([
             "application/vnd.oci.image.manifest.v1+json",
@@ -456,34 +387,22 @@ class SandboxManager:
     def _create_disk_image_with_labels(self, labels: dict[str, str]) -> DiskImage:
         """Create a disk image carrying our full label dict.
 
-        The SDK's ``create_disk_image()`` only encodes ``labels.name`` (from
-        its ``name=`` kwarg), so we bypass it and call the internal ``_dp_put``
-        with a hand-built body that carries arbitrary labels (image-ref,
-        oci-digest, demo=agents). Registry pull uses the sandbox group's
-        ``imageRegistryCredentials`` (configured in bicep with the SG UAMI +
-        AcrPull on the registry).
+        The SDK's ``create_disk_image()`` targets the legacy endpoint, which
+        rejects managed-identity pulls, and only encodes ``labels.name``. Use the
+        v2 endpoint's ``source.managedIdentityClientId`` for the sandbox group's
+        AcrPull identity, keeping our image-ref, oci-digest, and demo labels.
         """
         client = self._get_group_client()
         body: dict[str, Any] = {
             "labels": labels,
-            "image": {"base": self.container_image},
+            "source": {
+                "kind": "registry",
+                "imageUrl": self.container_image,
+                "managedIdentityClientId": self.sandbox_group_uami_client_id,
+            },
         }
-        if self.registry_username and self.registry_token:
-            body["registryCredentials"] = RegistryCredentials(
-                username=self.registry_username,
-                token=self.registry_token,
-            )._to_dict()
-        elif self.sandbox_group_uami_client_id:
-            # Keyless pull: authenticate the ACR pull with the sandbox group's
-            # user-assigned identity (which holds AcrPull on the registry). The
-            # API names the identity by its client id.
-            body["managedIdentityClientId"] = self.sandbox_group_uami_client_id
-        elif self.sandbox_group_uami_resource_id:
-            # Keyless pull: authenticate the ACR pull with the sandbox group's
-            # user-assigned identity (which holds AcrPull on the registry).
-            body["managedIdentityResourceId"] = self.sandbox_group_uami_resource_id
-        # SDK private API — needed because public method drops arbitrary labels.
-        raw = client._dp_put(f"{client._group_path}/diskimages", body)  # type: ignore[attr-defined]
+        # SDK private API — needed because the public method targets the legacy endpoint.
+        raw = client._dp_put(f"{client._group_path}/diskimages/v2", body)  # type: ignore[attr-defined]
         return DiskImage._from_dict(raw)
 
     async def _wait_until_ready(
@@ -726,36 +645,60 @@ class SandboxManager:
     # ── Sandbox lifecycle ──────────────────────────────────────────────────
 
     def _build_egress_policy(self) -> EgressPolicy:
-        """Default-deny egress; allow only the Azure OpenAI / Foundry endpoints.
+        """Default-deny egress; the model hosts are reachable only with proxy-injected auth.
 
-        Every research sandbox starts fully network-isolated. We punch a single
-        hole for the AOAI / Foundry hosts the agent needs for model inference and
-        hosted web search, so an autonomous workload can reach the model (and the
-        Foundry-side grounding tool) and nothing else. Web search runs server-side
-        in Foundry, so no bing.com / search-engine egress is ever required.
+        Every research sandbox starts fully network-isolated. For the Foundry
+        project and AOAI hosts, a Transform rule lets the request through and has
+        the egress proxy set ``Authorization`` to an Entra token for the sandbox
+        group's managed identity, so no token is ever placed inside the sandbox.
+        Web search runs server-side in Foundry, so no search-engine egress is needed.
+        Application Insights ingestion is a plain allow (it authenticates with the
+        connection string).
         """
+        rules: list[EgressRule] = []
+
+        def _sign_with_group_identity(url: str | None, audience: str, name: str) -> None:
+            host = urlparse(url).hostname if url else None
+            if not host or not self.sandbox_group_uami_resource_id:
+                return
+            token = EgressHeaderValueRef(managed_identity_ref=EgressManagedIdentityRef(
+                identity_type="UserAssigned",
+                identity_resource_id=self.sandbox_group_uami_resource_id,
+                resource=audience,
+                format="Bearer {value}",
+            ))
+            rules.append(EgressRule(
+                name=name,
+                match=EgressRuleMatch(host=host),
+                action=EgressRuleAction(type="Transform", headers=[
+                    EgressHeader(operation="Set", name="Authorization", value_ref=token),
+                ]),
+            ))
+
+        # Foundry project host (hosted web search / grounding via FoundryChatClient).
+        _sign_with_group_identity(self.foundry_project_endpoint, "https://ai.azure.com", "foundry-with-group-identity")
+        # AOAI data-plane host for model inference.
+        _sign_with_group_identity(self.openai_endpoint, "https://cognitiveservices.azure.com", "aoai-with-group-identity")
+
         host_rules: list[EgressHostRule] = []
         seen: set[str] = set()
-
-        def _allow(url: str | None) -> None:
-            host = urlparse(url).hostname if url else None
-            if not host:
-                return
-            for pattern in (host, f"*.{host.split('.', 1)[1]}" if "." in host else host):
-                if pattern not in seen:
-                    seen.add(pattern)
-                    host_rules.append(EgressHostRule(pattern=pattern, action="Allow"))
-
-        # AOAI data-plane host for model inference.
-        _allow(self.openai_endpoint)
-        # Foundry project host (hosted web search / grounding via FoundryChatClient).
-        _allow(self.foundry_project_endpoint)
         # Application Insights ingestion (so the in-sandbox agent can export
         # OpenTelemetry traces). Parsed from the connection string's
         # Ingestion/Live endpoints; falls back to the public ingestion domains.
         for endpoint in self._appinsights_egress_endpoints():
-            _allow(endpoint)
-        return EgressPolicy(default_action="Deny", host_rules=host_rules)
+            host = urlparse(endpoint).hostname if endpoint else None
+            if not host:
+                continue
+            for pattern in (host, f"*.{host.split('.', 1)[1]}" if "." in host else host):
+                if pattern not in seen:
+                    seen.add(pattern)
+                    host_rules.append(EgressHostRule(pattern=pattern, action="Allow"))
+        return EgressPolicy(
+            default_action="Deny",
+            traffic_inspection="Full",
+            host_rules=host_rules,
+            rules=rules,
+        )
 
     def _appinsights_egress_endpoints(self) -> list[str]:
         """Endpoints the in-sandbox OTEL exporter must reach, derived from the
@@ -817,15 +760,10 @@ class SandboxManager:
             environment["AZURE_OPENAI_ENDPOINT"] = self.openai_endpoint
         if self.openai_deployment:
             environment["AZURE_OPENAI_DEPLOYMENT"] = self.openai_deployment
-        token = await self.get_aoai_token()
-        if token:
-            environment["AZURE_OPENAI_TOKEN"] = token
-        # Foundry project + ai.azure.com-scoped token for the hosted web-search tool.
+        # Foundry project for the hosted web-search tool. No token is passed:
+        # the egress proxy signs these requests with the sandbox group's identity.
         if self.foundry_project_endpoint:
             environment["FOUNDRY_PROJECT_ENDPOINT"] = self.foundry_project_endpoint
-        foundry_token = await self.get_foundry_token()
-        if foundry_token:
-            environment["AZURE_AI_TOKEN"] = foundry_token
 
         labels = {
             "demo": "agents",

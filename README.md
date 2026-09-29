@@ -122,11 +122,9 @@ This is a useful pattern beyond research. Put broad external capability behind a
 
 Authentication follows the same boundary.
 
-The Bicep deployment creates user-assigned managed identities for the orchestrator and sandbox group, then grants scoped roles for Azure OpenAI, Foundry, the sandbox group data plane, and ACR pulls. The orchestrator uses its Azure identity to obtain short-lived bearer tokens for the Azure OpenAI and Foundry audiences.
+The Bicep deployment creates user-assigned managed identities for the orchestrator and sandbox group, then grants scoped roles. The orchestrator identity gets Azure OpenAI (for its planner) and the sandbox group data plane. The sandbox group identity gets ACR pull, Azure OpenAI, and Foundry.
 
-In the swarm, those scoped tokens are forwarded into the egress-restricted sandbox as environment variables. The in-sandbox researcher wraps the Foundry token in a credential implementation, so it does not need to call Microsoft Entra ID or an instance metadata endpoint from inside the locked network.
-
-The standalone agent ([create_sandbox.py](create_sandbox.py)) uses the platform's alternative: the sandbox group's managed identity has the Azure OpenAI role, and an egress `Transform` rule makes the proxy add an Entra token for that identity to each model request. No token is ever placed inside that sandbox.
+No token is ever placed inside a sandbox. Both the swarm researchers and the standalone agent ([create_sandbox.py](create_sandbox.py)) rely on egress `Transform` rules: for each model host, the proxy sets `Authorization` to an Entra token for the sandbox group's managed identity (audience `https://ai.azure.com` for the Foundry project, `https://cognitiveservices.azure.com` for Azure OpenAI). The in-sandbox code hands its SDK a placeholder credential, and the proxy replaces it on the way out.
 
 No model API key needs to be baked into the researcher image.
 
@@ -357,28 +355,13 @@ docker build --platform linux/amd64 \
 docker push <registry>/sandbox-agent:latest
 ```
 
-The launcher calls `SandboxGroupClient.begin_create_disk_image` and waits up to
-four minutes for `Ready` before creating a sandbox. For private ACR, use
-`--registry-auth azure-cli` when the sandbox compute plane rejects managed-identity
-pulls with `RegistryAuthFailed`, even with the client ID configured. The existing
-orchestrator uses explicit registry credentials for this limitation.
-
-The launcher obtains an ACR token using `az acr login --expose-token` under your
-current Azure CLI profile and the launcher's subscription. Your signed-in CLI
-identity must have registry pull permissions. The token is passed as
-`registryCredentials` to disk-image preparation; it is not printed, stored in azd,
-or placed in the sandbox environment. This option supports `*.azurecr.io` images
-and does not require Docker or an ACR admin password. Live compatibility with the
-sandbox service must still be verified in your deployment.
-
-For services supporting managed-identity pulls, the default mode uses the
-client ID of a managed identity attached to the sandbox group with `AcrPull`
-on that registry, through `SANDBOX_GROUP_UAMI_CLIENT_ID` or
-`--image-identity-client-id`. The disk-image API expects `managedIdentityClientId`,
-not the identity's resource ID or principal ID. The launcher bridges the installed
-SDK's missing client-ID field while retaining its readiness poller. Public images
-do not need this setting. The older resource-ID option remains a fallback, but
-does not authenticate pulls on services requiring the client-ID field.
+The launcher prepares a disk image and waits up to four minutes for `Ready`
+before creating a sandbox. For private ACR, the sandbox group's managed identity
+pulls the image: Bicep grants it `AcrPull`, and the launcher passes its client ID
+(`SANDBOX_GROUP_UAMI_CLIENT_ID` or `--image-identity-client-id`) to the disk-image
+API's v2 endpoint as `source.managedIdentityClientId`. The installed SDK targets the
+legacy endpoint, which rejects managed-identity pulls, so the launcher calls v2
+directly while keeping the SDK's readiness poller. Public images need no identity.
 
 The infrastructure outputs `SANDBOX_GROUP_UAMI_RESOURCE_ID` and
 `SANDBOX_GROUP_UAMI_CLIENT_ID`, so `azd up` or
@@ -407,14 +390,14 @@ above. With the image and identity stored in azd, and the model outputs from
 ```bash
 python -m pip install -r sandbox-agent/requirements.txt
 
-python create_sandbox.py --registry-auth azure-cli --prompt \
+python create_sandbox.py --prompt \
   "Create a Bash script in /workspace that writes a CSV of the squares of 1 through 10. Run it, inspect the CSV, and report its contents." \
   --delete-after-run
 ```
 
 Progress goes to stderr, and the launcher prints `disk_image_id` alongside
 `sandbox_id`. A later run can pass that ID via `--disk-id` to skip preparation.
-`--disk`, `--disk-id`, and `--image` are mutually exclusive.
+`--disk`, `--disk-id`, `--image`, and `--snapshot-id` are mutually exclusive.
 Any explicit source overrides `SANDBOX_AGENT_IMAGE`; use `--disk ubuntu` to
 create a plain sandbox even when an agent image is configured. Without azd,
 export the launcher and model settings and pass `--image "$SANDBOX_AGENT_IMAGE"`
@@ -432,7 +415,8 @@ Use the sandbox configuration and authentication from the preceding section.
 The launcher passes the task into the sandbox and invokes the agent there.
 **The harness, model connection, shell, and filesystem operations all run inside
 the sandbox.** No model credential goes into the sandbox. The sandbox's egress
-policy allows only the model endpoint, through a `Transform` rule that sets the
+policy denies everything except read-only (`GET`) requests to `api.github.com` and the
+model endpoint, which goes through a `Transform` rule that sets the
 `Authorization` header to an Entra token for the sandbox group's managed identity
 (`SANDBOX_GROUP_UAMI_RESOURCE_ID`, which Bicep grants Cognitive Services OpenAI User).
 The agent sends requests with a placeholder key, and the egress proxy replaces it
@@ -445,12 +429,49 @@ on the way out, so code inside the sandbox never sees a token.
   calls, subject to the shell tool's working-directory confinement behavior.
   Commands have a 30-second timeout and a 64-KiB output cap; the agent run has a
   five-minute timeout.
-- Egress is denied except for the configured model endpoint. Package downloads
-  and other external HTTP calls remain blocked; bake dependencies into the image.
+- Egress is denied except for the model endpoint and `GET https://api.github.com`.
+  Blocked requests get a fast HTTP 403 from the proxy. Package downloads and other
+  external HTTP calls remain blocked; bake dependencies into the image.
+- `--show-egress` prints the proxy's audit log (allowed and denied requests) after
+  the run. The log lags, so later requests can take minutes to appear; the portal's
+  Egress Network Traffic panel shows the same data.
 - File memory, hosted web search, and plan/execute mode switching are disabled.
   The harness retains todo tracking and session history.
 - `--delete-after-run` removes the sandbox and its files when the run finishes or
   raises an error. Omit it to keep the sandbox and artifacts for inspection.
+
+### Keep the agent's work: volumes and snapshots
+
+Files in `/workspace` are private to the sandbox and are gone when it's deleted.
+Two options keep them:
+
+```bash
+# Mount a group volume at /workspace/out and snapshot the sandbox after the run.
+python create_sandbox.py --volume agent-output --snapshot-after-run first-draft \
+  --delete-after-run \
+  --prompt "Write report.md: three bullets on why agents need sandboxes. Keep your outline in notes.md."
+
+# Continue from the snapshot (prints snapshot_id above).
+python create_sandbox.py --snapshot-id <snapshot-id> --delete-after-run \
+  --prompt "Add a fourth bullet about cost to the report."
+
+# Read the volume from a plain sandbox.
+python create_sandbox.py --disk ubuntu --volume agent-output --delete-after-run \
+  --command "cat /workspace/out/report.md"
+```
+
+- `--volume NAME` creates the Azure Blob volume in the sandbox group if it's
+  missing and mounts it at `/workspace/out`. When that mount exists, the agent is
+  told to save final deliverables there. Volume files outlive every sandbox.
+- `--snapshot-after-run NAME` captures the sandbox after the command or prompt
+  finishes, including files, running processes, memory, and environment variables.
+- `--snapshot-id ID` creates a sandbox from a snapshot. A restore accepts no
+  configuration (labels, environment, egress policy, volumes, or ports) and uses
+  the snapshot's CPU and memory. The egress policy isn't part of the snapshot, so a
+  restored sandbox starts with unrestricted egress; the launcher reapplies the
+  policy immediately. Volumes mounted at snapshot time stay mounted.
+- Snapshots and volumes belong to the sandbox group and aren't deleted with the
+  sandbox. Clean them up with the SDK (`delete_snapshot`, `delete_volume`) or the portal.
 
 Because the proxy mints tokens as needed, long-running agents don't hit token
 expiry. `--prompt` and `--command` are mutually exclusive. No orchestrator
@@ -469,7 +490,7 @@ repository root. Prefer a dedicated validation environment when available.
 ```bash
 python -m pip install -r scripts/requirements-smoke.txt
 
-python scripts/smoke_standalone.py --run --registry-auth azure-cli
+python scripts/smoke_standalone.py --run
 python scripts/smoke_swarm.py --run
 ```
 
@@ -477,8 +498,7 @@ The standalone smoke uses the launcher's configuration and image-preparation
 helpers. It runs the packaged agent in a fresh sandbox and unique workspace,
 reads back the actual CSV, checks every square from 1 through 10, then removes
 the CSV and reruns the agent-written Bash script to verify it recreates the
-correct output. An agent claiming success is not enough. Omit
-`--registry-auth azure-cli` to test managed-identity pulls, or pass `--disk-id`
+correct output. An agent claiming success is not enough. Pass `--disk-id`
 to test an already-prepared image (which skips registry-pull coverage).
 
 The standalone script allows four minutes for image preparation, three minutes
