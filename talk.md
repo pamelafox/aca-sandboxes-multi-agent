@@ -85,11 +85,11 @@ Use the research swarm as the running example, but make Sandboxes the subject. C
 
 **Slides / main idea:** Introduce a research question with independent sub-questions. Fan-out helps, but now several agents need compute, permissions, and cleanup at once.
 
-**Demo beat:** Preview the gardening question and the work it can split into.
+**Demo beat:** Preview the Forester question and the work it can split into.
 
 ### Slide 3. Demo: the research swarm
 
-**On slide:** Screenshot of the swarm UI with the gardening question and parallel researcher progress visible.
+**On slide:** Screenshot of the swarm UI running the Forester question, after a second research wave.
 
 **Demo 1: End-to-end swarm.** Submit the question. Use the architecture minimap to show ownership moving from Research Lead to a parallel research wave to Reviewer, then point to the append-only history when the Reviewer requests another wave. The earlier prompts and results remain visible rather than being replaced. Inspect the resulting report, and briefly show the live sandboxes in the Azure portal while they exist.
 

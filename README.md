@@ -186,6 +186,7 @@ Useful options:
 | `--delete-after-run` | Deletes the sandbox when the run finishes or fails. Without it, the sandbox stays available and auto-suspends after 5 idle minutes. |
 | `--disk ubuntu` | Uses the built-in Ubuntu image instead of the agent image. |
 | `--disk-id <id>` | Reuses a prepared disk image (the launcher prints `disk_image_id`), skipping preparation. |
+| `--name <name>` | Adds a `name` label, so you can find the sandbox in the portal. |
 | `--show-egress` | Prints the egress proxy's allowed and denied requests after the run. |
 | `--volume <name>` | Mounts a sandbox group volume at `/workspace/out`, creating it if needed. |
 | `--snapshot-after-run <name>` | Snapshots the sandbox after the run and prints the snapshot ID. |
@@ -205,7 +206,16 @@ python create_sandbox.py --show-egress --prompt \
   "Use Python to try these requests and report each HTTP status code in a table: GET https://api.github.com/zen, POST https://api.github.com/markdown with JSON {\"text\": \"hi\"}, GET https://pypi.org/simple/requests/, and GET https://example.com."
 ```
 
-The GitHub `GET` returns 200. The GitHub `POST`, pypi.org, and example.com get a fast HTTP 403 from the proxy. The audit log lags, so `--show-egress` may not show every request yet; the sandbox's **Egress Network Traffic** panel in the Azure portal fills in within a few minutes. The log is only readable while the sandbox is running.
+The GitHub `GET` returns 200. The GitHub `POST`, pypi.org, and example.com get a fast HTTP 403 from the proxy. `--command` runs get the same policy, and the agent image includes curl, so you can also try the rules directly. The model call works even though the sandbox has no key:
+
+```shell
+MODEL_HOST=$(azd env get-value openAiEndpoint | sed -E 's#https://([^/]+)/?#\1#')
+python create_sandbox.py --delete-after-run --command "curl -s -o /dev/null -w '%{http_code}\n' https://api.github.com/zen; \
+  curl -s -o /dev/null -w '%{http_code}\n' https://example.com; \
+  curl -s https://$MODEL_HOST/openai/v1/responses -H 'Content-Type: application/json' \
+    -d '{\"model\": \"gpt-5.6-luna\", \"input\": \"Say hi in five words.\"}'"
+```
+ The audit log lags, so `--show-egress` may not show every request yet; the sandbox's **Egress Network Traffic** panel in the Azure portal fills in within a few minutes. The log is only readable while the sandbox is running.
 
 ### Keep the agent's work: volumes and snapshots
 

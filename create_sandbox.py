@@ -208,6 +208,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=f"Mount this sandbox group volume at {OUTPUT_MOUNT} (created if missing); files there outlive the sandbox.",
     )
     parser.add_argument(
+        "--name", help="Add a name label, which shows in the portal's sandbox list.",
+    )
+    parser.add_argument(
         "--show-egress", action="store_true",
         help="After the run, print the egress proxy's allowed and denied requests for this sandbox.",
     )
@@ -243,14 +246,17 @@ def main(argv: list[str] | None = None) -> None:
         stack.callback(credential.close)
         environment = {}
         egress_policy = EgressPolicy(default_action="Deny")
+        endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
+        # Commands get the same policy as the agent when it's configured, so you can
+        # try the rules with curl: the model host answers with no key, GitHub allows GET.
+        if endpoint and args.image_identity_resource_id:
+            egress_policy = agent_egress_policy(endpoint, args.image_identity_resource_id)
         if args.prompt:
-            endpoint = os.environ["AZURE_OPENAI_ENDPOINT"]
             environment = {
                 "AGENT_PROMPT": args.prompt,
                 "AZURE_OPENAI_ENDPOINT": endpoint,
                 "AZURE_OPENAI_DEPLOYMENT": os.environ["AZURE_OPENAI_DEPLOYMENT"],
             }
-            egress_policy = agent_egress_policy(endpoint, args.image_identity_resource_id)
         group = RegistryIdentitySandboxGroupClient(
             endpoint_for_region(args.region),
             credential,
@@ -277,7 +283,7 @@ def main(argv: list[str] | None = None) -> None:
                 cpu="500m",
                 memory="1Gi",
                 auto_suspend_seconds=300,
-                labels={"demo": "standalone"},
+                labels={"demo": "standalone", **({"name": args.name} if args.name else {})},
                 egress_policy=egress_policy,
                 volumes=volumes,
                 **({"environment": environment} if args.prompt else {}),

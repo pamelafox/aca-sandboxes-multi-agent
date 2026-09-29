@@ -350,7 +350,9 @@
 
 		.reveal img.demo-shot {
 			display: block;
-			width: 100%;
+			width: auto;
+			max-width: 100%;
+			max-height: 520px;
 			height: auto;
 			margin: 0 auto;
 			border: 1px solid var(--deck-border);
@@ -1256,17 +1258,10 @@
 
 				<!-- 1 -->
 				<section class="heading-only">
-					<p style="font-size: 0.8em;">Azure Container Apps Sandboxes</p>
-					<h1 style="font-size: 1.8em;">When One Agent Isn't Enough</h1>
-					<p style="font-size: 1em; margin-top: 4px;"><strong>Orchestrating Secure Parallel Agent Swarms</strong></p>
-					<div style="display: flex; gap: 14px; justify-content: center; margin: 22px 0 6px;" aria-label="Diagram: several isolated sandboxes side by side">
-						<div class="box sandbox" style="width: 130px;">Sandbox 1<small>research</small></div>
-						<div class="box sandbox" style="width: 130px;">Sandbox 2<small>research</small></div>
-						<div class="box sandbox" style="width: 130px;">Sandbox 3<small>research</small></div>
-						<div class="box sandbox" style="width: 130px;">Sandbox 4<small>research</small></div>
-					</div>
-					<p style="font-size: 0.7em; max-width: 860px; margin-top: 12px;">From a working swarm to the infrastructure and code behind it.</p>
-					<p style="margin-top: 22px; font-size: 1.05em;"><strong>Pamela Fox</strong></p>
+					<h1 style="font-size: 1.8em;">When one agent isn't enough</h1>
+					<p style="font-size: 1.1em; margin-top: 4px;"><strong>Orchestrating secure parallel agent swarms</strong></p>
+
+					<p style="margin-top: 42px; font-size: 1.05em;"><strong>Pamela Fox</strong></p>
 					<p style="font-size: 0.65em;">Python Cloud Advocate · Microsoft · <a href="https://pamelafox.org" target="_blank">pamelafox.org</a></p>
 					<aside class="notes">
 						Agents need somewhere safe to act. This talk starts with a working research swarm, then goes underneath it:
@@ -1291,23 +1286,24 @@
 				<!-- 3 -->
 				<section class="fit-sm">
 					<h3>One question, several independent research tasks</h3>
-					<div class="callout" style="font-size: 0.72em; margin-top: 0;">
-						“Optimal tree to plant for a native California garden for a lawn that faces north, has tough soil, and is near oak tree roots.
-						Tree can't grow more than 15 feet tall. Tree is NOT shaded.”
+					<div class="callout" style="font-size: 0.62em; margin-top: 0;">
+						“My family of four in California is deciding whether to replace our gas car (Subaru Forester 2001) with a hybrid version of the Forester in 2026.
+						Compare the total five-year cost, charging practicality, winter range, reliability, insurance, and available incentives.
+						Include the strongest reasons not to switch, identify assumptions that could change the recommendation, and produce a decision checklist.”
 					</div>
 					<p class="label" style="margin-top: 22px;">Example decomposition</p>
 					<div class="grid3 fragment" style="grid-template-columns: repeat(4, 1fr);">
-						<div class="card">Which California native trees stay under 15 feet?</div>
-						<div class="card">Which tolerate tough, compacted soil?</div>
-						<div class="card">What can grow safely near oak roots?</div>
-						<div class="card">Which thrive in full sun on a north-facing lawn?</div>
+						<div class="card">What's the five-year cost of the hybrid vs. keeping the 2001?</div>
+						<div class="card">Which California incentives apply?</div>
+						<div class="card">How do winter range and reliability compare?</div>
+						<div class="card">How much would insurance change?</div>
 					</div>
 					<ul class="tight fragment" style="margin-top: 26px;">
 						<li>Fan-out makes the answer faster and more thorough.</li>
 						<li>But now <strong>several agents need compute, permissions, and cleanup at once</strong>.</li>
 					</ul>
 					<aside class="notes">
-						Preview the gardening question. The sub-questions shown are an illustrative decomposition; the live decomposer
+						Preview the Forester question (the "Forester upgrade" sample button in the app). The sub-questions shown are an illustrative decomposition; the live decomposer
 						may split it differently (the sample returns 4-6 questions). The interesting part isn't the fan-out itself,
 						it's that each branch needs somewhere to run.
 					</aside>
@@ -1316,13 +1312,10 @@
 				<!-- 4 -->
 				<section>
 					<h3>Demo: the research swarm</h3>
-					<div class="placeholder" role="img" aria-label="Screenshot placeholder: swarm UI with the gardening question and parallel researcher progress">
-						<p><strong>Screenshot placeholder</strong></p>
-						<p>Swarm UI with the gardening question submitted and parallel researcher progress visible.</p>
-						<p class="muted">Capture from the deployed orchestrator; save as <code>images/demo-swarm.png</code>.</p>
-					</div>
+					<img class="demo-shot" src="images/demo-swarm.png" alt="The research swarm web app running the Forester upgrade sample topic. The live agent architecture shows Research Lead complete, a parallel research wave on wave 2 with 4 of 4 researchers complete, the Reviewer complete with a dashed 'gaps, more research' route back to the Research Lead, and the Report Writer waiting for approval.">
 					<aside class="notes">
-						Switch to the live app. Submit the gardening question early and narrate while it runs: decomposition, researchers provisioning,
+						Screenshot: the Forester upgrade sample after a second research wave, with the Reviewer's two routes visible (gaps back to the Research Lead, approved on to the Report Writer).
+						Switch to the live app. Submit a sample topic early and narrate while it runs: decomposition, researchers provisioning,
 						researching, done. Briefly open portal.azure.com and show the live sandboxes in the sandbox group while they exist.
 						Inspect the final report. Backup: have a completed report and a captured sandbox list ready rather than waiting silently.
 					</aside>
@@ -1970,10 +1963,11 @@ AsyncOpenAI(base_url=endpoint + &quot;/openai/v1/&quot;,
 				<!-- 19 -->
 				<section>
 					<h3>Demo: Allowed and blocked requests</h3>
-					<img class="demo-shot" src="images/demo-egress.png" alt="Backup screenshot: browser terminal running curl commands next to the portal's Egress Network Traffic panel. GET api.github.com/zen and GET to the Azure OpenAI endpoint are ALLOWED; POST api.github.com/markdown, pypi.org, and example.com are DENIED. The panel shows 3 allowed and 5 denied requests with timestamps.">
+					<img class="demo-shot" src="images/demo-egress.png" alt="Azure portal view of sandbox 9328c0ee, labeled standalone and running. The browser terminal runs curl: GET api.github.com/zen returns 200; POST api.github.com/markdown, pypi.org, and example.com return 403; and a request to the Azure OpenAI responses endpoint with no key returns a completed model response. The Egress Network Traffic panel lists the model POST and the GitHub GET as allowed, and the GitHub POST and pypi.org as denied.">
 					<aside class="notes">
 						Run the repo's standalone agent with the policy from the last two slides (agent_egress_policy in create_sandbox.py):
-						python create_sandbox.py --show-egress --prompt "Use Python to try these requests and report each HTTP status code in a table: GET https://api.github.com/zen, POST https://api.github.com/markdown with JSON {\"text\": \"hi\"}, GET https://pypi.org/simple/requests/, and GET https://example.com."
+						Agent version: python create_sandbox.py --show-egress --prompt "Use Python to try these requests and report each HTTP status code in a table: GET https://api.github.com/zen, POST https://api.github.com/markdown with JSON {\"text\": \"hi\"}, GET https://pypi.org/simple/requests/, and GET https://example.com."
+						Curl alternative (the agent image includes curl, and --command runs get the same policy): python create_sandbox.py --command "curl ...", or curl in the sandbox's browser terminal in the portal. curl -s https://&lt;model host&gt;/openai/v1/responses with no Authorization header returns a real model answer: the proxy injected the token.
 						Expected: GitHub GET 200; the GitHub POST, pypi.org, and example.com 403 (the proxy answers fast, with an x-deny-reason header). The agent's own model calls work with no key in the sandbox: that's the injected identity token from the previous slide.
 						Then open the sandbox's Egress Network Traffic panel in the portal (or sandbox.get_egress_decisions(), aca sandbox egress decisions -l &lt;selector&gt; -o json). Tie each entry to the rule that explains it.
 						The audit log lags: the first allowed and denied entries show up within seconds, later ones can take minutes. --show-egress may print only part of the run; the portal fills in. The log can only be read while the sandbox is running (a stopped sandbox returns 409), and this sandbox auto-suspends after 5 idle minutes: open the panel right after the run, or resume the sandbox first. Backup: captured panel screenshot.
