@@ -12,8 +12,13 @@ from urllib.parse import urlparse
 
 from azure.containerapps.sandbox import (
     DiskImage,
-    EgressHostRule,
+    EgressHeader,
+    EgressHeaderValueRef,
+    EgressManagedIdentityRef,
     EgressPolicy,
+    EgressRule,
+    EgressRuleAction,
+    EgressRuleMatch,
     RegistryCredentials,
     SandboxGroupClient,
     endpoint_for_region,
@@ -98,6 +103,31 @@ def prepare_disk_image(
     return image.id
 
 
+def model_egress_policy(endpoint: str, identity_resource_id: str) -> EgressPolicy:
+    """Allow only the model endpoint, and have the proxy sign each request.
+
+    The Transform rule sets ``Authorization`` to an Entra token for the sandbox
+    group's managed identity, so the sandbox never holds a model credential.
+    """
+    group_identity_token = EgressHeaderValueRef(managed_identity_ref=EgressManagedIdentityRef(
+        identity_type="UserAssigned",
+        identity_resource_id=identity_resource_id,
+        resource="https://cognitiveservices.azure.com",
+        format="Bearer {value}",
+    ))
+    return EgressPolicy(
+        default_action="Deny",
+        traffic_inspection="Full",
+        rules=[EgressRule(
+            name="model-with-group-identity",
+            match=EgressRuleMatch(host=urlparse(endpoint).hostname),
+            action=EgressRuleAction(type="Transform", headers=[
+                EgressHeader(operation="Set", name="Authorization", value_ref=group_identity_token),
+            ]),
+        )],
+    )
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     load_azd_env(override=False, quiet=True)
     for variable, aliases in (
@@ -141,7 +171,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--image-identity-resource-id",
         default=os.environ.get("SANDBOX_GROUP_UAMI_RESOURCE_ID"),
-        help="Sandbox group managed identity with AcrPull; defaults to SANDBOX_GROUP_UAMI_RESOURCE_ID.",
+        help=(
+            "Sandbox group managed identity: pulls the image (AcrPull) and signs model calls "
+            "(Cognitive Services OpenAI User); defaults to SANDBOX_GROUP_UAMI_RESOURCE_ID."
+        ),
     )
     task = parser.add_mutually_exclusive_group()
     task.add_argument("--command", help="Optional shell command to execute in the new sandbox.")
@@ -164,6 +197,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         endpoint = urlparse(os.environ["AZURE_OPENAI_ENDPOINT"])
         if endpoint.scheme != "https" or not endpoint.hostname:
             parser.error("AZURE_OPENAI_ENDPOINT must be an HTTPS endpoint")
+        if not args.image_identity_resource_id:
+            parser.error("--prompt requires the sandbox group identity (SANDBOX_GROUP_UAMI_RESOURCE_ID)")
     return args
 
 
@@ -173,7 +208,7 @@ def main(argv: list[str] | None = None) -> None:
         credential = DefaultAzureCredential()
         stack.callback(credential.close)
         environment = {}
-        host_rules = []
+        egress_policy = EgressPolicy(default_action="Deny")
         if args.prompt:
             endpoint = os.environ["AZURE_OPENAI_ENDPOINT"]
             environment = {
@@ -181,7 +216,7 @@ def main(argv: list[str] | None = None) -> None:
                 "AZURE_OPENAI_ENDPOINT": endpoint,
                 "AZURE_OPENAI_DEPLOYMENT": os.environ["AZURE_OPENAI_DEPLOYMENT"],
             }
-            host_rules = [EgressHostRule(pattern=urlparse(endpoint).hostname, action="Allow")]
+            egress_policy = model_egress_policy(endpoint, args.image_identity_resource_id)
         group = RegistryIdentitySandboxGroupClient(
             endpoint_for_region(args.region),
             credential,
@@ -196,10 +231,6 @@ def main(argv: list[str] | None = None) -> None:
                 group, args.image, args.image_identity_resource_id, args.image_identity_client_id,
                 registry_auth=args.registry_auth, subscription_id=args.subscription_id,
             )
-        if args.prompt:
-            environment["AZURE_OPENAI_TOKEN"] = credential.get_token(
-                "https://cognitiveservices.azure.com/.default"
-            ).token
         sandbox = group.begin_create_sandbox(
             disk=None if disk_id else args.disk,
             disk_id=disk_id,
@@ -207,7 +238,7 @@ def main(argv: list[str] | None = None) -> None:
             memory="1Gi",
             auto_suspend_seconds=300,
             labels={"demo": "standalone"},
-            egress_policy=EgressPolicy(default_action="Deny", host_rules=host_rules),
+            egress_policy=egress_policy,
             **({"environment": environment} if args.prompt else {}),
         ).result()
         stack.callback(sandbox.close)

@@ -5,7 +5,7 @@
 //          and a Microsoft.App/sandboxGroups resource for the research swarm.
 //
 // Sandboxes themselves are dynamic: the orchestrator creates them at runtime
-// against the sandbox group via the data plane (management.azuredevcompute.io).
+// against the sandbox group via the Sandboxes data plane.
 //
 // NOTE on disk images: Disk images live behind the *data plane* of the sandbox
 // group, not ARM, so they cannot be pre-created in Bicep. The orchestrator
@@ -74,7 +74,7 @@ var cognitiveServicesOpenAIUserId = '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
 // Azure AI User (a.k.a. Foundry User): data-plane role for using Foundry
 // projects and their hosted tools (e.g. hosted web search / grounding).
 var foundryUserRoleId             = '53ca6127-db72-4b80-b1b0-d745d6d5456d'
-// Custom role: Dev Compute SandboxGroup Data Owner
+// Built-in role: Container Apps SandboxGroup Data Owner
 var sandboxGroupDataOwnerRoleId   = 'c24cf47c-5077-412d-a19c-45202126392c'
 
 // Resource IDs computed as strings (force runtime resolution; works around Bicep
@@ -207,7 +207,7 @@ resource acaEnvironment 'Microsoft.App/managedEnvironments@2026-03-02-preview' =
 
 // ── Sandbox Group (the official ACA Sandboxes resource) ─────────────────────
 // Sandboxes are created dynamically by the orchestrator at runtime against
-// this group via Microsoft.Adc.Arm.Client (data plane).
+// this group via the Sandboxes data plane.
 
 resource sandboxGroup 'Microsoft.App/sandboxGroups@2026-02-01-preview' = {
   name: sandboxGroupName
@@ -326,6 +326,19 @@ resource orchestratorAcrPull 'Microsoft.Authorization/roleAssignments@2022-04-01
   }
 }
 
+// Sandbox group identity → Cognitive Services OpenAI User on the AOAI account.
+// The egress proxy mints tokens for this identity and injects them into the
+// sandbox agent's model requests, so no token is ever passed into the sandbox.
+resource sandboxGroupOpenAiRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(openAi.id, sandboxGroupUami.id, cognitiveServicesOpenAIUserId)
+  scope: openAi
+  properties: {
+    principalId: sandboxGroupUami.properties.principalId
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', cognitiveServicesOpenAIUserId)
+    principalType: 'ServicePrincipal'
+  }
+}
+
 // Orchestrator → Cognitive Services OpenAI User on the AOAI account
 resource orchestratorOpenAiRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(openAi.id, orchestratorUami.id, cognitiveServicesOpenAIUserId)
@@ -350,7 +363,7 @@ resource orchestratorFoundryUserRole 'Microsoft.Authorization/roleAssignments@20
   }
 }
 
-// Orchestrator → Dev Compute SandboxGroup Data Owner on the sandbox group
+// Orchestrator → Container Apps SandboxGroup Data Owner on the sandbox group
 // REQUIRED for the orchestrator to call the data plane (create disk images, sandboxes, etc.)
 resource orchestratorSandboxDataOwner 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(sandboxGroupResourceId, orchestratorUami.id, sandboxGroupDataOwnerRoleId)

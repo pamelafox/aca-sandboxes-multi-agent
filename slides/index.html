@@ -1,0 +1,2444 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>When One Agent Isn't Enough: Orchestrating Secure Parallel Agent Swarms</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&amp;family=Outfit:wght@600;700;800&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reset.css">
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.css">
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/theme/simple.css" id="theme">
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/a11y-light.min.css">
+		<style>
+		:root {
+			--deck-ink: #000;
+			--deck-heading: #000;
+			--deck-page: #fff;
+			--deck-border: #bdbdbd;
+			--deck-muted: #444;
+			--deck-accent: #0b5cad;
+			--deck-accent-bg: #e8f1fb;
+			--deck-sandbox-bg: #eef7ee;
+			--deck-sandbox: #1f6b2a;
+		}
+
+		.reveal {
+			background: var(--deck-page);
+			font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+			color: var(--deck-ink);
+		}
+
+		.reveal .slides section {
+			text-align: left;
+			padding: 28px 48px 0;
+			box-sizing: border-box;
+		}
+
+		.reveal .slides section.stack {
+			padding: 0;
+		}
+
+		.reveal .slides section > h3:first-child,
+		.reveal .slides section > h2:first-child {
+			margin-top: 0;
+		}
+
+		.reveal h1,
+		.reveal h2,
+		.reveal h3 {
+			font-family: inherit;
+			color: var(--deck-heading);
+			background: none;
+			display: block;
+			padding: 6px 0;
+			text-transform: none;
+			letter-spacing: normal;
+			font-weight: 700;
+			-webkit-text-stroke: 0;
+			text-shadow: none;
+		}
+
+		.reveal h1 { font-size: 2.2em; }
+		.reveal h2 { font-size: 1.8em; }
+		.reveal h3 { font-size: 1.3em; }
+
+		.reveal p,
+		.reveal li,
+		.reveal td,
+		.reveal th {
+			font-size: 1em;
+			line-height: 1.45;
+		}
+
+		.reveal a,
+		.reveal a:hover,
+		.reveal a:visited {
+			color: revert;
+			text-decoration: revert;
+		}
+
+		.reveal strong {
+			color: var(--deck-heading);
+		}
+
+		.reveal code {
+			font-size: 0.84em;
+			padding: 0.08em 0.26em;
+			border-radius: 0.3em;
+			background: #f3f3f3;
+		}
+
+		.reveal pre code {
+			padding: 0;
+			background: transparent;
+			font-size: 1em;
+			line-height: 1.45;
+			max-height: 560px;
+		}
+
+		.reveal pre {
+			width: 100%;
+			max-width: none;
+			margin: 0;
+			padding: 12px 16px;
+			box-sizing: border-box;
+			border: 1px solid var(--deck-border);
+			background: #fff;
+			box-shadow: none;
+		}
+
+		.reveal .code-example-link {
+			margin-top: 8px;
+			font-size: 0.5em;
+		}
+
+		.no-code-badge .code-badge {
+			display: none;
+		}
+
+		/* Stack line-highlight step copies (reveal.css 4.1 predates the 4.5 highlight plugin) */
+		.reveal pre code:not(:first-child).fragment {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			padding: 12px 16px;
+			box-sizing: border-box;
+			background: #fff;
+		}
+
+		.reveal pre code.has-highlights tr:not(.highlight-line) {
+			opacity: 0.4;
+		}
+
+		.reveal ul.tight li,
+		.reveal ol.tight li {
+			margin-bottom: 0.35em;
+		}
+
+		.reveal .lead {
+			font-size: 0.95em;
+			max-width: 1100px;
+		}
+
+		/* Sandbox group architecture (SVG from the Sandboxes docs, restyled) */
+		.reveal .sandbox-arch {
+			--diag-card-bg: #fff;
+			--diag-card-stroke: #cfdae3;
+			--diag-text: #10243a;
+			--diag-text-dim: #34495e;
+			--diag-text-muted: #5f6e7b;
+			--diag-group-bg: #f5fbfe;
+			--diag-group-stroke: #087ca7;
+			--diag-brand: #087ca7;
+			--diag-brand-soft: #e3f4fb;
+			--diag-success: #568b12;
+			--diag-success-soft: #e9f6de;
+			--diag-success-text: #3f6b0c;
+			--diag-warning: #c2410c;
+			--diag-warning-soft: #fdece6;
+			--diag-warning-text: #9a3412;
+			--diag-danger: #b42318;
+			--diag-danger-soft: #fdf0ee;
+			--diag-danger-text: #7a1f14;
+			--diag-snippet-bg: #f7fafc;
+		}
+
+		.reveal .sandbox-arch {
+			margin-top: 4px;
+		}
+
+		.reveal .sandbox-arch .arch-diagram {
+			display: block;
+			width: 100%;
+			height: auto;
+			max-width: 100%;
+			margin: 0 auto;
+			font-family: 'Atkinson Hyperlegible', sans-serif;
+		}
+
+		.reveal .sandbox-arch .diagCard { fill: var(--diag-card-bg); stroke: var(--diag-card-stroke); }
+		.reveal .sandbox-arch .diagGroup { fill: var(--diag-group-bg); stroke: var(--diag-group-stroke); }
+		.reveal .sandbox-arch .diagAccentBrand,
+		.reveal .sandbox-arch .diagTextBrand { color: var(--diag-brand); fill: var(--diag-brand); }
+		.reveal .sandbox-arch .diagAccentViolet,
+		.reveal .sandbox-arch .diagTextViolet { color: var(--deck-violet); fill: var(--deck-violet); }
+		.reveal .sandbox-arch .diagArrowViolet { fill: none; stroke: var(--deck-violet); }
+		.reveal .sandbox-arch .diagText { color: var(--diag-text); fill: var(--diag-text); }
+		.reveal .sandbox-arch .diagTextDim { color: var(--diag-text-dim); fill: var(--diag-text-dim); }
+		.reveal .sandbox-arch .diagTextMuted { color: var(--diag-text-muted); fill: var(--diag-text-muted); }
+		.reveal .sandbox-arch .diagArrow { fill: none; stroke: var(--diag-text-muted); }
+		.reveal .sandbox-arch .diagArrowBrand { fill: none; stroke: var(--diag-brand); }
+		.reveal .sandbox-arch .diagPillRunning { color: var(--diag-success); fill: var(--diag-success-soft); stroke: var(--diag-success); }
+		.reveal .sandbox-arch .diagPillSuspended { color: var(--diag-warning); fill: var(--diag-warning-soft); stroke: var(--diag-warning); }
+		.reveal .sandbox-arch .diagPillRunningText { fill: var(--diag-success-text); }
+		.reveal .sandbox-arch .diagPillSuspendedText { fill: var(--diag-warning-text); }
+		.reveal .sandbox-arch .diagMono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+		/* Inside a sandbox: containers vs. sandboxes */
+		.reveal .vstack { display: flex; flex-direction: column; gap: 8px; }
+		.reveal .vcols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+		.reveal .vcol { display: flex; flex-direction: column; gap: 6px; }
+		.reveal .vcell,
+		.reveal .vrow {
+			padding: 10px 8px;
+			border-radius: 8px;
+			font-size: 0.5em;
+			line-height: 1.25;
+			text-align: center;
+			color: var(--deck-heading);
+		}
+		.reveal .v-code { background: #e3f3d3; border: 1px solid #a9cf7c; }
+		.reveal .v-image { background: #d9eff9; border: 1px solid #87c4df; }
+		.reveal .v-kernel { background: #e8e1f8; border: 1px solid #b5a3e6; font-weight: 700; }
+		.reveal .v-hyper { background: #cfe9e6; border: 2px solid #2f8f86; }
+		.reveal .v-shared { background: #fde9cf; border: 2px solid #d9822b; }
+		.reveal .v-hw { background: #eceff2; border: 1px solid #c3ccd4; color: var(--deck-muted); }
+
+		.reveal .vcompare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 16px; }
+		.reveal .vpanel {
+			padding: 14px 16px;
+			border: 1px solid var(--deck-border);
+			border-radius: 14px;
+			background: #fff;
+		}
+		.reveal .vpanel-sandbox { border: 2px solid var(--deck-sandbox); }
+		.reveal .vtitle {
+			margin: 0 0 10px;
+			font-family: 'Outfit', sans-serif;
+			font-size: 0.7em;
+			font-weight: 700;
+			color: var(--deck-heading);
+		}
+
+		.reveal .vcompare .vcell,
+		.reveal .vcompare .vrow { padding: 7px 6px; }
+		.reveal .vcompare .vstack { gap: 6px; }
+		.reveal .vcompare .vcol { gap: 5px; }
+
+		/* Fixed row heights so both panels line up; the shared kernel spans the kernel + hypervisor rows */
+		.reveal .vcompare .vcell,
+		.reveal .vcompare .vrow {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			box-sizing: border-box;
+			height: 40px;
+			padding: 0 6px;
+		}
+		.reveal .vcompare .v-kernel { height: 40px; }
+		.reveal .vcompare .v-shared { height: 111px; }
+
+		/* Bring your agent image: 4-step flow */
+		.reveal .img-flow { display: flex; flex-direction: column; gap: 10px; }
+		.reveal .flow-group {
+			margin: 4px 0 -2px;
+			font-family: 'Space Mono', monospace;
+			font-size: 0.45em;
+			font-weight: 700;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			color: var(--deck-muted);
+		}
+		.reveal .flow-group-sandbox { color: var(--deck-sandbox); }
+		.reveal .flow-step {
+			position: relative;
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+			padding: 10px 14px 10px 26px;
+			border: 1px solid var(--deck-border);
+			border-radius: 12px;
+			background: #fff;
+			font-size: 0.56em;
+			line-height: 1.25;
+		}
+		.reveal .flow-step code { align-self: flex-start; font-size: 0.82em; white-space: nowrap; }
+		.reveal .flow-step-sandbox { border: 2px solid var(--deck-sandbox); background: var(--deck-sandbox-bg); }
+		.reveal .flow-num {
+			position: absolute;
+			top: 50%;
+			left: -12px;
+			width: 24px;
+			height: 24px;
+			margin-top: -12px;
+			border-radius: 50%;
+			background: var(--deck-accent);
+			color: #fff;
+			font-size: 0.8em;
+			font-weight: 700;
+			line-height: 24px;
+			text-align: center;
+		}
+		.reveal .flow-step-sandbox .flow-num { background: var(--deck-sandbox); }
+
+		/* Each sandbox column is one microVM: dashed outline around code, image, and guest kernel */
+		.reveal .vcompare .vmicro {
+			padding: 5px;
+			margin: -6px -6px 0;
+			border: 2px dashed var(--deck-sandbox);
+			border-radius: 10px;
+		}
+		.reveal .vcompare .v-hyper { height: 58px; line-height: 1.3; }
+
+		/* Sandbox configuration: code with per-parameter annotations */
+		.reveal .cfg-map {
+			display: grid;
+			grid-template-columns: max-content 32px max-content;
+			align-items: center;
+			row-gap: 2px;
+			margin-top: 8px;
+			padding: 16px 20px;
+			border-left: 6px solid var(--deck-accent);
+			border-radius: 10px;
+			background: #f5f9fc;
+		}
+		.reveal .cfg-row { display: contents; }
+		.reveal .cfg-code {
+			grid-column: 1;
+			padding: 0;
+			background: none;
+			font-size: 0.56em;
+			line-height: 1.9;
+			color: #10243a;
+		}
+		.reveal .cfg-arrow { grid-column: 2; text-align: center; font-size: 0.6em; color: var(--deck-muted); }
+		.reveal .cfg-what { grid-column: 3; font-size: 0.58em; font-weight: 700; color: var(--deck-accent); }
+
+		/* Network egress: code + request path */
+		.reveal .egress-cols { gap: 26px; align-items: flex-start; }
+		.reveal .egress-code { flex: 1.05; min-width: 0; }
+		.reveal .egress-flow { flex: 0.95; display: flex; flex-direction: column; align-items: stretch; }
+		.reveal .eg-box { padding: 10px 14px; border-radius: 12px; background: #fff; }
+		.reveal .eg-box p { margin: 0; font-size: 0.5em; line-height: 1.35; }
+		.reveal .eg-box .eg-title { font-family: 'Outfit', sans-serif; font-size: 0.6em; font-weight: 700; color: var(--deck-heading); margin-bottom: 4px; }
+		.reveal .eg-sandbox { border: 2px dashed var(--deck-sandbox); background: var(--deck-sandbox-bg); }
+		.reveal .eg-proxy { border: 2px solid var(--deck-violet); background: #f6f2ff; }
+		.reveal .eg-outside { margin-left: 6px; padding: 2px 8px; border-radius: 999px; background: var(--deck-violet); color: #fff; font-family: 'Atkinson Hyperlegible', sans-serif; font-size: 0.7em; vertical-align: middle; }
+		.reveal .eg-proxy ol { margin: 4px 0 6px 1.1em; padding: 0; }
+		.reveal .eg-proxy li { margin: 0 0 3px; font-size: 0.48em; line-height: 1.3; }
+		.reveal .eg-note { color: var(--deck-muted); }
+		.reveal .eg-link { display: flex; align-items: center; gap: 10px; margin: 4px 0 4px 18px; }
+		.reveal .eg-arrow { font-size: 0.7em; color: var(--deck-violet); }
+		.reveal .eg-tag { font-size: 0.44em; font-weight: 700; color: var(--deck-violet); }
+		.reveal .eg-out { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+		.reveal .eg-result { padding: 4px 12px; border-radius: 8px; font-size: 0.46em; font-weight: 700; }
+		.reveal .eg-allow { background: var(--deck-sandbox-bg); border: 1px solid var(--deck-sandbox); color: #3f6b0c; }
+		.reveal .eg-deny { background: #fdf0ee; border: 1px solid #b42318; color: #b42318; }
+
+		.reveal img.demo-shot {
+			display: block;
+			width: 100%;
+			height: auto;
+			margin: 0 auto;
+			border: 1px solid var(--deck-border);
+			border-radius: 10px;
+			box-shadow: 0 10px 28px rgba(39, 94, 128, 0.14);
+		}
+
+		/* Network ingress: reuse the egress flow styles in blue */
+		.reveal .ig-caller { border: 1px solid var(--deck-border); }
+		.reveal .ig-proxy { border: 2px solid var(--deck-accent); background: #eef8fc; }
+		.reveal .ig-proxy ol { margin: 4px 0 2px 1.1em; padding: 0; }
+		.reveal .ig-proxy li { margin: 0 0 3px; font-size: 0.48em; line-height: 1.3; }
+		.reveal .ig-outside { background: var(--deck-accent); }
+		.reveal .ig-arrow, .reveal .ig-tag { color: var(--deck-accent); }
+		.reveal .ig-proc { margin-left: 8px; font-family: 'Atkinson Hyperlegible', sans-serif; font-size: 0.8em; font-weight: 400; color: var(--deck-ink); }
+
+		.reveal .port-opts { margin: 2px 0 0 1em; padding: 0; }
+		.reveal .port-opts li { margin: 0 0 3px; font-size: 0.48em; line-height: 1.3; }
+
+		.reveal .port-cols .eg-box { padding: 8px 14px; }
+		.reveal .port-link { margin: 0 0 0 18px; line-height: 1; }
+
+		.reveal .ig-steps pre { margin: 0 0 30px; box-shadow: none; }
+		.reveal .ig-step {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			margin: 0 0 8px;
+			font-size: 0.56em;
+			font-weight: 700;
+			color: var(--deck-heading);
+		}
+		.reveal .ig-num {
+			flex: 0 0 auto;
+			width: 26px;
+			height: 26px;
+			border-radius: 50%;
+			background: var(--deck-accent);
+			color: #fff;
+			font-size: 0.85em;
+			line-height: 26px;
+			text-align: center;
+		}
+
+		/* Ingress: IP access control / auth */
+		.reveal .ipac { flex: 0.95; display: flex; flex-direction: column; gap: 14px; }
+		.reveal .ipac-zone { padding: 12px 16px; border-radius: 12px; }
+		.reveal .ipac-allow { border: 2px dashed var(--deck-sandbox); background: var(--deck-sandbox-bg); }
+		.reveal .ipac-deny { border: 2px dashed #c9a19b; background: #fbf4f2; }
+		.reveal .ipac-label { margin: 0; font-size: 0.52em; font-weight: 700; color: var(--deck-heading); }
+		.reveal .ipac-sub { margin: 2px 0 8px; font-size: 0.44em; font-weight: 400; color: var(--deck-muted); }
+		.reveal .ipac-row { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+		.reveal .ipac-ip { min-width: 150px; padding: 4px 10px; border-radius: 8px; background: #fff; border: 1px solid var(--deck-border); font-size: 0.5em; }
+		.reveal .ipac-arrow { font-size: 0.6em; color: var(--deck-muted); }
+		.reveal .ipac .eg-result, .reveal .auth-panel .eg-result { flex: 0 0 auto; }
+		.reveal .auth-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+		.reveal .auth-panel { padding: 14px 18px; border: 1px solid var(--deck-border); border-radius: 14px; background: #fff; }
+		.reveal .auth-entra { border: 2px solid var(--deck-accent); }
+		.reveal .auth-title { margin: 0 0 8px; font-family: 'Outfit', sans-serif; font-size: 0.7em; font-weight: 700; color: var(--deck-heading); }
+		.reveal .auth-panel pre { margin: 0 0 10px; box-shadow: none; }
+		.reveal .auth-who { flex: 1; font-size: 0.52em; }
+		.reveal .auth-foot { margin: 12px 0 0; font-size: 0.46em; color: var(--deck-muted); }
+
+		/* Create your first sandbox */
+		.reveal .portal-pair {
+			display: flex;
+			justify-content: center;
+			align-items: flex-start;
+			gap: 20px;
+		}
+
+		.reveal img.portal-shot {
+			display: block;
+			height: 447px;
+			width: auto;
+			max-width: 100%;
+			margin: 0;
+			border: 1px solid var(--deck-border);
+			border-radius: 10px;
+			box-shadow: 0 10px 28px rgba(39, 94, 128, 0.14);
+		}
+
+		.reveal .portal-caption {
+			margin: 10px 0 0;
+			font-size: 0.5em;
+			color: var(--deck-muted);
+		}
+
+		/* Create a sandbox programmatically */
+		.reveal .prog-grid {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 16px;
+		}
+
+		.reveal .prog-box {
+			display: flex;
+			flex-direction: column;
+			min-width: 0;
+			padding: 12px 16px 10px;
+			border: 1px solid var(--deck-border);
+			border-radius: 12px;
+			background: #fff;
+			box-shadow: 0 8px 20px rgba(39, 94, 128, 0.1);
+		}
+
+		.reveal .prog-head {
+			display: flex;
+			align-items: baseline;
+			justify-content: space-between;
+			gap: 12px;
+			margin-bottom: 8px;
+		}
+
+		.reveal .prog-title {
+			margin: 0;
+			font-family: 'Outfit', sans-serif;
+			font-size: 0.7em;
+			font-weight: 700;
+			color: var(--deck-heading);
+		}
+
+		.reveal .prog-link {
+			font-size: 0.45em;
+			white-space: nowrap;
+		}
+
+		.reveal .prog-box pre {
+			flex: 1;
+			margin: 0;
+			box-shadow: none;
+		}
+
+		.reveal .prog-grid.group-code pre.code-tiny code {
+			font-size: 0.6em;
+		}
+
+		/* What is a sandbox? */
+		.reveal .zoom-frame {
+			padding: 16px 20px;
+			border: 2px solid var(--deck-sandbox);
+			border-radius: 16px;
+			background: var(--deck-sandbox-bg);
+		}
+
+		.reveal .isolation-diagram {
+			display: block;
+			width: auto;
+			height: 340px;
+			max-width: 100%;
+			margin: 0 auto;
+		}
+
+		.reveal .trait-row {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 16px;
+			margin-top: 14px;
+		}
+
+		.reveal .trait {
+			padding: 8px 14px 10px;
+			border-left: 6px solid var(--deck-accent);
+			border-radius: 8px;
+			background: rgba(255, 255, 255, 0.85);
+		}
+
+		.reveal .trait-isolated { border-left-color: var(--deck-sandbox); }
+		.reveal .trait-bounded { border-left-color: var(--deck-violet); }
+
+		.reveal .trait h4 {
+			margin: 0 0 2px;
+			font-family: 'Outfit', sans-serif;
+			font-size: 0.62em;
+			font-weight: 700;
+			letter-spacing: -0.01em;
+			text-transform: none;
+			color: var(--deck-heading);
+		}
+
+		.reveal .trait p {
+			margin: 0;
+			font-size: 0.46em;
+			line-height: 1.35;
+		}
+
+		.reveal section.heading-only {
+			display: flex !important;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			text-align: center;
+			height: 100%;
+			min-height: 720px;
+			padding: 0 72px;
+			box-sizing: border-box;
+		}
+
+		.reveal section.heading-only h1,
+		.reveal section.heading-only h2,
+		.reveal section.heading-only h3,
+		.reveal section.heading-only p,
+		.reveal section.heading-only li {
+			color: #000;
+		}
+
+		.reveal section.heading-only h1::after,
+		.reveal section.heading-only h2::after,
+		.reveal section.heading-only h3::after {
+			content: "";
+			display: block;
+			width: 80px;
+			height: 6px;
+			border-radius: 999px;
+			margin: 18px auto 0;
+			background: #000;
+		}
+
+		/* Layout helpers */
+		.reveal .cols {
+			display: flex;
+			gap: 28px;
+			align-items: flex-start;
+		}
+
+		.reveal .cols > * {
+			flex: 1 1 0;
+			min-width: 0;
+		}
+
+		.reveal .small { font-size: 0.6em; }
+		.reveal .smaller { font-size: 0.5em; }
+
+		.reveal .small li,
+		.reveal .small p,
+		.reveal .small td,
+		.reveal .small th,
+		.reveal .smaller li,
+		.reveal .smaller p,
+		.reveal .smaller td,
+		.reveal .smaller th {
+			font-size: 1em;
+		}
+
+		.reveal .muted {
+			color: var(--deck-muted);
+		}
+
+		.reveal .label {
+			font-size: 0.6em;
+			font-weight: 700;
+			letter-spacing: 0.04em;
+			text-transform: uppercase;
+			color: var(--deck-muted);
+			margin: 0 0 6px;
+		}
+
+		.reveal pre.code-small code,
+		.reveal .code-small pre code { font-size: 0.8em; }
+		.reveal pre.code-tiny code,
+		.reveal .code-tiny pre code { font-size: 0.68em; }
+
+		.reveal table {
+			border-collapse: collapse;
+		}
+
+		.reveal table th,
+		.reveal table td {
+			border-bottom: 1px solid var(--deck-border);
+			padding: 6px 12px;
+			vertical-align: top;
+		}
+
+		.reveal .callout {
+			border-left: 6px solid var(--deck-accent);
+			background: var(--deck-accent-bg);
+			padding: 10px 18px;
+			margin-top: 18px;
+			font-size: 0.64em;
+		}
+
+		.reveal .box {
+			border: 2px solid #333;
+			border-radius: 8px;
+			padding: 8px 12px;
+			background: #fff;
+			font-size: 0.62em;
+			line-height: 1.3;
+			text-align: center;
+		}
+
+		.reveal .box.sandbox {
+			border-color: var(--deck-sandbox);
+			background: var(--deck-sandbox-bg);
+		}
+
+		.reveal .box.app {
+			border-color: var(--deck-accent);
+			background: var(--deck-accent-bg);
+		}
+
+		.reveal .box small {
+			display: block;
+			font-size: 0.85em;
+			color: var(--deck-muted);
+		}
+
+		.reveal .zone {
+			border: 2px dashed #555;
+			border-radius: 12px;
+			padding: 12px;
+			position: relative;
+		}
+
+		.reveal .zone-title {
+			font-size: 0.55em;
+			font-weight: 700;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			margin-bottom: 8px;
+		}
+
+		.reveal .arrow {
+			font-size: 0.6em;
+			text-align: center;
+			color: var(--deck-muted);
+		}
+
+		.reveal .placeholder {
+			border: 3px dashed #777;
+			border-radius: 12px;
+			height: 500px;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			text-align: center;
+			background: #fafafa;
+			padding: 24px;
+			box-sizing: border-box;
+		}
+
+		.reveal .placeholder p {
+			font-size: 0.7em;
+			max-width: 900px;
+			margin: 6px 0;
+		}
+
+		.reveal .grid5 {
+			display: grid;
+			grid-template-columns: repeat(5, 1fr);
+			gap: 14px;
+		}
+
+		.reveal .grid3 {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 18px;
+		}
+
+		.reveal .card {
+			border: 2px solid #333;
+			border-radius: 10px;
+			padding: 12px 14px;
+			font-size: 0.62em;
+			line-height: 1.35;
+		}
+
+		.reveal .card h4 {
+			font-size: 1.1em;
+			font-weight: 700;
+			margin: 0 0 6px;
+			text-transform: none;
+			font-family: inherit;
+		}
+
+		.reveal .chip {
+			display: inline-block;
+			border: 2px solid #333;
+			border-radius: 999px;
+			padding: 4px 14px;
+			margin: 4px 6px 4px 0;
+			font-size: 0.58em;
+			font-weight: 600;
+		}
+
+		.reveal .r-stack {
+			place-items: start stretch;
+		}
+
+		.reveal .r-stack > * {
+			width: 100%;
+			min-width: 0;
+			margin: 0;
+		}
+
+		/* Swarm architecture diagram */
+		.reveal .arch {
+			display: grid;
+			grid-template-columns: 1fr 190px 1fr;
+			grid-template-rows: 44px repeat(5, auto);
+			row-gap: 10px;
+			margin: 0 auto;
+			max-width: 1080px;
+		}
+
+		.reveal .arch .zone-outline {
+			grid-row: 1 / 7;
+			border: 2px dashed #555;
+			border-radius: 12px;
+			margin: 0 0 -10px;
+		}
+
+		.reveal .arch .zone-outline.left { grid-column: 1; }
+		.reveal .arch .zone-outline.right { grid-column: 3; }
+
+		.reveal .arch .zone-title {
+			grid-row: 1;
+			align-self: start;
+			padding: 12px 16px 0;
+			margin: 0;
+		}
+
+		.reveal .arch .cell {
+			margin: 0 16px;
+		}
+
+		.reveal .arch .left { grid-column: 1; }
+		.reveal .arch .mid { grid-column: 2; align-self: center; }
+		.reveal .arch .right { grid-column: 3; }
+		.reveal .arch .r2 { grid-row: 2; }
+		.reveal .arch .r3 { grid-row: 3; }
+		.reveal .arch .r4 { grid-row: 4; }
+		.reveal .arch .r5 { grid-row: 5; }
+		.reveal .arch .r6 { grid-row: 6; }
+
+		.reveal .arch-endpoint {
+			text-align: center;
+			font-size: 0.62em;
+			font-weight: 700;
+			margin: 4px 0;
+		}
+
+		.reveal .product-logos {
+			display: grid;
+			grid-template-columns: repeat(5, 1fr);
+			gap: 14px;
+			margin: 10px 0 18px;
+			padding: 0;
+			list-style: none;
+		}
+
+		.reveal .product-logos li {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 10px;
+			margin: 0;
+			padding: 14px 10px 12px;
+			border: 1px solid rgba(24, 113, 171, 0.22);
+			border-radius: 12px;
+			background: #fff;
+			box-shadow: 0 8px 20px rgba(39, 94, 128, 0.1);
+			font-size: 0.5em;
+			font-weight: 700;
+			line-height: 1.25;
+			text-align: center;
+		}
+
+		.reveal .product-logos img {
+			height: 64px;
+			width: auto;
+			margin: 0;
+		}
+
+
+		/* Lifecycle diagram */
+		.reveal .lifecycle-svg {
+			display: block;
+			width: 100%;
+			height: auto;
+			margin: 4px 0 0;
+		}
+
+		.reveal .disabled-state {
+			display: flex;
+			align-items: center;
+			gap: 16px;
+			max-width: 760px;
+			margin: 18px auto 0;
+			padding: 14px 22px 14px 18px;
+			box-sizing: border-box;
+			border: 1px solid #d3dbe1;
+			border-left: 9px solid #8793a0;
+			border-radius: 12px;
+			background: #eef1f4;
+			box-shadow: 0 6px 16px rgba(39, 94, 128, 0.1);
+		}
+
+		.reveal .disabled-state svg {
+			flex: 0 0 auto;
+		}
+
+		.reveal .disabled-state p {
+			margin: 0;
+			font-size: 0.66em;
+			line-height: 1.35;
+		}
+
+		.reveal .layers .layer {
+			border: 2px solid #333;
+			border-bottom-width: 0;
+			padding: 10px 16px;
+			display: flex;
+			justify-content: space-between;
+			font-size: 0.66em;
+			background: var(--deck-sandbox-bg);
+		}
+
+		.reveal .layers .layer .muted {
+			white-space: nowrap;
+			margin-left: 12px;
+		}
+
+		.reveal .layers .layer.boundary {
+			border: 4px solid #000;
+			background: #fff;
+			font-weight: 700;
+			display: block;
+		}
+
+		/* Secure swarm control-room theme */
+		:root {
+			--deck-ink: #10243a;
+			--deck-heading: #09284a;
+			--deck-page: #edf8ff;
+			--deck-panel: rgba(255, 255, 255, 0.94);
+			--deck-panel-strong: #ffffff;
+			--deck-border: rgba(24, 113, 171, 0.25);
+			--deck-muted: #49677d;
+			--deck-accent: #087ca7;
+			--deck-accent-bg: rgba(44, 185, 225, 0.12);
+			--deck-sandbox-bg: rgba(154, 213, 52, 0.14);
+			--deck-sandbox: #568b12;
+			--deck-coral: #d94f38;
+			--deck-violet: #7657c9;
+			--r-link-color: #075fa1;
+			--r-link-color-hover: #365f0b;
+		}
+
+		html,
+		body {
+			background: var(--deck-page);
+		}
+
+		.reveal {
+			background:
+				url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='360'%3E%3Cpath d='M40 50L150 90L260 40L380 80L450 170L330 190L210 200L90 210ZM150 90L230 120L260 40M230 120L210 200M230 120L330 190M380 80L330 190M90 210L160 310L30 320M160 310L290 300L210 200M290 300L410 300L450 170M330 190L410 300' fill='none' stroke='%23087ca7' stroke-opacity='.13' stroke-width='1.5'/%3E%3Cg fill='%23087ca7' fill-opacity='.28'%3E%3Ccircle cx='40' cy='50' r='4'/%3E%3Ccircle cx='150' cy='90' r='5'/%3E%3Ccircle cx='260' cy='40' r='3.5'/%3E%3Ccircle cx='230' cy='120' r='6'/%3E%3Ccircle cx='90' cy='210' r='4'/%3E%3Ccircle cx='290' cy='300' r='4.5'/%3E%3C/g%3E%3Cg fill='%23568b12' fill-opacity='.32'%3E%3Ccircle cx='380' cy='80' r='4.5'/%3E%3Ccircle cx='160' cy='310' r='4'/%3E%3Ccircle cx='330' cy='190' r='5'/%3E%3C/g%3E%3Cg fill='%237657c9' fill-opacity='.3'%3E%3Ccircle cx='450' cy='170' r='4'/%3E%3Ccircle cx='30' cy='320' r='3.5'/%3E%3C/g%3E%3Cg fill='%23d94f38' fill-opacity='.26'%3E%3Ccircle cx='210' cy='200' r='4'/%3E%3Ccircle cx='410' cy='300' r='3.5'/%3E%3C/g%3E%3C/svg%3E"),
+				radial-gradient(circle at 12% 10%, rgba(82, 178, 232, 0.24), transparent 34%),
+				radial-gradient(circle at 90% 90%, rgba(154, 213, 52, 0.18), transparent 34%),
+				linear-gradient(135deg, #f9fcff 0%, #f0f8ff 55%, #f4fbef 100%);
+			background-size: 480px 360px, auto, auto, auto;
+			font-family: 'Atkinson Hyperlegible', sans-serif;
+			color: var(--deck-ink);
+		}
+
+		.reveal::after {
+			content: "";
+			position: fixed;
+			z-index: 0;
+			pointer-events: none;
+			right: 24px;
+			bottom: 20px;
+			width: 150px;
+			height: 46px;
+			opacity: 0.42;
+			background:
+				radial-gradient(circle, var(--deck-accent) 0 4px, transparent 5px) 0 50% / 38px 38px repeat-x;
+		}
+
+		.reveal .slides {
+			z-index: 1;
+		}
+
+		.reveal .slides > section,
+		.reveal .slides > section > section {
+			top: 0;
+			left: 0;
+		}
+
+		.reveal .slides section:not(.stack):not(.heading-only)::before {
+			content: "";
+			position: absolute;
+			inset: 18px 28px 28px;
+			z-index: -1;
+			border: 1px solid var(--deck-border);
+			border-radius: 18px;
+			background:
+				linear-gradient(135deg, rgba(44, 185, 225, 0.08), transparent 28%),
+				var(--deck-panel);
+			box-shadow: 0 22px 60px rgba(39, 94, 128, 0.15);
+		}
+
+		.reveal .slides section {
+			padding: 36px 52px 40px;
+		}
+
+		.reveal .slides > section.fit-sm {
+			font-size: 0.76em;
+		}
+
+		.reveal .slides > section.fit-md {
+			font-size: 0.86em;
+		}
+
+		.reveal h1,
+		.reveal h2,
+		.reveal h3 {
+			color: var(--deck-heading);
+		}
+
+		.reveal h3 {
+			position: relative;
+			margin-bottom: 0.7em;
+		}
+
+		.reveal h3::after {
+			content: "";
+			display: block;
+			width: 112px;
+			height: 5px;
+			margin-top: 10px;
+			border-radius: 999px;
+			background: linear-gradient(90deg, var(--deck-accent), var(--deck-sandbox));
+			box-shadow: 0 0 18px rgba(71, 215, 255, 0.48);
+		}
+
+		.reveal strong {
+			color: var(--deck-heading);
+		}
+
+		.reveal a,
+		.reveal a:visited {
+			color: var(--r-link-color);
+			text-decoration-color: rgba(114, 221, 255, 0.55);
+		}
+
+		.reveal a:hover {
+			color: var(--r-link-color-hover);
+		}
+
+		.reveal code {
+			color: #075274;
+			background: rgba(8, 124, 167, 0.1);
+		}
+
+		.reveal pre {
+			border: 1px solid rgba(112, 211, 255, 0.35);
+			border-left: 6px solid var(--deck-accent);
+			border-radius: 10px;
+			background: #f5f9fc;
+			box-shadow: 0 14px 32px rgba(0, 0, 0, 0.24);
+		}
+
+		.reveal pre code,
+		.reveal pre code:not(:first-child).fragment {
+			background: #f5f9fc;
+		}
+
+		.reveal .label,
+		.reveal .zone-title {
+			font-family: 'Space Mono', monospace;
+			color: var(--deck-accent);
+		}
+
+		.reveal .label::before {
+			content: "// ";
+			color: var(--deck-sandbox);
+		}
+
+		.reveal .callout {
+			border: 1px solid rgba(71, 215, 255, 0.4);
+			border-left: 6px solid var(--deck-accent);
+			border-radius: 0 12px 12px 0;
+			background: linear-gradient(90deg, rgba(44, 185, 225, 0.16), rgba(44, 185, 225, 0.05));
+		}
+
+		.reveal .box,
+		.reveal .card,
+		.reveal .chip {
+			border-color: rgba(24, 113, 171, 0.34);
+			background: rgba(255, 255, 255, 0.9);
+			color: var(--deck-ink);
+			box-shadow: 0 8px 22px rgba(39, 94, 128, 0.12);
+		}
+
+		.reveal .card {
+			position: relative;
+			overflow: hidden;
+			border-radius: 12px;
+		}
+
+		.reveal .card::before {
+			content: "";
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 4px;
+			background: linear-gradient(90deg, var(--deck-accent), var(--deck-violet));
+		}
+
+		.reveal .card:nth-child(2n)::before {
+			background: linear-gradient(90deg, var(--deck-sandbox), var(--deck-accent));
+		}
+
+		.reveal .card:nth-child(3n)::before {
+			background: linear-gradient(90deg, var(--deck-coral), var(--deck-violet));
+		}
+
+		.reveal .card h4 {
+			color: var(--deck-heading);
+		}
+
+		.reveal h1,
+		.reveal h2,
+		.reveal h3,
+		.reveal .card h4 {
+			font-family: 'Outfit', sans-serif;
+			letter-spacing: -0.01em;
+		}
+
+		.reveal .box.sandbox {
+			border-color: var(--deck-sandbox);
+			background: var(--deck-sandbox-bg);
+			box-shadow: 0 0 0 1px rgba(86, 139, 18, 0.1), 0 10px 24px rgba(39, 94, 128, 0.12);
+		}
+
+		.reveal .box.app {
+			border-color: var(--deck-accent);
+			background: var(--deck-accent-bg);
+			box-shadow: 0 0 0 1px rgba(8, 124, 167, 0.1), 0 10px 24px rgba(39, 94, 128, 0.12);
+		}
+
+		.reveal .box small {
+			color: var(--deck-muted);
+		}
+
+		.reveal .zone,
+		.reveal .arch .zone-outline {
+			border-color: rgba(8, 124, 167, 0.4);
+			background: rgba(232, 247, 255, 0.45);
+		}
+
+		.reveal .placeholder {
+			border-color: rgba(112, 211, 255, 0.5);
+			background:
+				linear-gradient(135deg, rgba(44, 185, 225, 0.09), rgba(183, 156, 255, 0.09)),
+				rgba(255, 255, 255, 0.72);
+		}
+
+		.reveal table {
+			overflow: hidden;
+			border: 1px solid var(--deck-border);
+			border-radius: 10px;
+			background: rgba(255, 255, 255, 0.76);
+		}
+
+		.reveal table th {
+			color: var(--deck-heading);
+			background: rgba(44, 185, 225, 0.15);
+			font-family: 'Space Mono', monospace;
+			font-size: 0.82em;
+		}
+
+		.reveal table th,
+		.reveal table td {
+			border-color: rgba(112, 211, 255, 0.2);
+		}
+
+		.reveal table tbody tr:nth-child(even) {
+			background: rgba(112, 211, 255, 0.045);
+		}
+
+		.reveal .layers .layer {
+			border-color: rgba(151, 194, 220, 0.58);
+			background: rgba(184, 246, 92, 0.1);
+		}
+
+		.reveal .layers .layer.boundary {
+			border-color: var(--deck-accent);
+			background: var(--deck-panel-strong);
+		}
+
+		.reveal section.heading-only {
+			overflow: hidden;
+			background: transparent;
+		}
+
+		.reveal section.heading-only::before,
+		.reveal section.heading-only::after {
+			content: "";
+			position: absolute;
+			width: 330px;
+			height: 330px;
+			border: 2px solid rgba(71, 215, 255, 0.18);
+			transform: rotate(45deg);
+			pointer-events: none;
+		}
+
+		.reveal section.heading-only::before {
+			top: -230px;
+			right: -90px;
+			box-shadow: 0 0 0 34px rgba(71, 215, 255, 0.025), 0 0 0 68px rgba(71, 215, 255, 0.018);
+		}
+
+		.reveal section.heading-only::after {
+			bottom: -250px;
+			left: -90px;
+			border-color: rgba(184, 246, 92, 0.16);
+			box-shadow: 0 0 0 34px rgba(184, 246, 92, 0.022), 0 0 0 68px rgba(184, 246, 92, 0.016);
+		}
+
+		.reveal section.heading-only h1,
+		.reveal section.heading-only h2,
+		.reveal section.heading-only h3,
+		.reveal section.heading-only p,
+		.reveal section.heading-only li {
+			position: relative;
+			z-index: 1;
+			color: var(--deck-heading);
+		}
+
+		.reveal section.heading-only h1::after,
+		.reveal section.heading-only h2::after,
+		.reveal section.heading-only h3::after {
+			width: 112px;
+			height: 6px;
+			background: linear-gradient(90deg, var(--deck-accent), var(--deck-sandbox));
+			box-shadow: 0 0 18px rgba(71, 215, 255, 0.5);
+		}
+
+		.reveal .progress {
+			height: 5px;
+			color: var(--deck-accent);
+		}
+
+		.reveal .slide-number {
+			right: auto;
+			left: 26px;
+			bottom: 20px;
+			padding: 4px 9px;
+			border: 1px solid var(--deck-border);
+			border-radius: 999px;
+			background: rgba(255, 255, 255, 0.84);
+			color: var(--deck-muted);
+			font-family: 'Space Mono', monospace;
+		}
+
+		.reveal .controls {
+			color: var(--deck-accent);
+		}
+
+		.reveal .controls button {
+			filter: drop-shadow(0 0 8px rgba(71, 215, 255, 0.35));
+		}
+		</style>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+
+				<!-- 1 -->
+				<section class="heading-only">
+					<p style="font-size: 0.8em;">Azure Container Apps Sandboxes</p>
+					<h1 style="font-size: 1.8em;">When One Agent Isn't Enough</h1>
+					<p style="font-size: 1em; margin-top: 4px;"><strong>Orchestrating Secure Parallel Agent Swarms</strong></p>
+					<div style="display: flex; gap: 14px; justify-content: center; margin: 22px 0 6px;" aria-label="Diagram: several isolated sandboxes side by side">
+						<div class="box sandbox" style="width: 130px;">Sandbox 1<small>research</small></div>
+						<div class="box sandbox" style="width: 130px;">Sandbox 2<small>research</small></div>
+						<div class="box sandbox" style="width: 130px;">Sandbox 3<small>research</small></div>
+						<div class="box sandbox" style="width: 130px;">Sandbox 4<small>research</small></div>
+					</div>
+					<p style="font-size: 0.7em; max-width: 860px; margin-top: 12px;">From a working swarm to the infrastructure and code behind it.</p>
+					<p style="margin-top: 22px; font-size: 1.05em;"><strong>Pamela Fox</strong></p>
+					<p style="font-size: 0.65em;">Python Cloud Advocate · Microsoft · <a href="https://pamelafox.org" target="_blank">pamelafox.org</a></p>
+					<aside class="notes">
+						Agents need somewhere safe to act. This talk starts with a working research swarm, then goes underneath it:
+						the execution environment, the security boundaries, the code, and the telemetry.
+					</aside>
+				</section>
+
+				<!-- 2 -->
+				<section class="fit-sm">
+					<h3>One question, several independent research tasks</h3>
+					<div class="callout" style="font-size: 0.72em; margin-top: 0;">
+						“Optimal tree to plant for a native California garden for a lawn that faces north, has tough soil, and is near oak tree roots.
+						Tree can't grow more than 15 feet tall. Tree is NOT shaded.”
+					</div>
+					<p class="label" style="margin-top: 22px;">Example decomposition</p>
+					<div class="grid3 fragment" style="grid-template-columns: repeat(4, 1fr);">
+						<div class="card">Which California native trees stay under 15 feet?</div>
+						<div class="card">Which tolerate tough, compacted soil?</div>
+						<div class="card">What can grow safely near oak roots?</div>
+						<div class="card">Which thrive in full sun on a north-facing lawn?</div>
+					</div>
+					<ul class="tight fragment" style="margin-top: 26px;">
+						<li>Fan-out makes the answer faster and more thorough.</li>
+						<li>But now <strong>several agents need compute, permissions, and cleanup at once</strong>.</li>
+					</ul>
+					<aside class="notes">
+						Preview the gardening question. The sub-questions shown are an illustrative decomposition; the live decomposer
+						may split it differently (the sample returns 4-6 questions). The interesting part isn't the fan-out itself,
+						it's that each branch needs somewhere to run.
+					</aside>
+				</section>
+
+				<!-- 3 -->
+				<section>
+					<h3>Demo: the research swarm</h3>
+					<div class="placeholder" role="img" aria-label="Screenshot placeholder: swarm UI with the gardening question and parallel researcher progress">
+						<p><strong>Screenshot placeholder</strong></p>
+						<p>Swarm UI with the gardening question submitted and parallel researcher progress visible.</p>
+						<p class="muted">Capture from the deployed orchestrator; save as <code>images/demo-swarm.png</code>.</p>
+					</div>
+					<aside class="notes">
+						Switch to the live app. Submit the gardening question early and narrate while it runs: decomposition, researchers provisioning,
+						researching, done. Briefly open portal.azure.com and show the live sandboxes in the sandbox group while they exist.
+						Inspect the final report. Backup: have a completed report and a captured sandbox list ready rather than waiting silently.
+					</aside>
+				</section>
+
+				<!-- 4 -->
+				<section>
+					<h3>Swarm architecture</h3>
+					<div class="arch-endpoint" style="margin-bottom: 8px;">User question ↓</div>
+					<div class="arch" role="img" aria-label="Orchestrator running in a container with a decomposer, three researcher agents, and a collector and synthesizer. Each researcher agent makes a tool call to its own sandbox, which runs the research process and returns a result.">
+						<div class="zone-outline left fragment" data-fragment-index="1"></div>
+						<div class="zone-outline right fragment" data-fragment-index="1"></div>
+						<div class="zone-title left fragment" data-fragment-index="1">Container · orchestrator</div>
+						<div class="zone-title right fragment" data-fragment-index="1">Sandboxes</div>
+
+						<div class="cell left r2"><div class="box app">Decomposer</div></div>
+						<div class="cell left r3"><div class="box">↳ Researcher agent 1</div></div>
+						<div class="cell left r4"><div class="box">↳ Researcher agent 2</div></div>
+						<div class="cell left r5"><div class="box">↳ Researcher agent 3</div></div>
+						<div class="cell left r6"><div class="box app">Collector (fan-in) → Synthesizer</div></div>
+
+						<div class="mid r3 arrow fragment" data-fragment-index="1">tool call →<br>← result</div>
+						<div class="mid r4 arrow fragment" data-fragment-index="1">tool call →<br>← result</div>
+						<div class="mid r5 arrow fragment" data-fragment-index="1">tool call →<br>← result</div>
+
+						<div class="cell right r3 fragment" data-fragment-index="1"><div class="box sandbox">Sandbox 1<small>Research process</small></div></div>
+						<div class="cell right r4 fragment" data-fragment-index="1"><div class="box sandbox">Sandbox 2<small>Research process</small></div></div>
+						<div class="cell right r5 fragment" data-fragment-index="1"><div class="box sandbox">Sandbox 3<small>Research process</small></div></div>
+						<div class="cell right r6 fragment" data-fragment-index="1"><p class="smaller muted" style="margin: 0; text-align: center;">Each sandbox has its own execution boundary.</p></div>
+					</div>
+					<div class="arch-endpoint" style="margin-top: 14px;">↓ Final report</div>
+					<p class="smaller fragment" style="text-align: center; margin-top: 4px;"><strong>Tool-call lifecycle:</strong> create sandbox → run research → collect result → delete</p>
+					<aside class="notes">
+						Build 1: the work. Question, decomposer, parallel researcher branches, fan-in, report. Three branches for readability; the sample supports up to six.
+						Build 2: where it runs. The orchestrator runs in an ordinary container. Each researcher agent calls a run_in_sandbox tool;
+						the actual research process runs across that boundary in its own sandbox. Tool-call arrows summarize the sandbox lifecycle,
+						not a direct model-to-sandbox connection. Keep this vendor-neutral: container versus sandbox. Azure names come on slide 6.
+						Walk back through what the audience just saw in the demo, now with the hosting boundaries named.
+					</aside>
+				</section>
+
+				<!-- 5 -->
+				<section>
+					<h3>What is a sandbox?</h3>
+					<div class="zoom-frame">
+						<svg class="isolation-diagram" viewBox="0 0 1120 372" role="img" aria-label="Sandbox 3 has its own processes, memory, and filesystem, separate from neighboring sandboxes 1 and 2 on the same host. Step 1: each sandbox has a short lifetime, starting in seconds and deleted when its task ends. Step 2: Sandbox 3 can reach the model API and telemetry but is blocked from any other site, and its CPU and memory are capped.">
+							<g opacity="0.55">
+								<rect x="2" y="30" width="136" height="200" rx="12" fill="#f4f6f8" stroke="#9aa7b2" stroke-width="2"/>
+								<text x="70" y="58" text-anchor="middle" font-size="17" font-weight="700" fill="#5f6e7b">Sandbox 1</text>
+								<rect x="16" y="74" width="108" height="40" rx="7" fill="#e3e8ec"/>
+								<rect x="16" y="122" width="108" height="40" rx="7" fill="#e3e8ec"/>
+								<rect x="16" y="170" width="108" height="40" rx="7" fill="#e3e8ec"/>
+								<rect x="158" y="30" width="136" height="200" rx="12" fill="#f4f6f8" stroke="#9aa7b2" stroke-width="2"/>
+								<text x="226" y="58" text-anchor="middle" font-size="17" font-weight="700" fill="#5f6e7b">Sandbox 2</text>
+								<rect x="172" y="74" width="108" height="40" rx="7" fill="#e3e8ec"/>
+								<rect x="172" y="122" width="108" height="40" rx="7" fill="#e3e8ec"/>
+								<rect x="172" y="170" width="108" height="40" rx="7" fill="#e3e8ec"/>
+							</g>
+							<rect x="318" y="2" width="440" height="228" rx="16" fill="#fff" stroke="#568b12" stroke-width="3"/>
+							<text x="538" y="36" text-anchor="middle" font-family="Outfit, sans-serif" font-size="24" font-weight="700" fill="#3f6b0c">Sandbox 3</text>
+							<rect x="338" y="52" width="400" height="50" rx="9" fill="#e3f4fb" stroke="#087ca7" stroke-width="2"/>
+							<text x="358" y="85" font-size="23" font-weight="700" fill="#065f80">Processes</text>
+							<rect x="338" y="112" width="400" height="50" rx="9" fill="#efeafb" stroke="#7657c9" stroke-width="2"/>
+							<text x="358" y="145" font-size="23" font-weight="700" fill="#5b3fa8">Memory</text>
+							<rect x="338" y="172" width="400" height="50" rx="9" fill="#fdf1dc" stroke="#b7791f" stroke-width="2"/>
+							<text x="358" y="205" font-size="23" font-weight="700" fill="#8a5a12">Filesystem</text>
+							<rect x="2" y="250" width="756" height="46" rx="10" fill="#e7edf2" stroke="#b8c4ce" stroke-width="2"/>
+							<text x="380" y="281" text-anchor="middle" font-size="21" font-weight="700" fill="#49677d">Host</text>
+
+							<!-- Fast & disposable: lifetimes -->
+							<g class="fragment" data-fragment-index="1">
+								<line x1="30" y1="362" x2="742" y2="362" stroke="#8aa3b5" stroke-width="1.5"/>
+								<path d="M736 357L746 362L736 367" fill="none" stroke="#8aa3b5" stroke-width="1.5"/>
+								<text x="752" y="367" font-size="15" fill="#49677d">time</text>
+								<g font-size="14" font-weight="700" fill="#49677d" text-anchor="middle">
+									<text x="16" y="319">1</text><text x="16" y="337">2</text><text x="16" y="355">3</text>
+								</g>
+								<g fill="#bfe3f2">
+									<rect x="40" y="308" width="250" height="12" rx="6"/>
+									<rect x="130" y="326" width="330" height="12" rx="6"/>
+								</g>
+								<rect x="230" y="344" width="420" height="12" rx="6" fill="#087ca7"/>
+								<g fill="#065f80">
+									<circle cx="40" cy="314" r="6"/><circle cx="130" cy="332" r="6"/><circle cx="230" cy="350" r="6"/>
+								</g>
+								<g stroke="#b42318" stroke-width="3" stroke-linecap="round">
+									<path d="M284 308l12 12M296 308l-12 12"/>
+									<path d="M454 326l12 12M466 326l-12 12"/>
+									<path d="M644 344l12 12M656 344l-12 12"/>
+								</g>
+								<text x="800" y="318" font-size="18" font-weight="700" fill="#065f80">● Starts in seconds</text>
+								<text x="800" y="346" font-size="18" font-weight="700" fill="#b42318">✕ Deleted when done</text>
+							</g>
+
+							<!-- Bounded: network and resource limits -->
+							<g class="fragment" data-fragment-index="2">
+								<text x="1010" y="24" text-anchor="middle" font-size="16" font-weight="700" fill="#49677d">Outbound network</text>
+								<rect x="904" y="40" width="212" height="44" rx="22" fill="#fff" stroke="#568b12" stroke-width="2"/>
+								<text x="1010" y="69" text-anchor="middle" font-size="18" font-weight="700" fill="#10243a">Model API</text>
+								<rect x="904" y="100" width="212" height="44" rx="22" fill="#fff" stroke="#568b12" stroke-width="2"/>
+								<text x="1010" y="129" text-anchor="middle" font-size="18" font-weight="700" fill="#10243a">Telemetry</text>
+								<rect x="904" y="160" width="212" height="44" rx="22" fill="#fdf0ee" stroke="#b42318" stroke-width="2" stroke-dasharray="6 5"/>
+								<text x="1010" y="189" text-anchor="middle" font-size="18" font-weight="700" fill="#b42318">Any other site</text>
+								<g stroke="#568b12" stroke-width="3">
+									<line x1="760" y1="62" x2="894" y2="62"/>
+									<line x1="760" y1="122" x2="894" y2="122"/>
+								</g>
+								<path d="M886 55L898 62L886 69M886 115L898 122L886 129" fill="none" stroke="#568b12" stroke-width="3" stroke-linejoin="round"/>
+								<g fill="#e9f6de" stroke="#568b12" stroke-width="2"><circle cx="828" cy="62" r="13"/><circle cx="828" cy="122" r="13"/></g>
+								<path d="M821 62l5 5 9-10M821 122l5 5 9-10" fill="none" stroke="#3f6b0c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+								<line x1="760" y1="182" x2="808" y2="182" stroke="#b42318" stroke-width="3" stroke-dasharray="7 5"/>
+								<circle cx="828" cy="182" r="13" fill="#fdf0ee" stroke="#b42318" stroke-width="2"/>
+								<path d="M822 176l12 12M834 176l-12 12" stroke="#b42318" stroke-width="3" stroke-linecap="round"/>
+								<rect x="580" y="62" width="146" height="30" rx="15" fill="#fff" stroke="#7657c9" stroke-width="2"/>
+								<text x="653" y="83" text-anchor="middle" font-size="17" font-weight="700" fill="#5b3fa8">CPU ≤ 2 cores</text>
+								<rect x="580" y="122" width="146" height="30" rx="15" fill="#fff" stroke="#7657c9" stroke-width="2"/>
+								<text x="653" y="143" text-anchor="middle" font-size="17" font-weight="700" fill="#5b3fa8">RAM ≤ 4 GiB</text>
+							</g>
+						</svg>
+					</div>
+					<div class="trait-row">
+						<div class="trait trait-isolated"><h4>Isolated</h4><p>Its own processes, memory, and filesystem. It can't see or change the host or other sandboxes.</p></div>
+						<div class="trait trait-fast fragment" data-fragment-index="1"><h4>Fast &amp; disposable</h4><p>Starts in seconds or less for one task, then gets deleted when the task is done.</p></div>
+						<div class="trait trait-bounded fragment" data-fragment-index="2"><h4>Bounded</h4><p>Gets only the network endpoints, credentials, and CPU and memory you allow for its task.</p></div>
+					</div>
+					<aside class="notes">
+						Before any Azure specifics: what is a sandbox? The architecture put each research process in one; here is what that means.
+						Isolated: separation you get by default. Each sandbox has its own processes, memory, and filesystem, so model-driven code can't see or change the host or the other branches. How that separation is enforced varies: containers share the host kernel, gVisor adds a user-space kernel, and microVMs give each sandbox its own kernel. We'll see which one Azure uses later.
+						Click 1, fast and disposable: the lifetime bars. Each sandbox is created for one task in seconds or less and deleted afterward, so six branches can start at once and nothing lingers.
+						Click 2, bounded: limits you configure per task. The network allowlist and the CPU and memory numbers are examples, not defaults. Allowed network endpoints, scoped credentials, and CPU and memory caps, so a misbehaving branch can only call approved services and use its own resources.
+						Next: how Azure Container Apps provides this.
+					</aside>
+				</section>
+
+				<!-- 6 -->
+				<section>
+					<h3 style="margin-top: 0;">Azure Container Apps Sandboxes</h3>
+					<p class="lead">Fast, isolated, and stateful compute infrastructure on demand.</p>
+					<div class="grid3" style="margin-top: 18px;">
+						<div class="card"><h4>Execute securely by default</h4>Sandbox isolation for any untrusted workload</div>
+						<div class="card"><h4>Resume instantly</h4>Preserve state across stop and resume, with enterprise controls</div>
+						<div class="card"><h4>Burst to hyperscale</h4>Sub-second start, zero to thousands, no compute cost when idle</div>
+					</div>
+					<p style="margin-top: 30px;">The foundation layer used by:</p>
+					<ul class="product-logos">
+						<li><img src="images/logos/github.png" alt="">GitHub Copilot cloud sandboxes</li>
+						<li><img src="images/logos/foundry.png" alt="">Microsoft Foundry hosted agents</li>
+						<li><img src="images/logos/container-apps.png" alt="">Azure Container Apps Express</li>
+						<li><img src="images/logos/sre-agent.png" alt="">Azure SRE Agent</li>
+						<li><img src="images/logos/copilot-studio.png" alt="">Microsoft Copilot Studio</li>
+					</ul>
+					<aside class="notes">
+						Mental model in one sentence: a sandbox group holds sandboxes, and each sandbox boots from a disk image, which can come from your own OCI image.
+						Pillars preview later slides: isolation, resume, burst and scale-to-zero.
+						Precision: sub-second start comes from prewarmed pools; it doesn't mean first-time custom image preparation is sub-second, and restoring from a snapshot needs a short warm-up.
+						"No compute cost idle": stopped sandboxes have no vCPU/memory charges, but storage for custom disk images, snapshots, and volumes will be billed (coming soon).
+						How products use it (if asked): Copilot's cloud sandbox is an ACA Sandbox internally; Foundry hosted agents run on Sandboxes;
+						Express cut provisioning from 14-20 minutes to under a minute and cold start from ~20s to sub-second; SRE Agent runs Python and hosted tools in Sandboxes;
+						Copilot Studio's new harness runs each custom agent in its own sandbox with a data disk volume for memory.
+						Don't demo copilot --cloud. Don't claim Copilot-from-Teams uses it.
+					</aside>
+				</section>
+
+				<!-- 7 -->
+				<section>
+					<h3>Anatomy of a sandbox on Azure</h3>
+					<div class="sandbox-arch">
+						<svg class="arch-diagram" viewBox="0 0 1176 528" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ACA Sandbox architecture: a sandbox group containing sandboxes of different sizes and shared resources (disk images, snapshots, data volumes, secrets, identity). Inbound traffic from the internet or a VNet reaches a sandbox port only through the ingress proxy; ingress is off by default and opted into per port. Outbound traffic goes through the egress proxy; egress is open by default, with optional per-sandbox allow and deny host rules and credential injection."><defs><filter id="diagShadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000" flood-opacity="0.12"></feDropShadow></filter><marker id="diagArrow" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 L9 6 L0 12" fill="none" stroke="context-stroke" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></marker></defs><rect x="282" y="2" width="604" height="524" rx="14" class="diagGroup" stroke-width="1.5" stroke-dasharray="6 5"></rect><g class="diagTextBrand" transform="translate(300, 18) scale(1.5)"><rect x="0" y="0" width="6" height="6" rx="1" fill="currentColor" opacity="0.85"></rect><rect x="8" y="0" width="6" height="6" rx="1" fill="currentColor" opacity="0.55"></rect><rect x="0" y="8" width="6" height="6" rx="1" fill="currentColor" opacity="0.55"></rect><rect x="8" y="8" width="6" height="6" rx="1" fill="currentColor" opacity="0.85"></rect></g><text x="332" y="36" font-size="20" font-weight="700" letter-spacing="1.5" class="diagTextBrand">SANDBOX GROUP</text><text x="300" y="74" font-size="18" font-weight="700" letter-spacing="1.5" class="diagTextMuted">SANDBOXES</text><g filter="url(#diagShadow)"><rect x="300" y="88" width="277" height="102" rx="10" class="diagCard" stroke-width="1"></rect><rect x="300" y="88" width="5" height="102" rx="2.5" class="diagPillRunning"></rect><g class="diagPillRunningText" transform="translate(314, 104) scale(1.5)"><path d="M6 0.5 L11.5 3 L11.5 9 L6 11.5 L0.5 9 L0.5 3 Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path><path d="M0.5 3 L6 5.5 L11.5 3 M6 5.5 L6 11.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path></g><text x="340" y="121" font-size="20" font-weight="600" class="diagText diagMono">sandbox-1</text><rect x="481" y="100" width="86" height="28" rx="14" class="diagPillRunning" stroke-width="1"></rect><text x="524.0" y="120" font-size="16" font-weight="700" text-anchor="middle" class="diagPillRunningText">Running</text><text x="314" y="154" font-size="19" class="diagTextDim">M — 1 core / 2 GiB / 20 GiB</text><text x="314" y="181" font-size="19" class="diagMono diagTextMuted">ingress: port 8080</text></g><g filter="url(#diagShadow)"><rect x="591" y="88" width="277" height="102" rx="10" class="diagCard" stroke-width="1"></rect><rect x="591" y="88" width="5" height="102" rx="2.5" class="diagPillRunning"></rect><g class="diagPillRunningText" transform="translate(605, 104) scale(1.5)"><path d="M6 0.5 L11.5 3 L11.5 9 L6 11.5 L0.5 9 L0.5 3 Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path><path d="M0.5 3 L6 5.5 L11.5 3 M6 5.5 L6 11.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path></g><text x="631" y="121" font-size="20" font-weight="600" class="diagText diagMono">sandbox-2</text><rect x="772" y="100" width="86" height="28" rx="14" class="diagPillRunning" stroke-width="1"></rect><text x="815.0" y="120" font-size="16" font-weight="700" text-anchor="middle" class="diagPillRunningText">Running</text><text x="605" y="154" font-size="19" class="diagTextDim">L — 2 cores / 4 GiB / 40 GiB</text></g><g filter="url(#diagShadow)"><rect x="300" y="204" width="277" height="102" rx="10" class="diagCard" stroke-width="1"></rect><rect x="300" y="204" width="5" height="102" rx="2.5" class="diagPillSuspended"></rect><g class="diagPillSuspendedText" transform="translate(314, 220) scale(1.5)"><path d="M6 0.5 L11.5 3 L11.5 9 L6 11.5 L0.5 9 L0.5 3 Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path><path d="M0.5 3 L6 5.5 L11.5 3 M6 5.5 L6 11.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path></g><text x="340" y="237" font-size="20" font-weight="600" class="diagText diagMono">sandbox-3</text><rect x="481" y="216" width="86" height="28" rx="14" class="diagPillSuspended" stroke-width="1"></rect><text x="524.0" y="236" font-size="16" font-weight="700" text-anchor="middle" class="diagPillSuspendedText">Stopped</text><text x="314" y="270" font-size="19" class="diagTextDim">M — 1 core / 2 GiB / 20 GiB</text><text x="314" y="297" font-size="19" class="diagMono diagTextMuted">ingress: port 8080</text></g><g filter="url(#diagShadow)"><rect x="591" y="204" width="277" height="102" rx="10" class="diagCard" stroke-width="1"></rect><rect x="591" y="204" width="5" height="102" rx="2.5" class="diagPillSuspended"></rect><g class="diagPillSuspendedText" transform="translate(605, 220) scale(1.5)"><path d="M6 0.5 L11.5 3 L11.5 9 L6 11.5 L0.5 9 L0.5 3 Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path><path d="M0.5 3 L6 5.5 L11.5 3 M6 5.5 L6 11.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path></g><text x="631" y="237" font-size="20" font-weight="600" class="diagText diagMono">sandbox-4</text><rect x="772" y="216" width="86" height="28" rx="14" class="diagPillSuspended" stroke-width="1"></rect><text x="815.0" y="236" font-size="16" font-weight="700" text-anchor="middle" class="diagPillSuspendedText">Stopped</text><text x="605" y="270" font-size="19" class="diagTextDim">S — 0.5 cores / 1 GiB / 10 GiB</text></g><text x="300" y="342" font-size="18" font-weight="700" letter-spacing="1.5" class="diagTextMuted">SHARED RESOURCES</text><g filter="url(#diagShadow)"><rect x="300" y="356" width="181" height="70" rx="8" class="diagCard" stroke-width="1"></rect><rect x="300" y="356" width="5" height="70" rx="2.5" class="diagAccentBrand"></rect><text x="314" y="386" font-size="19" font-weight="700" class="diagText">Disk Images</text><text x="314" y="413" font-size="18" class="diagTextMuted">root filesystems</text></g><g filter="url(#diagShadow)"><rect x="493" y="356" width="181" height="70" rx="8" class="diagCard" stroke-width="1"></rect><rect x="493" y="356" width="5" height="70" rx="2.5" class="diagAccentBrand"></rect><text x="507" y="386" font-size="19" font-weight="700" class="diagText">Snapshots</text><text x="507" y="413" font-size="18" class="diagTextMuted">memory + disk</text></g><g filter="url(#diagShadow)"><rect x="686" y="356" width="181" height="70" rx="8" class="diagCard" stroke-width="1"></rect><rect x="686" y="356" width="5" height="70" rx="2.5" class="diagAccentBrand"></rect><text x="700" y="386" font-size="19" font-weight="700" class="diagText">Data Volumes</text><text x="700" y="413" font-size="18" class="diagTextMuted">blob · data disk</text></g><g filter="url(#diagShadow)"><rect x="300" y="438" width="260" height="70" rx="8" class="diagCard" stroke-width="1"></rect><rect x="300" y="438" width="5" height="70" rx="2.5" class="diagAccentBrand"></rect><text x="314" y="468" font-size="19" font-weight="700" class="diagText">Secrets</text><text x="314" y="495" font-size="18" class="diagTextMuted">egress credential injection</text></g><g filter="url(#diagShadow)"><rect x="572" y="438" width="296" height="70" rx="8" class="diagCard" stroke-width="1"></rect><rect x="572" y="438" width="5" height="70" rx="2.5" class="diagAccentBrand"></rect><text x="586" y="468" font-size="19" font-weight="700" class="diagText">Identity</text><text x="586" y="495" font-size="18" class="diagTextMuted">managed identity</text></g><g filter="url(#diagShadow)"><rect x="0" y="2" width="250" height="58" rx="10" class="diagCard" stroke-width="1"></rect><g class="diagTextMuted" transform="translate(16, 20) scale(1.6)"><circle cx="7" cy="7" r="6.2" fill="none" stroke="currentColor" stroke-width="1.3"></circle><ellipse cx="7" cy="7" rx="2.8" ry="6.2" fill="none" stroke="currentColor" stroke-width="1.3"></ellipse><line x1="0.8" y1="7" x2="13.2" y2="7" stroke="currentColor" stroke-width="1.3"></line></g><text x="46" y="39" font-size="23" font-weight="600" class="diagText">Internet / VNet</text></g><line x1="125.0" y1="62" x2="125.0" y2="92" class="diagArrowBrand" stroke-width="1.8" marker-end="url(#diagArrow)"></line><g filter="url(#diagShadow)"><rect x="0" y="94" width="250" height="142" rx="8" class="diagCard" stroke-width="1"></rect><rect x="0" y="94" width="5" height="142" rx="2.5" class="diagAccentBrand"></rect><g class="diagTextBrand" transform="translate(16, 110) scale(1.8)"><path d="M3 6 L3 4 C3 2.3 4.3 1 6 1 C7.7 1 9 2.3 9 4 L9 6" fill="none" stroke="currentColor" stroke-width="1.4"></path><rect x="1.5" y="6" width="9" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"></rect></g><text x="44" y="130" font-size="23" font-weight="600" class="diagText">Ingress proxy</text><text x="16" y="160" font-size="18" font-weight="700" class="diagTextBrand">PER-SANDBOX POLICIES</text><text x="16" y="188" font-size="18" class="diagText">off by default</text><text x="16" y="214" font-size="18" class="diagText">opt-in per port</text></g><line x1="250" y1="139.0" x2="296" y2="139.0" class="diagArrowBrand" stroke-width="1.8" marker-end="url(#diagArrow)"></line><line x1="886" y1="214" x2="914" y2="214" class="diagArrowViolet" stroke-width="1.8" marker-end="url(#diagArrow)"></line><g filter="url(#diagShadow)"><rect x="918" y="170" width="258" height="222" rx="8" class="diagCard" stroke-width="1"></rect><rect x="918" y="170" width="5" height="222" rx="2.5" class="diagAccentViolet"></rect><g class="diagTextViolet" transform="translate(934, 186) scale(1.8)"><path d="M3 6 L3 4 C3 2.3 4.3 1 6 1 C7.7 1 9 2.3 9 4 L9 6" fill="none" stroke="currentColor" stroke-width="1.4"></path><rect x="1.5" y="6" width="9" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"></rect></g><text x="962" y="206" font-size="23" font-weight="600" class="diagText">Egress proxy</text><text x="934" y="236" font-size="18" font-weight="700" class="diagTextViolet">PER-SANDBOX POLICIES</text><text x="934" y="264" font-size="18" class="diagText">open by default</text><text x="934" y="290" font-size="18" class="diagText">allow / deny host rules</text><text x="934" y="316" font-size="18" class="diagText">credential injection</text><text x="934" y="350" font-size="18" class="diagTextMuted">injected credentials</text><text x="934" y="374" font-size="18" class="diagTextMuted">stay outside the sandbox</text></g><line x1="1047.0" y1="394" x2="1047.0" y2="426" class="diagArrowViolet" stroke-width="1.8" marker-end="url(#diagArrow)"></line><g filter="url(#diagShadow)"><rect x="918" y="428" width="258" height="58" rx="10" class="diagCard" stroke-width="1"></rect><g class="diagTextMuted" transform="translate(934, 446) scale(1.6)"><circle cx="7" cy="7" r="6.2" fill="none" stroke="currentColor" stroke-width="1.3"></circle><ellipse cx="7" cy="7" rx="2.8" ry="6.2" fill="none" stroke="currentColor" stroke-width="1.3"></ellipse><line x1="0.8" y1="7" x2="13.2" y2="7" stroke="currentColor" stroke-width="1.3"></line></g><text x="964" y="465" font-size="23" font-weight="600" class="diagText">Internet / VNet</text></g></svg>
+					</div>
+					<aside class="notes">
+						Before creating a sandbox, you need somewhere to put it. A sandbox group is the regional, top-level resource that contains sandboxes
+						and the configuration they share: disk images, snapshots, data volumes, secrets, and identity. It's the security and configuration boundary.
+						Create it once with the portal, the aca CLI, or the SDKs (control plane), then create and delete sandboxes inside it (data plane),
+						which needs the SandboxGroup Data Owner role at the group scope. No Container Apps environment or deployed app required.
+						Briefly point at the edges; we'll come back to both: ingress is off by default and opt-in per sandbox and port;
+						egress goes through the egress proxy and is open unless you set a per-sandbox egress policy (allow/deny host rules, credential injection). In the swarm, one group holds every researcher's sandbox.
+						Size presets are CPU / memory / disk, from the portal's create form: XS 0.25 cores / 512 MiB / 5 GiB, S 0.5 / 1 GiB / 10 GiB, M 1 / 2 GiB / 20 GiB (default), L 2 / 4 GiB / 40 GiB, XL 4 / 8 GiB / 80 GiB.
+						Diagram adapted from https://sandboxes.azure.com/docs/sandboxes/
+					</aside>
+				</section>
+
+				<!-- 8 -->
+				<section class="no-code-badge">
+					<h3>Create a sandbox group</h3>
+					<div class="prog-grid group-code" style="grid-template-columns: 1.3fr 1fr;">
+						<div class="prog-box">
+							<div class="prog-head"><p class="prog-title">Bicep</p><a class="prog-link" target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/quickstart/setup-bicep">📎 Quickstart</a></div>
+							<pre class="code-tiny"><code class="language-bicep" data-trim>
+resource group &#x27;Microsoft.App/sandboxGroups@2026-02-01-preview&#x27; = {
+  name: &#x27;my-sandbox-group&#x27;
+  location: &#x27;westus2&#x27;
+}
+
+var dataOwner = &#x27;c24cf47c-5077-412d-a19c-45202126392c&#x27;
+
+resource access &#x27;Microsoft.Authorization/roleAssignments@2022-04-01&#x27; = {
+  name: guid(group.id, principalId, dataOwner)
+  scope: group
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      &#x27;Microsoft.Authorization/roleDefinitions&#x27;, dataOwner)
+    principalId: principalId
+  }
+}
+							</code></pre>
+						</div>
+						<div class="prog-box">
+							<div class="prog-head"><p class="prog-title">Azure CLI + <code>aca</code> CLI</p><a class="prog-link" target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/quickstart/setup-cli">📎 Quickstart</a></div>
+							<pre class="code-tiny"><code class="language-bash" data-trim>
+az group create --name my-rg --location westus2
+
+aca sandboxgroup create -g my-rg \
+  --name my-sandbox-group \
+  --location westus2 \
+  -s &quot;$SUBSCRIPTION_ID&quot; --set-config
+
+aca sandboxgroup role create \
+  --group my-sandbox-group \
+  --role &quot;Container Apps SandboxGroup Data Owner&quot; \
+  --principal-id &quot;$PRINCIPAL_ID&quot;
+							</code></pre>
+						</div>
+					</div>
+					<aside class="notes">
+						Create the group once; every sandbox lives inside it. In the Bicep, dataOwner is the built-in role ID for Container Apps SandboxGroup Data Owner. Both paths do two things: create the regional sandbox group, and grant the caller
+						the Container Apps SandboxGroup Data Owner role on it, which data-plane calls (create, exec, delete) require. RBAC can take a minute to propagate.
+						There's no az command for sandbox groups yet: az creates the resource group, and the aca CLI creates the group.
+						--set-config saves the group, subscription, and region into aca config so later commands don't need them. Run aca doctor to verify.
+						The portal can also create a group (Create, then subscription, resource group, name, region). Later we'll extend this Bicep to pull images from ACR.
+					</aside>
+				</section>
+
+				<!-- 9 -->
+				<section>
+					<h3>Create a sandbox from the portal</h3>
+					<div class="portal-pair">
+						<img class="portal-shot" src="images/create-sandbox-portal.png" alt="Azure portal Create Sandbox form in simple and quick mode: source set to the ubuntu public disk image, resource tier M (1 core, 2 GiB), and an optional name label.">
+						<img class="portal-shot" src="images/sandbox-terminal-top.png" alt="The sandbox's browser terminal running a Python process that holds 1 GiB of memory, with top showing it at about 91% CPU and 1.0 GiB resident. Below, the portal's gauges read CPU 1 core at 100%, memory 2 GiB at 53% (1.2 GiB used), and storage 892 MiB of 19.5 GiB.">
+					</div>
+					<p class="portal-caption"><a target="_blank" href="https://portal.azure.com">📎 portal.azure.com</a></p>
+					<aside class="notes">
+						Switch to portal.azure.com and demo the portal flow (steps from the Learn portal quickstart, which is written for sandboxes.azure.com; the Azure portal has the same features):
+						Create a sandbox group (subscription, resource group, name, region), then + Create sandbox, Ubuntu disk image, default 1 vCPU and 2 GiB.
+						Open the sandbox: a browser terminal attaches. Demo commands (verified on the ubuntu image):
+						<ol>
+							<li>Its own Linux machine: <code>whoami</code>, <code>uname -a</code>, <code>cat /etc/os-release</code></li>
+							<li>Its own kernel: <code>dmesg | head -2</code> shows <code>[0.000000] Linux version 6.12.8+ ...</code>, the boot log of a kernel that started seconds ago just for this sandbox (a container never sees its own kernel boot). The docs: "Isolated microVMs... each sandbox runs in its own secure boundary with its own kernel." Optional extras: <code>grep -m1 -o hypervisor /proc/cpuinfo</code>, <code>cat /proc/cmdline</code> (root=/dev/vda, console=hvc0).</li>
+							<li>The size I picked (M = 1 core / 2 GiB / 20 GiB): <code>nproc</code>, <code>free -h</code>, <code>df -h /</code></li>
+							<li>It can reach the internet (egress is open with no policy): <code>curl -s https://api.github.com/zen</code>
+								or <code>python3 -c "import urllib.request; print(urllib.request.urlopen('https://api.github.com/zen').read().decode())"</code>.
+								Sets up the later allowed/blocked demo: same command after a deny policy.</li>
+							<li>Run code: <code>python3 -c "import platform, os; print(platform.python_version(), os.cpu_count(), 'cores')"</code></li>
+							<li>Optional, NOT yet verified: ingress. <code>python3 -m http.server 8080 --bind 0.0.0.0</code>, then add port 8080 in the sandbox's Ports settings and open the generated URL. Must bind 0.0.0.0, not 127.0.0.1.</li>
+						</ol>
+						Then stop or delete it from the toolbar.
+						Use the sandbox group created on the previous slide (create it ahead of time so provisioning isn't live waiting time).
+						Besides the standard sandbox, the Create menu has GitHub Copilot and Claude templates that inject a stored GitHub PAT or Anthropic key at start;
+						unlike egress injection later, those credentials land inside the sandbox.
+						Next slide: the same thing from code.
+					</aside>
+				</section>
+
+				<!-- 10 -->
+				<section class="no-code-badge">
+					<h3>Create a sandbox programmatically</h3>
+					<div class="prog-grid">
+						<div class="prog-box">
+							<div class="prog-head"><p class="prog-title"><code>aca</code> CLI</p><a class="prog-link" target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/quickstart/setup-cli">📎 Quickstart</a></div>
+							<pre class="code-tiny"><code class="language-bash" data-trim>
+aca sandbox create --disk ubuntu --label name=demo
+aca sandbox exec -l name=demo -c &quot;uname -a&quot;
+aca sandbox delete -l name=demo --yes
+							</code></pre>
+						</div>
+						<div class="prog-box">
+							<div class="prog-head"><p class="prog-title">Agent Skill <span class="muted">· Copilot CLI</span></p><a class="prog-link" target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/quickstart/agent-skills">📎 Quickstart</a></div>
+							<pre class="code-tiny"><code class="language-plaintext" data-trim>
+/plugin marketplace add microsoft/azure-container-apps
+/plugin install sandboxes@Azure-Container-Apps
+
+&gt; Create an Ubuntu sandbox and run uname -a
+							</code></pre>
+						</div>
+						<div class="prog-box">
+							<div class="prog-head"><p class="prog-title">Python SDK</p><a class="prog-link" target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/quickstart/setup-python-sdk">📎 Quickstart</a></div>
+							<pre class="code-tiny"><code class="language-python" data-trim>
+sandbox = client.begin_create_sandbox(
+    disk=&quot;ubuntu&quot;).result()
+result = sandbox.exec(&quot;uname -a&quot;)
+print(result.stdout)
+sandbox.delete()
+							</code></pre>
+						</div>
+						<div class="prog-box">
+							<div class="prog-head"><p class="prog-title">TypeScript SDK</p><a class="prog-link" target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/quickstart/setup-typescript-sdk">📎 Quickstart</a></div>
+							<pre class="code-tiny"><code class="language-typescript" data-trim>
+const poller = groupClient.sandboxes.beginCreate({
+  sourcesRef: {
+    diskImage: { name: &quot;ubuntu&quot;, isPublic: true } },
+});
+const sandbox = await poller.pollUntilDone();
+const result = await groupClient.sandboxes
+  .exec(sandbox.id, { command: &quot;uname -a&quot; });
+await groupClient.sandboxes.delete(sandbox.id);
+							</code></pre>
+						</div>
+					</div>
+					<aside class="notes">
+						The same create, run, delete flow from code. All four assume a sandbox group already exists
+						(Bicep and Terraform quickstarts cover creating the group; sandboxes themselves are data-plane objects, not ARM resources).
+						CLI: --label sets a label at creation; -l selects by label afterward. Install with curl -fsSL https://aka.ms/aca-cli-install | sh.
+						Python and TypeScript SDKs are beta today (.NET beta soon, stable SDKs by Ignite). The Python client setup is omitted here: SandboxGroupClient(endpoint_for_region(region), credential, subscription/resource group/sandbox group). We'll see it in the swarm code later.
+						Agent Skill: installs a skill that teaches a coding agent the aca CLI, so it can create sandboxes, run commands, and set egress from natural language. Claude Code: claude plugin add microsoft/azure-container-apps.
+					</aside>
+				</section>
+
+				<!-- 11 -->
+				<section>
+					<h3>Inside a sandbox</h3>
+					<p class="lead" style="font-size: 0.7em;">Each sandbox runs as a hardware-isolated microVM with its <strong>own Linux kernel</strong>, <strong>own virtual hardware</strong>, and <strong>memory separation enforced by CPU virtualization</strong>.</p>
+					<div class="vcompare" role="img" aria-label="Comparison. Typical containers: each container has its own code and image but all share one host kernel on the physical host. ACA Sandboxes: each sandbox has its own code, image, and guest kernel, each in a hardware-isolated microVM whose boundary is enforced by the CPU (Intel VT-x / AMD-V), not by kernel permissions or policy, on the physical host.">
+						<div class="vpanel">
+							<p class="vtitle">Typical containers</p>
+							<div class="vstack">
+								<div class="vcols"><div class="vcol"><div class="vcell v-code">Your code</div><div class="vcell v-image">Container image</div></div><div class="vcol"><div class="vcell v-code">Your code</div><div class="vcell v-image">Container image</div></div><div class="vcol"><div class="vcell v-code">Your code</div><div class="vcell v-image">Container image</div></div></div>
+								<div class="vrow v-shared"><strong>Shared host kernel</strong></div>
+								<div class="vrow v-hw">Physical host</div>
+							</div>
+						</div>
+						<div class="vpanel vpanel-sandbox">
+							<p class="vtitle">Sandboxes</p>
+							<div class="vstack">
+								<div class="vcols"><div class="vcol vmicro"><div class="vcell v-code">Your code</div><div class="vcell v-image">Container image</div><div class="vcell v-kernel">Guest kernel</div></div><div class="vcol vmicro"><div class="vcell v-code">Your code</div><div class="vcell v-image">Container image</div><div class="vcell v-kernel">Guest kernel</div></div><div class="vcol vmicro"><div class="vcell v-code">Your code</div><div class="vcell v-image">Container image</div><div class="vcell v-kernel">Guest kernel</div></div></div>
+								<div class="vrow v-hyper"><span><strong>Hardware-isolated microVM boundary</strong><br>Enforced by the CPU (Intel VT-x / AMD-V)</span></div>
+								<div class="vrow v-hw">Physical host</div>
+							</div>
+						</div>
+					</div>
+					<aside class="notes">
+						This is what we just saw in the terminal: dmesg showed a kernel that booted seconds ago, just for that sandbox, on its own virtual disk and console.
+						Each sandbox is a microVM: its own kernel and virtual hardware, with memory separation enforced by the CPU, not by kernel permissions.
+						Left: ordinary containers share one host kernel, so a kernel bug or escape affects everything on the machine. Right: your container runs the same way, but each sandbox is its own microVM (dashed outline) with its own guest kernel. The boundary is hardware-isolated, enforced by the CPU (Intel VT-x / AMD-V), not by kernel permissions and not by policy. Verbally: that's hardware virtualization, the job a hypervisor does; the ACA team doesn't document the hypervisor itself.
+						"Guest kernel" is the virtualization term for the kernel a VM boots; "host kernel" is the machine's own. Each sandbox's guest kernel is the one dmesg showed booting.
+						Key points (previously on the slide): Your container runs exactly the way it always has; what changes is what's underneath it.
+						That's a stronger boundary than a typical container runtime, which shares the host kernel with everything else on the machine.
+						Left caption: a kernel bug or escape affects everything on the machine. Right caption: your container runs the same way; each one gets its own kernel.
+						The top two layers are yours: your code and your container image. So far we used the built-in ubuntu image; next, how to bring your own.
+						In the swarm, the trusted orchestrator stays outside every researcher's sandbox: one task, one workspace, no shared filesystem or process space.
+						Caveat: this is a boundary, not a guarantee about your code. Anything you deliberately place inside a sandbox (credentials, mounted data, allowed network destinations) is available to whatever runs there. That sets up the next questions: egress, identity, and data.
+						Optional demo beat: two sandboxes with separate files and processes. That illustrates separation; it isn't proof that escape is impossible.
+					</aside>
+				</section>
+
+				<!-- 12 -->
+				<section>
+					<h3>Bring your agent image</h3>
+					<div class="cols" style="gap: 32px;">
+						<div>
+							<p class="small" style="margin: 0 0 8px;">Example: Dockerfile for Python agent</p>
+							<pre class="code-tiny"><code class="language-dockerfile" data-trim>
+FROM python:3.12-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       bash git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY sandbox_agent.py .
+
+RUN mkdir -p /workspace
+WORKDIR /workspace
+CMD ["sleep", "infinity"]
+							</code></pre>
+							<p class="code-example-link"><a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/sandbox-agent/Dockerfile">📎 sandbox-agent/Dockerfile</a></p>
+						</div>
+						<div class="img-flow" style="flex: 0.95;" role="img" aria-label="Four steps. Same as any container: build your image with docker build, then push it to a registry such as Azure Container Registry. Sandboxes: import it into the sandbox group as a disk image with begin_create_disk_image, then create sandboxes from it with begin_create_sandbox and the disk image ID.">
+							<p class="flow-group">Same as any container</p>
+							<div class="flow-step"><span class="flow-num">1</span><span><strong>Build</strong> your image</span><code>docker build -t myagent .</code></div>
+							<div class="flow-step"><span class="flow-num">2</span><span><strong>Push</strong> to a registry, e.g. ACR</span><code>docker push myreg.azurecr.io/myagent</code></div>
+							<p class="flow-group flow-group-sandbox">Sandboxes</p>
+							<div class="flow-step flow-step-sandbox"><span class="flow-num">3</span><span><strong>Import</strong> as a disk image</span><code>disk = client.begin_create_disk_image(image)</code></div>
+							<div class="flow-step flow-step-sandbox"><span class="flow-num">4</span><span><strong>Create</strong> sandboxes from it</span><code>client.begin_create_sandbox(disk_id=disk.id)</code></div>
+						</div>
+					</div>
+					<aside class="notes">
+						So far we used the built-in ubuntu image, but we can also bring our own.
+						Steps 1-2 are what you already do for any container. Steps 3-4 are the Sandboxes part: the sandbox group imports the OCI image as a disk image (the root filesystem a microVM boots from), and you create sandboxes by disk image ID instead of disk="ubuntu".
+						CLI: aca sandboxgroup disk create --image &lt;registry/image&gt;, then aca sandbox create --disk-id &lt;id&gt;. SDK: begin_create_sandbox(disk_id=...).
+						The docs list three disk image sources: public (ubuntu, nginx, copilot), custom from a registry (this slide), or committed from a running sandbox's filesystem.
+						ACR is an optional registry choice for bringing your own image, not a prerequisite. It stores the OCI image; it doesn't run the agent.
+						Building/pushing the OCI image, preparing a sandbox disk image, and creating the sandbox are three separate steps.
+						The container just sleeps; the agent is started later with sandbox.exec.
+						Pulling from a private registry: attach a managed identity to the sandbox group, point its image registry credentials at the registry, and grant that identity AcrPull on the registry (see infra/main.bicep). Attaching the identity alone doesn't authorize the pull.
+						If asked: the deployed swarm currently falls back to ACR admin credentials, because managed-identity disk-image conversion needs the 2026-09-01-preview data plane and the SDK targets 2026-02-01-preview (microsoft/azure-container-apps#1839).
+						Two planes: Bicep/ARM provisions the group, registry, identity, and role assignments; disk images and sandboxes are data-plane objects, not Bicep resources.
+						Transition: now let's create a sandbox from this image, and look at everything else we can configure.
+					</aside>
+				</section>
+
+				<!-- 13 -->
+				<section class="no-code-badge">
+					<h3>Sandbox configuration</h3>
+					<div class="cfg-map" role="table" aria-label="begin_create_sandbox parameters and what each configures">
+						<div class="cfg-row"><code class="cfg-code">sandbox&nbsp;=&nbsp;client.begin_create_sandbox(</code></div>
+						<div class="cfg-row" role="row"><code class="cfg-code" role="cell">&nbsp;&nbsp;&nbsp;&nbsp;disk_id=disk.id,</code><span class="cfg-arrow" aria-hidden="true">⟶</span><span class="cfg-what" role="cell">What it boots</span></div>
+						<div class="cfg-row" role="row"><code class="cfg-code" role="cell">&nbsp;&nbsp;&nbsp;&nbsp;cpu=&quot;1000m&quot;,&nbsp;memory=&quot;2048Mi&quot;,</code><span class="cfg-arrow" aria-hidden="true">⟶</span><span class="cfg-what" role="cell">How big it is</span></div>
+						<div class="cfg-row" role="row"><code class="cfg-code" role="cell">&nbsp;&nbsp;&nbsp;&nbsp;auto_suspend_seconds=300,</code><span class="cfg-arrow" aria-hidden="true">⟶</span><span class="cfg-what" role="cell">When it goes idle</span></div>
+						<div class="cfg-row" role="row"><code class="cfg-code" role="cell">&nbsp;&nbsp;&nbsp;&nbsp;egress_policy=deny_by_default,</code><span class="cfg-arrow" aria-hidden="true">⟶</span><span class="cfg-what" role="cell">Where it can connect</span></div>
+						<div class="cfg-row" role="row"><code class="cfg-code" role="cell">&nbsp;&nbsp;&nbsp;&nbsp;ports=[8080],</code><span class="cfg-arrow" aria-hidden="true">⟶</span><span class="cfg-what" role="cell">Who can reach it</span></div>
+						<div class="cfg-row" role="row"><code class="cfg-code" role="cell">&nbsp;&nbsp;&nbsp;&nbsp;volumes=[workspace_volume],</code><span class="cfg-arrow" aria-hidden="true">⟶</span><span class="cfg-what" role="cell">What data it keeps</span></div>
+						<div class="cfg-row"><code class="cfg-code">).result()</code></div>
+					</div>
+					<p class="code-example-link" style="margin-top: 10px;"><a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/create_sandbox.py">📎 create_sandbox.py</a></p>
+					<aside class="notes">
+						Everything about a sandbox is set when you create it. This one call is a map of what's coming: we just covered the image, and the sizes (cpu/memory) came up in the portal demo; next is lifecycle (auto_suspend_seconds), then the rest one at a time.
+						disk_id replaces disk="ubuntu" now that we have our own image. cpu/memory default to 1000m and 2048Mi (the M size). auto_suspend_seconds defaults to 300; auto_suspend_mode picks Memory or Disk.
+						egress_policy (shown as deny_by_default = EgressPolicy(default_action="Deny")) is explicit because with no policy, outbound access is unrestricted. ports publishes a port for ingress (off by default). volumes attach storage that outlives the sandbox.
+						Other real parameters, if asked: disk_size, labels, environment, connections, entrypoint/cmd.
+						Client setup (not shown): SandboxGroupClient(endpoint_for_region(region), credential, subscription_id=..., resource_group=..., sandbox_group=...). Creating a client doesn't create a sandbox; an async client exists for fan-out.
+						begin_create_sandbox is a long-running operation; .result() waits until it's running. Then sandbox.exec(...) runs commands and sandbox.delete() removes it.
+					</aside>
+				</section>
+
+				<!-- 14 -->
+				<section>
+					<h3>Sandbox lifecycle</h3>
+					<svg class="lifecycle-svg" viewBox="0 0 1180 320" role="img" aria-label="Sandbox lifecycle. Create leads to Running. Inside the lifecycle policy, idle timeout or stop command moves Running to Stopped through stopping and snapshotting. Network traffic or start command moves Stopped back to Running by resuming. The auto-delete policy moves Stopped to Delete.">
+						<defs>
+							<marker id="lc-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+								<path d="M1 1L9 5L1 9" fill="none" stroke="#5b6b78" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+							</marker>
+							<filter id="lc-shadow" x="-10%" y="-10%" width="120%" height="130%">
+								<feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#275e80" flood-opacity="0.12"/>
+							</filter>
+						</defs>
+
+						<!-- Lifecycle policy boundary -->
+						<rect x="250" y="40" width="700" height="250" rx="125" fill="rgba(118, 87, 201, 0.04)" stroke="#7657c9" stroke-width="2" stroke-dasharray="8 7"/>
+						<rect x="485" y="23" width="230" height="36" rx="18" fill="#fff" stroke="#cfdae3" stroke-width="1.5"/>
+						<text x="600" y="47" text-anchor="middle" font-family="'Space Mono', monospace" font-size="15" font-weight="700" letter-spacing="2" fill="#49677d">LIFECYCLE POLICY</text>
+
+						<!-- Create -->
+						<text x="30" y="179" font-size="30" font-weight="700" fill="#49677d">Create</text>
+						<line x1="140" y1="170" x2="291" y2="170" stroke="#5b6b78" stroke-width="2" marker-end="url(#lc-arrow)"/>
+
+						<!-- Running -->
+						<g filter="url(#lc-shadow)">
+							<rect x="295" y="110" width="210" height="120" rx="12" fill="#fff" stroke="#d3e0e9" stroke-width="1.5"/>
+						</g>
+						<rect x="295" y="110" width="9" height="120" rx="4.5" fill="#e3f3d3" stroke="#568b12" stroke-width="1.5"/>
+						<circle cx="343" cy="170" r="19" fill="#e9f6de" stroke="#568b12" stroke-width="1.8"/>
+						<path d="M337 160L351 170L337 180Z" fill="#3f6b0c"/>
+						<text x="372" y="180" font-family="Outfit, sans-serif" font-size="28" font-weight="700" fill="#09284a">Running</text>
+
+						<!-- Stopped -->
+						<g filter="url(#lc-shadow)">
+							<rect x="695" y="110" width="210" height="120" rx="12" fill="#fff" stroke="#d3e0e9" stroke-width="1.5"/>
+						</g>
+						<rect x="695" y="110" width="9" height="120" rx="4.5" fill="#fde5df" stroke="#c2410c" stroke-width="1.5"/>
+						<circle cx="743" cy="170" r="19" fill="#fdece6" stroke="#c2410c" stroke-width="1.8"/>
+						<rect x="735" y="162" width="16" height="16" rx="2" fill="#9a3412"/>
+						<text x="772" y="180" font-family="Outfit, sans-serif" font-size="28" font-weight="700" fill="#09284a">Stopped</text>
+
+						<!-- Running → Stopped -->
+						<text x="600" y="94" text-anchor="middle" font-size="19" font-weight="700" fill="#10243a">Idle timeout or stop command</text>
+						<path d="M508 145C560 98 640 98 692 145" fill="none" stroke="#5b6b78" stroke-width="2" marker-end="url(#lc-arrow)"/>
+						<text x="600" y="140" text-anchor="middle" font-size="16" fill="#49677d">stopping ·</text>
+						<text x="600" y="160" text-anchor="middle" font-size="16" fill="#49677d">snapshotting</text>
+
+						<!-- Stopped → Running -->
+						<path d="M692 195C640 242 560 242 508 195" fill="none" stroke="#5b6b78" stroke-width="2" marker-end="url(#lc-arrow)"/>
+						<text x="600" y="212" text-anchor="middle" font-size="16" fill="#49677d">resuming</text>
+						<text x="600" y="266" text-anchor="middle" font-size="19" font-weight="700" fill="#10243a">Network traffic or start command</text>
+
+						<!-- Stopped → Delete -->
+						<line x1="905" y1="170" x2="1052" y2="170" stroke="#5b6b78" stroke-width="2" marker-end="url(#lc-arrow)"/>
+						<text x="985" y="138" text-anchor="middle" font-size="16" font-weight="700" fill="#10243a" stroke="#fff" stroke-width="6" stroke-linejoin="round" paint-order="stroke">Auto-delete</text>
+						<text x="985" y="157" text-anchor="middle" font-size="16" font-weight="700" fill="#10243a" stroke="#fff" stroke-width="6" stroke-linejoin="round" paint-order="stroke">policy</text>
+						<text x="1062" y="180" font-size="30" font-weight="700" fill="#9f2a1b">Delete</text>
+					</svg>
+					<div class="disabled-state">
+						<svg viewBox="0 0 40 40" width="40" height="40" aria-hidden="true">
+							<circle cx="20" cy="20" r="18" fill="#f7f9fa" stroke="#5f6e7b" stroke-width="1.8"/>
+							<line x1="13" y1="27" x2="27" y2="13" stroke="#46525e" stroke-width="3.2" stroke-linecap="round"/>
+						</svg>
+						<p>Sandboxes can enter a third state, <strong>Disabled</strong>.<br>A disabled sandbox cannot start until it is re-enabled.</p>
+					</div>
+					<p class="smaller muted"><a href="https://sandboxes.azure.com/docs/sandboxes/sandbox/lifecycle" target="_blank">📎 Sandbox lifecycle docs</a></p>
+					<aside class="notes">
+						The lifecycle policy has two parts: auto-suspend (idle timeout plus a suspend mode, Memory or Disk) and auto-delete for sandboxes that stay stopped.
+						Stopping snapshots the disk, and optionally memory; resuming from stopped takes under a second.
+						Policies move sandboxes between states, so your application doesn't have to poll. Stopped sandboxes have no compute charges and don't count against the Sandbox Cores quota.
+						Sandboxes with a data-disk volume can only use Disk mode.
+						SDK: sandbox.set_lifecycle_policy(LifecyclePolicy(auto_suspend=AutoSuspendPolicy(...), auto_delete=AutoDeletePolicy(...))). CLI: aca sandbox lifecycle set.
+						stop() and resume() are explicit alternatives. Don't explain what causes Disabled; the docs only say it can't start until re-enabled.
+						We'll come back to this for cleanup (limits slide) and memory snapshots (suspend/resume slide).
+						Next: the boundary questions, starting with where code inside a sandbox can connect.
+					</aside>
+				</section>
+
+				<!-- 15 -->
+				<section class="no-code-badge">
+					<h3>Network egress: Making outbound calls</h3>
+					<div class="cols egress-cols">
+						<div class="egress-code">
+							<pre class="code-tiny"><code class="language-python" data-trim>
+policy = EgressPolicy(
+    default_action=&quot;Deny&quot;,
+    traffic_inspection=&quot;Full&quot;,
+    host_rules=[
+        EgressHostRule(
+            pattern=&quot;*.cognitiveservices.azure.com&quot;,
+            action=&quot;Allow&quot;),
+    ],
+    rules=[EgressRule(
+        match=EgressRuleMatch(host=&quot;api.github.com&quot;,
+                              methods=[&quot;GET&quot;]),
+        action=EgressRuleAction(type=&quot;Transform&quot;, headers=[
+            EgressHeader(name=&quot;Authorization&quot;,
+                         value_ref=github_token)]),
+    )],
+)
+client.begin_create_sandbox(..., egress_policy=policy)
+							</code></pre>
+							<p class="code-example-link"><a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/sandbox/egress">📎 Control egress</a> · <a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/orchestrator/sandbox_manager.py">📎 sandbox_manager.py</a></p>
+						</div>
+						<div class="egress-flow" role="img" aria-label="Outbound request path. Code inside the sandbox sends all outbound traffic through the egress proxy outside the sandbox. The proxy inspects host, path, and method, matches rules in order with the first match winning, applies the default Deny when nothing matches, and injects secret headers for Transform rules. Requests to the model endpoint (*.cognitiveservices.azure.com) are allowed; GET requests to api.github.com are allowed with a token header added by the proxy; everything else is blocked, and every decision is logged to the network audit.">
+							<div class="eg-box eg-sandbox">
+								<p class="eg-title" style="margin: 0;">Sandbox</p>
+							</div>
+							<div class="eg-link"><span class="eg-arrow">↓</span><span class="eg-tag">all outbound traffic goes through the proxy</span></div>
+							<div class="eg-box eg-proxy">
+								<p class="eg-title">Egress proxy <span class="eg-outside">outside the sandbox</span></p>
+								<ol>
+									<li><strong>Inspect</strong> host, path, method</li>
+									<li><strong>Match</strong> rules in order, first match wins</li>
+									<li><strong>No match →</strong> default action <code>Deny</code></li>
+									<li><strong>Inject</strong> secret headers <span class="eg-note">(never inside the sandbox)</span></li>
+									<li><strong>Record</strong> the decision in network audit logs</li>
+								</ol>
+							</div>
+							<div class="eg-out">
+								<div class="eg-result eg-allow">✓ <code>*.cognitiveservices.azure.com</code></div>
+								<div class="eg-result eg-allow">✓ <code>GET api.github.com</code> + token</div>
+								<div class="eg-result eg-deny">✗ everything else</div>
+							</div>
+						</div>
+					</div>
+					<aside class="notes">
+						Left: a policy in code. Default Deny, Full inspection, and two ways out: the model endpoint (plain Allow), and GET requests to api.github.com via a Transform rule, which lets the request through and adds an Authorization header from a group secret. A POST to GitHub matches neither rule, so it gets the default Deny. Egress is opt-in: with no policy, outbound access is unrestricted.
+						Right: why it's hard to get around. The policy is enforced outside the sandbox, so code inside (even as root) can't edit or skip it. Changing proxy env vars or routes inside the VM doesn't help; all outbound traffic goes through the proxy. The VNet docs say so directly: VNet connections "do not change the egress proxy posture; outbound traffic still flows through the proxy." Under the hood each microVM has a single virtual NIC (confirmed by the ACA team; the boot log showed one eth0 on a private link).
+						Fails closed: no matching rule means the default action (Deny); an egress webhook that fails also defaults to Deny (failBehavior).
+						Secrets stay outside: Transform headers are added by the proxy after the request leaves the sandbox, so the token never exists inside it for code to steal.
+						Every decision is recorded (Network audit in the portal, aca sandbox egress decisions, sandbox.get_egress_decisions()).
+						Caveats: an allowed destination is still a path for data to leave. Full inspection terminates TLS at the proxy, which is why research-agent/app.py disables certificate verification; it's a sample shortcut, don't recommend verify=False.
+						Whoever creates the sandbox controls the policy (begin_create_sandbox even has skip_egress_proxy); code inside the sandbox doesn't.
+						More rule options: actions Allow, Deny, Transform (modify headers), Rewrite (change destination); inspection Full (blocks non-HTTP), Partial, None; path and method matches need Full.
+						CLI: aca sandbox egress set -l &lt;selector&gt; --default Deny --rule "*.github.com:Allow" --traffic-inspection Full, or a YAML policy with aca sandbox egress apply --file egress.yaml.
+						Swarm version (orchestrator/sandbox_manager.py): default Deny plus allow rules for the model endpoint, the Foundry project (hosted web search runs outside the sandbox), and Application Insights.
+						Sources: "outbound traffic still flows through the proxy" is in the VNet docs (sandboxes.azure.com/docs/sandboxes/sandbox/vnet); the single virtual NIC is confirmed by the ACA team but not in public docs, so say it rather than putting it on the slide.
+					</aside>
+				</section>
+
+				<!-- 16 -->
+				<section>
+					<h3>Demo: Allowed and blocked requests</h3>
+					<img class="demo-shot" src="images/demo-egress.png" alt="Browser terminal running curl commands next to the portal's Egress Network Traffic panel. GET api.github.com/zen and GET to the Azure OpenAI endpoint are ALLOWED; POST api.github.com/markdown, pypi.org, and example.com are DENIED. The panel shows 3 allowed and 5 denied requests with timestamps.">
+					<aside class="notes">
+						Demo sandbox: label name=egress-demo in aca-sandboxes-agents-sg-westus (default Deny, Full inspection; allow the model endpoint and GET api.github.com). Run in its browser terminal: curl https://api.github.com/zen (allowed), curl -X POST https://api.github.com/markdown (denied: only GET is allowed), curl https://example.com and curl https://pypi.org/simple/ (denied: no rule), curl the model endpoint (allowed; its 404 is the endpoint's own answer). Denied requests return HTTP 403 quickly and print nothing with plain curl -s; add -w '%{http_code}' to show it. Then open Egress Network Traffic in the portal.
+						Tie each entry to the rule that explains it. This demonstrates the rules, not universal protection against exfiltration.
+						Same data elsewhere: aca sandbox egress decisions -l &lt;selector&gt; -o json, sandbox.get_egress_decisions() in the SDK,
+						or exported continuously as NetworkEgressDecisions via telemetryConfig. Backup: captured panel screenshot.
+					</aside>
+				</section>
+
+				<!-- 17 -->
+				<section>
+					<h3>Network ingress: exposing internal ports</h3>
+					<div class="cols egress-cols">
+						<div class="egress-code ig-steps">
+							<p class="ig-step"><span class="ig-num">1</span>Run a server bound to <code>0.0.0.0</code></p>
+							<pre class="code-tiny"><code class="language-python" data-trim>
+sandbox.exec("nohup python3 -m http.server 8080 "
+             "--bind 0.0.0.0 &amp;")
+							</code></pre>
+							<p class="ig-step"><span class="ig-num">2</span>Publish the port to get a public HTTPS URL</p>
+							<pre class="code-tiny"><code class="language-python" data-trim>
+port = sandbox.add_port(8080, anonymous=True)
+print(port.url)
+							</code></pre>
+							<p class="code-example-link"><a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/sandbox/ports">📎 Expose ports</a></p>
+						</div>
+						<div class="egress-flow" role="img" aria-label="Inbound request path. A caller on the internet reaches the ingress proxy, which runs outside the sandbox. Ingress is off by default: only published ports get an HTTPS URL. The proxy forwards to the process listening on 0.0.0.0:8080 inside the sandbox. Port 8080 is reachable; every other port is not.">
+							<div class="eg-box ig-caller">
+								<p class="eg-title" style="margin: 0;">Internet caller</p>
+							</div>
+							<div class="eg-link"><span class="eg-arrow ig-arrow">↓</span><span class="eg-tag ig-tag">HTTPS to the port's public URL</span></div>
+							<div class="eg-box ig-proxy">
+								<p class="eg-title">Ingress proxy <span class="eg-outside ig-outside">outside the sandbox</span></p>
+								<p><strong>Off by default:</strong> only published ports have a URL</p>
+							</div>
+							<div class="eg-link"><span class="eg-arrow ig-arrow">↓</span></div>
+							<div class="eg-box eg-sandbox">
+								<p class="eg-title" style="margin: 0;">Sandbox <span class="ig-proc">process on <code>0.0.0.0:8080</code></span></p>
+							</div>
+							<div class="eg-out">
+								<div class="eg-result eg-allow">✓ port <code>8080</code> (published)</div>
+								<div class="eg-result eg-deny">✗ every other port</div>
+							</div>
+						</div>
+					</div>
+					<aside class="notes">
+						Left: two steps. Run a server bound to 0.0.0.0 (not 127.0.0.1, or the proxy can't reach it), then publish the port to get a public HTTPS URL on the platform's proxy domain (*.{region}.adcproxy.io). To unpublish: sandbox.remove_port(8080); the URL stops working immediately.
+						Right: ingress is off by default, opt-in per sandbox and per port. Running a server and exposing its port are separate decisions, and outbound permission doesn't imply inbound access.
+						Anonymous means anyone with the URL can call it, so your app owns authentication. Next slides: who can call it, by IP range and by identity.
+						CLI: aca sandbox port add -l &lt;selector&gt; --port 8080 --anonymous. You can also publish at creation with begin_create_sandbox(ports=[8080]).
+						For private access instead of a public URL: link the group to a Container Apps environment in Express mode and add a private endpoint. Private linking changes ingress only; egress policy is unchanged.
+						In the swarm, the orchestrator polls status through an anonymous port. Incoming traffic also resumes a stopped sandbox (see lifecycle).
+						The proxy's placement outside the sandbox matches the docs architecture diagram (ingress proxy between the internet and the sandbox group).
+					</aside>
+				</section>
+
+				<!-- 18 -->
+				<section class="no-code-badge">
+					<h3>Network ingress: IP access control</h3>
+					<div class="cols egress-cols">
+						<div class="egress-code ig-steps">
+							<pre class="code-tiny"><code class="language-python" data-trim>
+sandbox.add_port(8080, anonymous=True,
+    ip_access_control=PortIpAccessControl(
+        default_action=&quot;Deny&quot;,
+        rules=[PortIpAccessControlRule(
+            name=&quot;office&quot;, action=&quot;Allow&quot;,
+            priority=10,
+            source_cidrs=[&quot;203.0.113.0/24&quot;])]))
+							</code></pre>
+							<p class="code-example-link"><a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/sandbox/ports">📎 Expose ports</a></p>
+						</div>
+						<div class="ipac" role="img" aria-label="IP access control example. Rule office allows the range 203.0.113.0/24, which covers 203.0.113.0 through 203.0.113.255. Callers from 203.0.113.7 and 203.0.113.42 are inside the range and allowed. A caller from 198.51.100.4 matches no rule, so the default action denies it.">
+							<div class="ipac-zone ipac-allow">
+								<p class="ipac-label">Rule <code>office</code>: allow <code>203.0.113.0/24</code></p>
+								<p class="ipac-sub">covers 203.0.113.0 to 203.0.113.255</p>
+								<div class="ipac-row"><code class="ipac-ip">203.0.113.7</code><span class="ipac-arrow">→</span><span class="eg-result eg-allow">✓ allowed</span></div>
+								<div class="ipac-row"><code class="ipac-ip">203.0.113.42</code><span class="ipac-arrow">→</span><span class="eg-result eg-allow">✓ allowed</span></div>
+							</div>
+							<div class="ipac-zone ipac-deny">
+								<p class="ipac-label">No rule matches: default action <code>Deny</code></p>
+								<div class="ipac-row"><code class="ipac-ip">198.51.100.4</code><span class="ipac-arrow">→</span><span class="eg-result eg-deny">✗ denied</span></div>
+							</div>
+						</div>
+					</div>
+					<aside class="notes">
+						IP access control is per port: a default action plus prioritized allow/deny rules on source IP ranges (CIDRs). The portal's default is Allow; this example flips it to Deny and allows one range.
+						203.0.113.0/24 means "the first 24 bits must match": any address from 203.0.113.0 to 203.0.113.255. Callers inside it get through; everything else falls to the default Deny.
+						Rules have a unique name and a unique priority. It combines with authentication: here the port is anonymous, so anyone on the office network can call it.
+						The SDK's add_port takes ip_access_control directly; update_ports with AddPortRequest sets every option at once.
+						To confirm with the ACA team: whether the IP check happens before or after authentication.
+					</aside>
+				</section>
+
+				<!-- 19 -->
+				<section class="no-code-badge">
+					<h3>Network ingress: Allowed users</h3>
+					<div class="auth-grid" role="img" aria-label="Two ports compared. Anonymous port: anyone with the URL can call it, including a teammate, a stranger, or a script, so your app must handle authentication. Entra ID port limited to pamela@contoso.com: that signed-in user is allowed, other Entra users are denied, and callers who aren't signed in are denied.">
+						<div class="auth-panel">
+							<p class="auth-title">Anonymous</p>
+							<pre class="code-tiny"><code class="language-python" data-trim>
+sandbox.add_port(8080, anonymous=True)
+							</code></pre>
+							<div class="ipac-row"><span class="auth-who">Teammate with the URL</span><span class="eg-result eg-allow">✓</span></div>
+							<div class="ipac-row"><span class="auth-who">Stranger with the URL</span><span class="eg-result eg-allow">✓</span></div>
+							<div class="ipac-row"><span class="auth-who">Script or crawler</span><span class="eg-result eg-allow">✓</span></div>
+							<p class="auth-foot">Your app has to handle authentication.</p>
+						</div>
+						<div class="auth-panel auth-entra">
+							<p class="auth-title">Microsoft Entra ID</p>
+							<pre class="code-tiny"><code class="language-python" data-trim>
+sandbox.add_port(8080, email=&quot;pamela@contoso.com&quot;)
+							</code></pre>
+							<div class="ipac-row"><span class="auth-who">pamela@contoso.com, signed in</span><span class="eg-result eg-allow">✓</span></div>
+							<div class="ipac-row"><span class="auth-who">Another Entra user</span><span class="eg-result eg-deny">✗</span></div>
+							<div class="ipac-row"><span class="auth-who">Not signed in</span><span class="eg-result eg-deny">✗</span></div>
+							<p class="auth-foot">Checked at the port, before your app sees the request.</p>
+						</div>
+					</div>
+					<p class="code-example-link"><a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/sandbox/ports">📎 Expose ports</a></p>
+					<aside class="notes">
+						Two choices per port. Anonymous: anyone who has the URL can call it, so the app inside owns authentication. The SDK logs a warning when you expose an anonymous port.
+						Microsoft Entra ID: only the listed users can call it. add_port(email=...) is a shortcut for one user; for several, use AddPortRequest(auth=PortAuthConfig(entra_id=PortAuthEntraId(enabled=True, emails=[...]))). You can't set both anonymous and Entra ID.
+						Entra ID auth is in the portal's Add Ingress Port form and the SDK, but not yet in the public ports docs.
+						To confirm with the ACA team: what a caller who isn't signed in gets (a sign-in redirect or a 401), and whether groups or apps can be allowed, not just emails.
+						Other port settings, if asked: Protocol (HTTP/1.1 or HTTP/2 between the proxy and your server; callers always use the HTTPS URL, and your server can speak plain HTTP) and Activation (Manual or OnDemand; OnDemand is expected to start a stopped sandbox when a request arrives). The portal form also has a CORS setting for browser callers from other origins.
+					</aside>
+				</section>
+
+				<!-- 20 -->
+				<section class="no-code-badge">
+					<h3>Keyless model access: what may the agent do?</h3>
+					<div class="r-stack">
+						<div class="fragment fade-out" data-fragment-index="1">
+							<ul class="tight small">
+								<li>Permission to <em>manage sandboxes</em> ≠ permission to <em>call a model or read data</em>.</li>
+								<li>Entra ID + managed identity + scoped RBAC. This repo: the orchestrator gets short-lived bearer tokens and forwards them into the sandbox.</li>
+								<li><strong>Keyless doesn't mean credential-free.</strong> Code inside the sandbox can use what it's given.</li>
+								<li>Managed identity exists at the <strong>sandbox group</strong> level only. For narrower access: separate groups per trust level, or an egress webhook that decides per <code>sandboxId</code>.</li>
+								<li>Network rules decide <em>reachability</em>; authorization decides <em>operations</em>. You need both.</li>
+							</ul>
+						</div>
+						<div class="fragment fade-in-then-out" data-fragment-index="1">
+							<p class="label">Acquire a short-lived token</p>
+							<pre class="code-small"><code class="language-python" data-trim>
+async def get_foundry_token(self) -> str | None:
+    now = int(time.time())
+    if self._foundry_token and now &lt; self._foundry_token_expires_on - 60:
+        return self._foundry_token
+    access = await self._async_credential.get_token(
+        "https://ai.azure.com/.default"
+    )
+    self._foundry_token = access.token
+    self._foundry_token_expires_on = access.expires_on
+    return self._foundry_token
+							</code></pre>
+						</div>
+						<div class="fragment fade-in-then-out" data-fragment-index="2">
+							<p class="label">Hand it to the sandbox</p>
+							<pre class="code-small"><code class="language-python" data-trim>
+environment: dict[str, str] = {"RESEARCH_QUESTION": question}
+token = await self.get_aoai_token()
+if token:
+    environment["AZURE_OPENAI_TOKEN"] = token
+foundry_token = await self.get_foundry_token()
+if foundry_token:
+    environment["AZURE_AI_TOKEN"] = foundry_token
+							</code></pre>
+							<p class="code-example-link"><a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/orchestrator/sandbox_manager.py">📎 orchestrator/sandbox_manager.py</a></p>
+						</div>
+						<div class="fragment" data-fragment-index="3">
+							<p class="label">This repo today</p>
+							<div style="display: flex; align-items: center; gap: 10px;">
+								<div class="box app">Orchestrator</div>
+								<div class="arrow">token in env var →</div>
+								<div class="box sandbox">Sandbox</div>
+								<div class="arrow">request + token →</div>
+								<div class="box">Foundry</div>
+							</div>
+							<p class="label" style="margin-top: 30px;">Credential injection (platform option)</p>
+							<div style="display: flex; align-items: center; gap: 10px;">
+								<div class="box sandbox">Sandbox</div>
+								<div class="arrow">request →</div>
+								<div class="box" style="border-width: 3px;">Egress proxy<small>Transform rule adds group-identity token</small></div>
+								<div class="arrow">request + token →</div>
+								<div class="box">Foundry</div>
+							</div>
+							<p class="small" style="margin-top: 26px;">Header value from a group secret (<code>secretRef</code>) or a token for the group's managed identity (<code>managedIdentityRef</code>). <strong>Code inside never sees the credential.</strong></p>
+						</div>
+					</div>
+					<aside class="notes">
+						Two separate permissions: the caller (orchestrator or your script) needs Container Apps SandboxGroup Data Owner on the group to create and manage sandboxes, and the group's own identity needs AcrPull to pull your image. Neither lets code inside a sandbox call a model; that's this slide.
+						Show code, never token values. Build 1-2: the credential flow this repo uses today.
+						Final build: an egress Transform rule can add an Authorization header on allowed outbound requests, sourced from a group secret or a token
+						minted for the sandbox group's managed identity. Give the group identity the Foundry role, add a Transform rule on the Foundry host,
+						and the orchestrator stops forwarding tokens. Don't claim the sample uses it.
+						Transform rules are written in egress YAML and applied with aca sandbox egress apply --file egress.yaml; the Python SDK example only shows host rules.
+						Group secrets are never exposed as environment variables. A webhook can mint a per-sandbox token at request time but can only return literal header values.
+						Contrast: the portal's Copilot and Claude templates put provider credentials inside the sandbox.
+					</aside>
+				</section>
+
+				<!-- 21 -->
+				<section>
+					<h3>Workspace data: private, shared, or retained?</h3>
+					<div class="grid3">
+						<div class="card" style="border-color: var(--deck-sandbox); background: var(--deck-sandbox-bg);"><h4>Task-local files</h4>Private to one sandbox. Gone when it's deleted.</div>
+						<div class="card"><h4>Explicitly shared</h4>Mounted volumes and exported results deliberately cross the boundary.</div>
+						<div class="card" style="border-style: dashed;"><h4>Retained state</h4>Snapshots and volumes <span class="muted">(platform options; not used by this swarm)</span></div>
+					</div>
+					<ul class="tight small" style="margin-top: 22px;">
+						<li>Treat disk images as trusted starting points: code and dependencies, not credentials or another task's data.</li>
+						<li>Memory snapshots can preserve in-process credentials.</li>
+						<li>Snapshots belong to the group and <strong>outlive their source sandbox</strong>. No automatic retention; clean up on a schedule.</li>
+						<li>Retained storage (disk images, snapshots, volumes) will be billed at Premium Blob ZRS rates (coming soon).</li>
+					</ul>
+					<aside class="notes">
+						Stopping or deleting a sandbox isn't a blanket retention policy for snapshots, volumes, exported results, or logs.
+						Deleting the sandbox group removes everything in it. Automatic snapshots are taken when a sandbox stops, and those will be billed too.
+						For image caching questions, the swarm's prepare_disk_image in sandbox_manager.py reuses a Ready disk image.
+					</aside>
+				</section>
+
+				<!-- 22 -->
+				<section>
+					<h3>Resource limits: how much can it consume?</h3>
+					<div class="cols">
+						<div>
+							<p class="label">Three layers of fan-out caps</p>
+							<ol class="tight small">
+								<li>Your app's concurrency limit (<code>MAX_RESEARCHERS = 6</code>)</li>
+								<li>The group's <code>maxSandboxCount</code> and defaults such as <code>defaultTimeoutSeconds</code></li>
+								<li>The subscription's <strong>Sandbox Cores</strong> quota: concurrent active cores per region</li>
+							</ol>
+							<p class="small">Sizes: XS (0.25 cores, 0.5 GB) · M default (1 core, 2 GB) · XL (4 cores, 8 GB, 80 GB disk)</p>
+						</div>
+						<div>
+							<p class="label">Close ≠ delete</p>
+							<pre class="code-tiny"><code class="language-python" data-trim>
+with ExitStack() as stack:
+    group = SandboxGroupClient(...)
+    stack.callback(group.close)      # local connections
+    sandbox = group.begin_create_sandbox(
+        ..., auto_suspend_seconds=300,
+    ).result()
+    stack.callback(sandbox.close)    # local connections
+    if args.delete_after_run:
+        stack.callback(sandbox.delete)  # remote sandbox
+							</code></pre>
+							<p class="code-example-link"><a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/create_sandbox.py">📎 create_sandbox.py</a> (simplified)</p>
+						</div>
+					</div>
+					<div class="callout">Compute caps don't cap model tokens or external API spend.</div>
+					<aside class="notes">
+						Bound CPU, memory, and disk per sandbox; separately bound fan-out, execution time, and retries in the app.
+						Stopped sandboxes don't count against Sandbox Cores; at the quota, new creates and starts are blocked. API calls can be rate-limited (429). Don't cite a default quota number.
+						Cleanup on success and failure, plus lifecycle policies as a backstop: auto-suspend after idle, then auto-delete for sandboxes left stopped.
+						Auto-suspend isn't a hard execution deadline. Without --delete-after-run, the sandbox keeps existing and relies on auto-suspend, so auto-delete is the backstop.
+					</aside>
+				</section>
+
+				<!-- 23 -->
+				<section class="no-code-badge">
+					<h3>Turn compute into an agent tool</h3>
+					<div class="r-stack">
+						<div class="fragment fade-out" data-fragment-index="1">
+							<div class="arch" style="grid-template-rows: 44px repeat(4, auto); grid-template-columns: 1fr 220px 1fr;" role="img" aria-label="Trust boundaries: ACA hosts the trusted orchestrator with researcher agents; Sandboxes host the untrusted research processes. Supporting services: ACR supplies the disk image, Foundry handles model and search calls, Application Insights receives telemetry.">
+								<div class="zone-outline left" style="grid-row: 1 / 6;"></div>
+								<div class="zone-outline right" style="grid-row: 1 / 6;"></div>
+								<div class="zone-title left">ACA app · trusted</div>
+								<div class="zone-title right">Sandboxes · untrusted</div>
+								<div class="cell left r2"><div class="box">Researcher agent 1<small>tools=[run_in_sandbox]</small></div></div>
+								<div class="cell left r3"><div class="box">Researcher agent 2<small>tools=[run_in_sandbox]</small></div></div>
+								<div class="cell left r4"><div class="box">Researcher agent 3<small>tools=[run_in_sandbox]</small></div></div>
+								<div class="mid r2 arrow">create, execute →<br>← collect, delete</div>
+								<div class="mid r3 arrow">create, execute →<br>← collect, delete</div>
+								<div class="mid r4 arrow">create, execute →<br>← collect, delete</div>
+								<div class="cell right r2"><div class="box sandbox">Sandbox 1<small>Research process</small></div></div>
+								<div class="cell right r3"><div class="box sandbox">Sandbox 2<small>Research process</small></div></div>
+								<div class="cell right r4"><div class="box sandbox">Sandbox 3<small>Research process</small></div></div>
+								<div class="cell right r5"><p class="smaller muted" style="margin: 0; text-align: center;">Egress: Foundry + App Insights only</p></div>
+							</div>
+							<div style="display: flex; gap: 12px; justify-content: center; margin-top: 26px;">
+								<div class="box" style="font-size: 0.5em;">ACR image → sandbox disk image</div>
+								<div class="box" style="font-size: 0.5em;">Foundry: models + hosted web search</div>
+								<div class="box" style="font-size: 0.5em;">Application Insights: telemetry</div>
+							</div>
+						</div>
+						<div class="fragment fade-in-then-out" data-fragment-index="1">
+							<p class="label">Define the agent</p>
+							<pre><code class="language-python" data-trim>
+return Agent(
+    client=build_chat_client(),
+    instructions=RESEARCHER_INSTRUCTIONS,
+    name=agent_id,
+    tools=[run_in_sandbox],
+)
+							</code></pre>
+							<p class="small" style="margin-top: 14px;">The agent can request sandbox execution only because the app registers that tool. Registering it doesn't create a sandbox.</p>
+							<p class="code-example-link"><a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/orchestrator/agents/researcher_agent.py">📎 orchestrator/agents/researcher_agent.py</a></p>
+						</div>
+						<div class="fragment" data-fragment-index="2">
+							<p class="label">Implement the tool</p>
+							<pre class="code-small"><code class="language-python" data-trim>
+async def run_in_sandbox(question: str) -> str:
+    sandbox_id = f"agent-{index}-{uuid.uuid4().hex[:8]}"
+    await sandbox_mgr.create_sandbox(sandbox_id, question)        # create
+    try:
+        while True:                                               # execute
+            await asyncio.sleep(2)
+            status = await sandbox_mgr.get_status(sandbox_id)
+            if status.status == "done":
+                result = await sandbox_mgr.get_result(sandbox_id) # collect
+                break
+    finally:
+        await sandbox_mgr.delete_sandbox(sandbox_id)              # delete
+    return json.dumps({"question": result.question,
+                       "answer": result.answer, ...})
+							</code></pre>
+							<p class="code-example-link"><a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/orchestrator/agents/researcher_agent.py">📎 researcher_agent.py</a> (simplified: timeouts, retries, errors, and UI events omitted)</p>
+						</div>
+					</div>
+					<aside class="notes">
+						Architecture first: trust boundaries. The researcher agent lives in the orchestrator; the research process it launches lives in a sandbox.
+						Foundry-hosted search means the sandbox only needs egress to Foundry, not the whole internet.
+						Reveal 1: model client, instructions, and the one registered tool. Reveal 2: the lifecycle behind the tool. The JSON result returns to the agent verbatim.
+						Real code tolerates transient poll errors (e.g., 502 while the port warms up) and times out after 360 s.
+						Other ways to hand compute to an agent: Sandboxes ship an Agent Skill. In Copilot CLI: /plugin marketplace add microsoft/azure-container-apps,
+						then /plugin install sandboxes@Azure-Container-Apps. Works with Claude Code or any skills folder.
+					</aside>
+				</section>
+
+				<!-- 24 -->
+				<section>
+					<h3>Wire the parallel swarm</h3>
+					<div class="cols">
+						<div>
+							<p class="label">Fan-out: one request per question</p>
+							<pre class="code-tiny"><code class="language-python" data-trim>
+questions = questions[:MAX_RESEARCHERS]
+for i, q in enumerate(questions):
+    await ctx.send_message(
+        AgentExecutorRequest(
+            messages=[Message("user", [q])],
+            should_respond=True,
+        ),
+        target_id=f"researcher_{i}",
+    )
+							</code></pre>
+						</div>
+						<div>
+							<p class="label">Graph: decomposer → researchers → collector → synthesizer</p>
+							<pre class="code-tiny"><code class="language-python" data-trim>
+builder = WorkflowBuilder(start_executor=decomposer)
+builder = builder.add_edge(decomposer, collector)
+for r in researchers:
+    builder = builder.add_edge(decomposer, r)  # fan-out
+    builder = builder.add_edge(r, collector)   # fan-in
+wf = builder.add_edge(collector, synthesizer).build()
+							</code></pre>
+						</div>
+					</div>
+					<p class="small" style="margin-top: 18px;">Separate edges per researcher let the branches run concurrently. The collector releases results once every dispatched branch has returned.</p>
+					<p class="code-example-link"><a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/orchestrator/agents/workflow.py">📎 orchestrator/agents/workflow.py</a></p>
+					<aside class="notes">
+						Map back to the architecture arrows. The decomposer also sends a ResearchPlan to the collector so it knows how many responses to await.
+						Full deployment adds an ACA environment and orchestrator Container App: azd up with azure.yaml provisions, builds images, and deploys. Don't run it on stage.
+						The Sandboxes docs show the same fan-out pattern with the async client and asyncio.gather.
+						Platform caps (maxSandboxCount, Sandbox Cores) sit underneath the workflow's own fan-out limit.
+					</aside>
+				</section>
+
+				<!-- 25 -->
+				<section>
+					<h3>Carry a trace across the sandbox boundary</h3>
+					<div class="cols">
+						<div>
+							<p class="label">Orchestrator: inject</p>
+							<pre class="code-tiny"><code class="language-python" data-trim>
+def _traceparent_env() -> dict[str, str]:
+    carrier: dict[str, str] = {}
+    _otel_propagate.inject(carrier)
+    env: dict[str, str] = {}
+    if carrier.get("traceparent"):
+        env["TRACEPARENT"] = carrier["traceparent"]
+    if carrier.get("tracestate"):
+        env["TRACESTATE"] = carrier["tracestate"]
+    return env
+
+environment.update(_traceparent_env())
+							</code></pre>
+							<p class="code-example-link"><a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/orchestrator/sandbox_manager.py">📎 sandbox_manager.py</a></p>
+						</div>
+						<div>
+							<p class="label">Sandbox: extract</p>
+							<pre class="code-tiny"><code class="language-python" data-trim>
+from opentelemetry.propagate import extract
+
+_PARENT_CTX = extract({
+    "traceparent": os.environ.get("TRACEPARENT", ""),
+    "tracestate": os.environ.get("TRACESTATE", ""),
+})
+
+tracer.start_as_current_span(
+    "research-agent.run", context=_PARENT_CTX)
+							</code></pre>
+							<p class="code-example-link"><a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes/blob/main/research-agent/app.py">📎 research-agent/app.py</a> (simplified)</p>
+						</div>
+					</div>
+					<p class="small" style="margin-top: 16px;">One trace: separate provisioning time from research/model time, find the slow or failed branch, and verify cleanup.</p>
+					<aside class="notes">
+						The sandbox.create span in the orchestrator becomes the parent of research-agent.run inside the sandbox.
+						Exporter config lives in orchestrator/observability.py for the editor walkthrough.
+						Platform option: a per-sandbox telemetryConfig, set at creation, exports stdout/stderr, OpenTelemetry signals, metrics, and NetworkEgressDecisions
+						to Log Analytics, Application Insights, or any OTLP backend, and injects OTEL_EXPORTER_OTLP_ENDPOINT. The sample doesn't use it.
+					</aside>
+				</section>
+
+				<!-- 26 -->
+				<section>
+					<h3>Demo: follow the distributed trace</h3>
+					<div class="placeholder" role="img" aria-label="Screenshot placeholder: Application Insights transaction trace with overlapping researcher spans">
+						<p><strong>Screenshot placeholder</strong></p>
+						<p>Application Insights transaction trace with overlapping researcher spans and one sandbox span expanded.</p>
+						<p class="muted">Save as <code>images/demo-trace.png</code>.</p>
+					</div>
+					<aside class="notes">
+						Open Azure Monitor / Application Insights for the swarm run. Inspect parallel branches and one sandbox's work, then verify the ephemeral sandboxes were deleted.
+						Optional: the sandbox group's RunningCores metric rising during fan-out and dropping to zero after cleanup.
+						Backup: captured trace if ingestion is delayed.
+					</aside>
+				</section>
+
+				<!-- 28 + optional B1 (vertical) -->
+				<section>
+					<section>
+						<h3>Beyond disposable tasks: suspend and resume</h3>
+						<div class="cols" style="margin-top: 10px;">
+							<div class="card">
+								<h4>Disk suspend</h4>
+								<p style="margin: 4px 0;">Before: files + running processes</p>
+								<p style="margin: 4px 0;">After resume: <strong>files</strong> preserved, processes restart</p>
+								<p class="muted" style="margin: 4px 0;">Required with a data-disk volume</p>
+							</div>
+							<div class="card">
+								<h4>Memory + disk suspend</h4>
+								<p style="margin: 4px 0;">Before: files + running processes</p>
+								<p style="margin: 4px 0;">After resume: <strong>files and in-memory state</strong> preserved</p>
+								<p class="muted" style="margin: 4px 0;">Can also capture in-process credentials</p>
+							</div>
+						</div>
+						<div class="box app" style="margin-top: 24px; font-size: 0.66em; text-align: left;">
+							<strong>Snapshots as starting points:</strong> prepare once, then fork.
+							One snapshot can seed many new sandboxes, which inherit its CPU, memory, and disk size.
+						</div>
+						<p class="small" style="margin-top: 20px;">Resume from stopped is sub-second; creating from a snapshot needs a short warm-up.</p>
+						<aside class="notes">
+							A platform capability beyond this repo's create-and-delete swarm. Stay conceptual.
+							CLI: aca sandbox snapshot -l &lt;selector&gt; --name &lt;name&gt; and aca sandbox create --snapshot &lt;name&gt;.
+							Only go down to the optional demo slide if time remains; then return to the next slide.
+						</aside>
+					</section>
+					<section>
+						<p class="label" style="margin-bottom: 0;">Optional</p>
+						<h3 style="margin-top: 0;">Demo: suspend and resume</h3>
+						<div class="placeholder" style="height: 460px;" role="img" aria-label="Screenshot placeholder: stateful process before suspension and after resuming">
+							<p><strong>Screenshot placeholder</strong></p>
+							<p>The same small stateful process before suspension and after resuming, with visible continuity of state.</p>
+							<p class="muted">Save as <code>images/demo-resume.png</code>.</p>
+						</div>
+						<aside class="notes">
+							Prepare and verify separately. Show what memory-preserving resume adds beyond retaining files.
+							Use up to the four-minute flex budget only if earlier delays didn't consume it. Not part of the main slide count.
+						</aside>
+					</section>
+				</section>
+
+				<!-- 28 -->
+				<section>
+					<h3>Recap: where agent runtimes break</h3>
+					<div class="grid5">
+						<div class="card"><h4>Untrusted code</h4>on a developer's laptop or shared host<p class="muted" style="margin-top: 8px;">→ execution isolation</p></div>
+						<div class="card"><h4>Cold starts</h4>that throttle the agent loop<p class="muted" style="margin-top: 8px;">→ prewarmed, sub-second start</p></div>
+						<div class="card"><h4>Budgets</h4>that burn unattended<p class="muted" style="margin-top: 8px;">→ resource &amp; lifecycle limits</p></div>
+						<div class="card"><h4>Workspaces</h4>that die on every restart<p class="muted" style="margin-top: 8px;">→ stop, resume, snapshot</p></div>
+						<div class="card"><h4>Tooling</h4>stitched together by hand<p class="muted" style="margin-top: 8px;">→ compute as an agent tool</p></div>
+					</div>
+					<aside class="notes">
+						Keep this quick: the audience has now seen each fix. Name the pain and point back to where it was addressed:
+						isolation, fast start, limits, lifecycle and suspend/resume, and compute as an agent tool.
+					</aside>
+				</section>
+
+				<!-- 29 -->
+				<section>
+					<h3>Where else Sandboxes fit</h3>
+					<table class="small" style="width: 100%;">
+						<thead><tr><th>Use case</th><th>What Sandboxes provide</th></tr></thead>
+						<tbody>
+							<tr style="background: var(--deck-accent-bg);"><td><strong>Agent workflows</strong> ★</td><td>Persistent, isolated workspaces that survive across task boundaries</td></tr>
+							<tr style="background: var(--deck-accent-bg);"><td><strong>AI code execution</strong> ★</td><td>Safely run LLM-generated code in isolated environments with instant startup</td></tr>
+							<tr><td><strong>Platform building</strong></td><td>Build on the same primitive powering Microsoft services</td></tr>
+							<tr><td><strong>Burst workloads</strong></td><td>Scale from zero to thousands of sandboxes on demand</td></tr>
+							<tr><td><strong>Secure multi-tenant compute</strong></td><td>Strong isolation for untrusted workloads from multiple tenants</td></tr>
+							<tr><td><strong>Interactive user sessions</strong></td><td>Give each user their own isolated compute environment</td></tr>
+						</tbody>
+					</table>
+					<p class="smaller muted" style="margin-top: 10px;">★ Demonstrated in this talk</p>
+					<aside class="notes">
+						Keep this under a minute. The swarm is one instance of the first two rows; the same lifecycle, egress, and identity patterns carry over.
+						Copilot Studio is a real-world agent-workflow example: one sandbox per agent with a data disk for memory.
+					</aside>
+				</section>
+
+				<!-- 30 -->
+				<section>
+					<h3>Choose the execution surface</h3>
+					<table class="small" style="width: 100%;">
+						<thead><tr><th>ACA surface</th><th>Best for</th><th>Lifecycle</th></tr></thead>
+						<tbody>
+							<tr><td><strong>Apps</strong></td><td>Long-running services and APIs</td><td>Continuous</td></tr>
+							<tr><td><strong>Jobs</strong></td><td>Scheduled or event-driven tasks</td><td>Run to completion</td></tr>
+							<tr><td><strong>Dynamic sessions</strong></td><td>Managed code execution; the platform hides the infrastructure</td><td>Pool-managed, ephemeral</td></tr>
+							<tr><td><strong>Sandboxes</strong></td><td>Programmable isolated compute that you control</td><td>Stateful: create, stop, resume, snapshot, delete</td></tr>
+						</tbody>
+					</table>
+					<div class="callout">
+						The swarm uses an <strong>App</strong> for orchestration and <strong>Sandboxes</strong> for isolated research.
+						A standalone sandbox doesn't need an ACA environment.
+					</div>
+					<p class="smaller muted" style="margin-top: 14px;">Source: <a href="https://learn.microsoft.com/azure/container-apps/sandboxes-overview" target="_blank">📎 Sandboxes overview</a></p>
+					<aside class="notes">
+						Rule of thumb from the docs: dynamic sessions for a managed experience that hides infrastructure; Sandboxes when you need
+						programmable control over images, networking, storage, and state. The docs have a longer comparison table for questions.
+						If asked why not Container Apps Express for the orchestrator: Express isn't compatible with azd yet. Express itself is built on Sandboxes.
+					</aside>
+				</section>
+
+				<!-- 31 -->
+				<section>
+					<h3>Takeaways</h3>
+					<div class="grid3" style="grid-template-columns: repeat(4, 1fr);">
+						<div class="card"><h4>One task</h4>One bounded workspace</div>
+						<div class="card"><h4>Explicit boundaries</h4>Isolation, egress, identity, data</div>
+						<div class="card"><h4>Explicit lifecycle</h4>Create, stop, resume, delete</div>
+						<div class="card"><h4>One trace</h4>Across every sandbox</div>
+					</div>
+					<p class="label" style="margin-top: 30px;">Get started with one sandbox, no swarm required</p>
+					<ul class="tight small">
+						<li>Sample repo: <a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes">github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes</a></li>
+						<li>Docs: <a target="_blank" href="https://learn.microsoft.com/azure/container-apps/sandboxes-overview">Sandboxes overview</a> · latest details: <a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/">sandboxes.azure.com/docs</a></li>
+						<li>Agent Skill: <a target="_blank" href="https://learn.microsoft.com/azure/container-apps/sandboxes-quickstart-agent-skills?tabs=copilot">Sandboxes Agent Skill quickstart</a></li>
+						<li>Try it: <a target="_blank" href="https://portal.azure.com">portal.azure.com</a></li>
+					</ul>
+					<aside class="notes">
+						Remind the audience they can start with one sandbox from the portal, CLI, or SDK without deploying the swarm.
+					</aside>
+				</section>
+
+				<!-- 32 -->
+				<section class="heading-only">
+					<h2>Questions?</h2>
+					<p style="font-size: 0.8em; margin-top: 18px;">Repo: <a target="_blank" href="https://github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes">github.com/jkalis-MS/Agent-Swarm-ACA-Sandboxes</a></p>
+					<p style="font-size: 0.8em;">Portal: <a target="_blank" href="https://portal.azure.com">portal.azure.com</a></p>
+					<p style="font-size: 0.7em; margin-top: 24px;">Pamela Fox · <a target="_blank" href="https://pamelafox.org">pamelafox.org</a> · <a target="_blank" href="https://github.com/pamelafox">github.com/pamelafox</a></p>
+					<aside class="notes">
+						Reserve the final five minutes. Don't spend Q&amp;A waiting for a demo.
+						If triggers come up: they're preview; they wake or invoke a sandbox on a connector event (email, SharePoint upload, Teams message, GitHub PR).
+						Network-traffic resume is part of the GA lifecycle, not triggers.
+					</aside>
+				</section>
+
+			</div>
+		</div>
+
+		<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/plugin/highlight/highlight.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/reveal.js-menu@2.1.0/menu.js"></script>
+		<script>
+			Reveal.initialize({
+				width: 1280,
+				height: 720,
+				hash: true,
+				center: false,
+				slideNumber: true,
+				showNotes: false,
+				margin: 0,
+				preloadIframes: true,
+				autoPlayMedia: true,
+				plugins: [RevealHighlight, RevealMenu],
+				pdfSeparateFragments: true
+			});
+		</script>
+	</body>
+</html>

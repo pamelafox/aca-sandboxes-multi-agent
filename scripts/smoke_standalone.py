@@ -9,13 +9,11 @@ import sys
 import tempfile
 import uuid
 from pathlib import Path
-from urllib.parse import urlparse
-
-from azure.containerapps.sandbox import EgressHostRule, EgressPolicy, endpoint_for_region
+from azure.containerapps.sandbox import endpoint_for_region
 from azure.identity import DefaultAzureCredential
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from create_sandbox import RegistryIdentitySandboxGroupClient, parse_args, prepare_disk_image
+from create_sandbox import RegistryIdentitySandboxGroupClient, model_egress_policy, parse_args, prepare_disk_image
 
 
 def verify_csv(text: str) -> None:
@@ -55,14 +53,11 @@ def smoke(args, artifacts: Path, workdir: str) -> None:
                 sandbox = group.begin_create_sandbox(
                     disk=None, disk_id=disk_id, cpu="500m", memory="1Gi", auto_suspend_seconds=300,
                     labels=labels, polling_timeout=180, polling_interval=2,
-                    egress_policy=EgressPolicy(default_action="Deny", host_rules=[
-                        EgressHostRule(pattern=urlparse(endpoint).hostname, action="Allow"),
-                    ]),
+                    egress_policy=model_egress_policy(endpoint, args.image_identity_resource_id),
                     environment={
                         "AGENT_PROMPT": args.prompt,
                         "AZURE_OPENAI_ENDPOINT": endpoint,
                         "AZURE_OPENAI_DEPLOYMENT": os.environ["AZURE_OPENAI_DEPLOYMENT"],
-                        "AZURE_OPENAI_TOKEN": credential.get_token("https://cognitiveservices.azure.com/.default").token,
                     },
                 ).result()
                 metadata["sandbox_id"] = sandbox.sandbox_id

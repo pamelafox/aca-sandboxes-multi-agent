@@ -12,7 +12,7 @@ That distinction matters. Azure Container Apps hosts the long-running web applic
 
 ## The Architecture
 
-The application accepts a research topic, asks a decomposer to produce sub-questions, fans those questions out to as many as six researcher agents, and combines their findings through a synthesizer. Every researcher gets its own ACA Sandbox, its own question, and a tightly restricted network boundary.
+The application accepts a research topic, asks a research lead to produce sub-questions, and fans those questions out to as many as six researcher agents. A reviewer then decides whether to hand the accumulated evidence back to the research lead for a bounded follow-up wave or forward to a report writer. Every researcher gets its own ACA Sandbox, its own question, and a tightly restricted network boundary.
 
 **Who this is for:** teams building agents that need parallel execution, custom code, strong isolation, controlled egress, keyless Azure access where supported, and one observable path across the full workflow.
 
@@ -24,23 +24,32 @@ The flow of information is simple:
 You provide a topic
   |
   v
-Decomposer decomposes it to multiple sub-topics.
+Research Lead plans a parallel research wave
   |
   +--> researcher 1 --> ACA Sandbox 1 --+
   +--> researcher 2 --> ACA Sandbox 2 --+
-  +--> researcher 3 --> ACA Sandbox 3 --+  --> Synthesizer compiles the report based on information from all researches --> Final report
-  +--> researcher 4 --> ACA Sandbox 4 --+
-  +--> researcher 5 --> ACA Sandbox 5 --+
-  +--> researcher 6 --> ACA Sandbox 6 --+
+  +--> researcher 3 --> ACA Sandbox 3 --+--> Reviewer
+  +--> researcher 4 --> ACA Sandbox 4 --+       |
+  +--> researcher 5 --> ACA Sandbox 5 --+       +-- gaps --> Research Lead
+  +--> researcher 6 --> ACA Sandbox 6 --+       |
+                                                  +-- approved --> Report Writer --> Final report
 ```
 
 The diagram is simple. Making each branch truly concurrent, isolated, and observable takes a few deliberate design choices.
 
+The web UI presents both views of the same run. A branched architecture minimap
+highlights the currently active owner or parallel wave and shows the Reviewer's
+two conditional routes: evidence gaps return to the Research Lead, while
+approved evidence advances to the Report Writer. An append-only execution
+history gives every Research Lead, research wave, Reviewer, and Report Writer
+invocation its own node. Handoffs appear as labeled edges between those nodes,
+and a follow-up wave never replaces evidence from an earlier wave.
+
 ## 1. Real concurrency needs separate workflow edges
 
-Microsoft Agent Framework gives us the agents and the workflow graph. The decomposer returns a list of questions. The workflow caps that list at six, creates a fixed pool of researcher executors, and targets one researcher for each question.
+Microsoft Agent Framework gives us the agents and the workflow graph. The research lead returns the initial list of questions. The workflow caps that list at six, creates a fixed pool of researcher executors, and targets one researcher for each question.
 
-Then the synthesizer receives the researcher responses through fan-in and produces the final Markdown report.
+The collector assembles the responses into a dossier. The reviewer makes an agent-directed routing decision: approve the dossier for the report writer, or return 2-4 focused questions to the research lead for one more parallel wave. The two-wave cap prevents an unattended review loop.
 
 The surprising part was the fan-out.
 
@@ -49,14 +58,13 @@ It is tempting to express all researchers as one fan-out edge group. That looks 
 So the workflow creates an individual edge for every researcher:
 
 ```python
-builder = WorkflowBuilder(start_executor=decomposer)
+builder = WorkflowBuilder(start_executor=research_lead)
 for researcher in researchers:
-    builder = builder.add_edge(decomposer, researcher)
+    builder = builder.add_edge(research_lead, researcher)
 
-workflow = builder.add_fan_in_edges(
-    list(researchers),
-    synthesizer,
-).build()
+builder = builder.add_edge(collector, reviewer)
+builder = builder.add_edge(reviewer, research_lead)
+workflow = builder.add_edge(reviewer, report_writer).build()
 ```
 
 That is intentional. Separate edge runners let Microsoft Agent Framework schedule the researcher branches concurrently instead of putting six calls behind one delivery loop.
@@ -75,7 +83,7 @@ The names are close enough to create confusion, so let us make the boundary expl
 | Researcher runtime | ACA Sandboxes | Runs one research question inside a separate isolated environment |
 | Sandbox group | ACA Sandboxes resource | Provides the control boundary used to create disk images and sandboxes |
 
-The orchestrator is a normal Azure Container App. It remains available, accepts topics, builds the workflow, and manages the fan-out.
+The orchestrator is a normal Azure Container App. It remains available, accepts topics, builds the workflow, manages each fan-out, and carries the reviewer handoff between research waves and final writing.
 
 The researcher is not another Container App replica. It runs from a disk image inside a newly created ACA Sandbox. One question goes in. One research result comes out. The sandbox is removed after the branch completes.
 
@@ -116,7 +124,9 @@ Authentication follows the same boundary.
 
 The Bicep deployment creates user-assigned managed identities for the orchestrator and sandbox group, then grants scoped roles for Azure OpenAI, Foundry, the sandbox group data plane, and ACR pulls. The orchestrator uses its Azure identity to obtain short-lived bearer tokens for the Azure OpenAI and Foundry audiences.
 
-Those scoped tokens are forwarded into the egress-restricted sandbox as environment variables. The in-sandbox researcher wraps the Foundry token in a credential implementation, so it does not need to call Microsoft Entra ID or an instance metadata endpoint from inside the locked network.
+In the swarm, those scoped tokens are forwarded into the egress-restricted sandbox as environment variables. The in-sandbox researcher wraps the Foundry token in a credential implementation, so it does not need to call Microsoft Entra ID or an instance metadata endpoint from inside the locked network.
+
+The standalone agent ([create_sandbox.py](create_sandbox.py)) uses the platform's alternative: the sandbox group's managed identity has the Azure OpenAI role, and an egress `Transform` rule makes the proxy add an Entra token for that identity to each model request. No token is ever placed inside that sandbox.
 
 No model API key needs to be baked into the researcher image.
 
@@ -162,7 +172,7 @@ The result is one trace path designed to connect:
 - Researcher agent and `run_in_sandbox` tool activity
 - Sandbox creation and instrumented lifecycle or network operations
 - In-sandbox Microsoft Agent Framework research and Foundry calls
-- Fan-in and synthesis
+- Fan-in, reviewer routing, and final report writing
 
 Application Insights is provisioned in Bicep as a workspace-based resource backed by Log Analytics. The orchestrator and researchers receive the same connection string, and the sandbox egress policy allows the required ingestion endpoints.
 
@@ -212,7 +222,7 @@ existing sandbox group and an identity with permission to create sandboxes in it
 Install the launcher dependencies in your Python environment:
 
 ```bash
-python -m pip install azure-containerapps-sandbox azure-identity dotenv-azd==0.3.0
+python -m pip install azure-containerapps-sandbox==0.1.0b4 azure-identity dotenv-azd==0.3.0
 ```
 
 For local CLI authentication, use an isolated Azure CLI profile:
@@ -418,14 +428,15 @@ launcher does not resolve tags to ACR digests or prune old disk images.
 The plain Ubuntu disk and research-agent disk do not contain this harness runtime.
 
 Use the sandbox configuration and authentication from the preceding section.
-Your local identity also needs permission to invoke the Azure OpenAI deployment
-(for example, the Cognitive Services OpenAI User role).
 
-The launcher acquires a short-lived Cognitive Services token, passes it and the
-task into the sandbox, and invokes the agent there. **The harness, model connection,
-shell, and filesystem operations all run inside the sandbox.** The agent does not
-receive your local Azure CLI credentials. It starts its shell with a clean
-environment rather than automatically inheriting the model token.
+The launcher passes the task into the sandbox and invokes the agent there.
+**The harness, model connection, shell, and filesystem operations all run inside
+the sandbox.** No model credential goes into the sandbox. The sandbox's egress
+policy allows only the model endpoint, through a `Transform` rule that sets the
+`Authorization` header to an Entra token for the sandbox group's managed identity
+(`SANDBOX_GROUP_UAMI_RESOURCE_ID`, which Bicep grants Cognitive Services OpenAI User).
+The agent sends requests with a placeholder key, and the egress proxy replaces it
+on the way out, so code inside the sandbox never sees a token.
 
 - The agent uses Bash to list, read, create, and edit files and run installed programs.
 - `LocalShellTool` uses `approval_mode="never_require"` and `acknowledge_unsafe=True`.
@@ -441,8 +452,8 @@ environment rather than automatically inheriting the model token.
 - `--delete-after-run` removes the sandbox and its files when the run finishes or
   raises an error. Omit it to keep the sandbox and artifacts for inspection.
 
-The forwarded token is not refreshed inside the sandbox. Start a new run to get
-a fresh token. `--prompt` and `--command` are mutually exclusive. No orchestrator
+Because the proxy mints tokens as needed, long-running agents don't hit token
+expiry. `--prompt` and `--command` are mutually exclusive. No orchestrator
 or researcher service is started. Do not run the agent module directly on your
 computer; its entry point checks the sandbox-image runtime marker.
 
@@ -481,11 +492,12 @@ reused. If the process is killed, a network call fails, or a resource appears
 after the failure lookup, cleanup may require manual attention.
 
 The swarm smoke connects to `orchestratorUrl` from azd (override with `--url`),
-submits a brief research task, and requires at least two decomposed questions,
-a successful answer with sources from every researcher, and a nonempty final
-report with no reported pipeline errors. It checks the operational workflow,
-not factual correctness or citation quality. Its default WebSocket deadline is
-900 seconds (`--timeout` overrides it). The server owns researcher cleanup;
+submits a brief research task, and requires at least two questions in every
+research wave, a successful answer with sources from every researcher, reviewer
+approval, and a nonempty final report with no reported pipeline errors. It
+checks the operational workflow, not factual correctness or citation quality.
+Its default WebSocket deadline is 900 seconds (`--timeout` overrides it). The
+server owns researcher cleanup;
 disconnecting or timing out does not cancel server work. The smoke script does
 not delete shared disk images or other users' sandboxes, and does not claim to
 verify server-side deletion. Inspect deployed logs if the run fails or times out.
@@ -497,7 +509,9 @@ researcher sandbox IDs) and the final report when available. Treat these as
 potentially sensitive application outputs; credentials are not deliberately
 recorded. A successful CLI/syntax check is not a successful production smoke run.
 
-The pre-existing local workflow tests under `orchestrator/tests` are unchanged.
+The local workflow tests under `orchestrator/tests` cover collector ordering,
+review-decision validation, and a complete two-wave handoff path with fake
+model and researcher responses.
 
 ## Next Steps
 

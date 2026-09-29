@@ -19,7 +19,7 @@ agent-framework-core==1.13.0
 agent-framework-openai==1.12.0
 
 # ACA Sandboxes SDK (PyPI)
-azure-containerapps-sandbox
+azure-containerapps-sandbox==0.1.0b4
 
 # Observability — OpenTelemetry export to Application Insights. The Agent
 # Framework emits GenAI spans for agent runs and tool calls; azure-monitor

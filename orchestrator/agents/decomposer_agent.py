@@ -1,5 +1,5 @@
 """
-Decomposer Agent — MAF agent that breaks a topic into 4-6 sub-questions.
+Research Lead Agent — MAF agent that breaks a topic into 4-6 sub-questions.
 
 Returned as a JSON array of strings on the agent's final message.
 """
@@ -31,6 +31,6 @@ def build_decomposer_agent() -> Agent:
     return Agent(
         client=build_chat_client(),
         instructions=DECOMPOSER_INSTRUCTIONS,
-        name="decomposer",
+        name="research_lead",
         default_options={"reasoning": {"effort": "low"}},
     )

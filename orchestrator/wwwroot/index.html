@@ -168,6 +168,38 @@
   .input-bar input:focus { border-color: var(--accent); }
   .input-bar input::placeholder { color: var(--text-muted); }
 
+  /* ── Sample queries ─────────────────────────────────────── */
+  .sample-queries {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin: -0.75rem 0 1.5rem;
+  }
+
+  .sample-queries .sample-label {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+
+  .sample-query {
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .sample-query:hover:not(:disabled) {
+    background: var(--card-hover);
+    border-color: var(--accent);
+  }
+
+  .sample-query:disabled { opacity: 0.4; cursor: not-allowed; }
+
   .btn {
     padding: 0.75rem 1.5rem;
     border-radius: 8px;
@@ -185,6 +217,218 @@
 
   .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
   .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* ── Architecture minimap ───────────────────────────────── */
+  .architecture-section {
+    display: none;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+
+  .architecture-section.visible { display: block; }
+
+  .architecture-diagram {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 260px;
+    overflow: visible;
+  }
+
+  .architecture-node .node-box {
+    fill: var(--bg-tertiary);
+    stroke: var(--border);
+    stroke-width: 2;
+    transition: fill 0.2s, stroke 0.2s;
+  }
+
+  .architecture-node.active .node-box {
+    fill: var(--card-hover);
+    stroke: var(--accent);
+    stroke-width: 3;
+  }
+
+  .architecture-node.complete .node-box { stroke: var(--accent-green); }
+  .architecture-node.error .node-box { stroke: var(--accent-red); }
+
+  .architecture-node .node-title {
+    fill: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .architecture-node .node-status {
+    fill: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  .architecture-node .node-count {
+    fill: var(--text-muted);
+    font-size: 11px;
+  }
+
+  .architecture-arrow {
+    fill: none;
+    stroke: var(--text-muted);
+    stroke-width: 2;
+    marker-end: url(#arrowhead);
+    transition: stroke 0.2s, stroke-width 0.2s;
+  }
+
+  .architecture-arrow.active {
+    stroke: var(--accent);
+    stroke-width: 3;
+  }
+
+  .architecture-arrow.conditional {
+    stroke-dasharray: 7 5;
+  }
+
+  .architecture-edge-label {
+    fill: var(--text-secondary);
+    font-size: 11px;
+    paint-order: stroke;
+    stroke: var(--bg-secondary);
+    stroke-width: 5px;
+    stroke-linejoin: round;
+  }
+
+  .architecture-decision-label {
+    fill: var(--accent-yellow);
+    font-size: 11px;
+    font-weight: 600;
+    paint-order: stroke;
+    stroke: var(--bg-secondary);
+    stroke-width: 5px;
+  }
+
+  /* ── Execution history ──────────────────────────────────── */
+  .history-section { display: none; }
+  .history-section.visible { display: block; }
+
+  .history-list {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .history-list::before {
+    content: "";
+    position: absolute;
+    left: 15px;
+    top: 16px;
+    bottom: 16px;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .history-entry {
+    position: relative;
+    margin-left: 32px;
+  }
+
+  .history-entry::before {
+    content: "";
+    position: absolute;
+    left: -23px;
+    top: 17px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--bg-primary);
+  }
+
+  .history-entry.active::before { border-color: var(--accent); }
+  .history-entry.complete::before { border-color: var(--accent-green); }
+  .history-entry.handoff::before { border-color: var(--accent-yellow); }
+
+  .wave-card,
+  .agent-step-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+  }
+
+  .wave-card.active { border-color: var(--accent); }
+  .wave-card.complete { border-color: var(--accent-green); }
+
+  .wave-header,
+  .handoff-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .wave-header h3,
+  .handoff-header h3 {
+    font-size: 0.95rem;
+  }
+
+  .wave-prompts {
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+  }
+
+  .wave-prompts summary {
+    cursor: pointer;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+  }
+
+  .wave-prompts ol { margin-left: 1.25rem; }
+  .wave-prompts li { margin-bottom: 0.35rem; }
+
+  .agent-step-card.active { border-color: var(--accent); }
+  .agent-step-card.complete { border-color: var(--accent-green); }
+  .agent-step-card.error { border-color: var(--accent-red); }
+
+  .agent-step-detail {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  .agent-step-detail ol {
+    margin: 0.65rem 0 0 1.25rem;
+  }
+
+  .history-edge {
+    position: relative;
+    margin: -0.35rem 0 -0.35rem 44px;
+    min-height: 30px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .history-edge::before {
+    content: "";
+    position: absolute;
+    left: -29px;
+    top: -1rem;
+    bottom: -1rem;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .history-edge-label {
+    padding: 0.25rem 0.55rem;
+    border: 1px dashed var(--accent-yellow);
+    border-radius: 12px;
+    color: var(--accent-yellow);
+    background: var(--bg-primary);
+    font-weight: 600;
+  }
 
   /* ── Agent grid ─────────────────────────────────────────── */
   .section-title {
@@ -463,19 +707,75 @@
         <input type="text" id="topic-input" placeholder="Enter a research topic, e.g. 'Quantum computing advances in 2024'" />
         <button class="btn btn-primary" id="research-btn" onclick="startResearch()">🔍 Research</button>
       </div>
+      <div class="sample-queries" id="sample-queries" role="group" aria-label="Sample research topics">
+        <span class="sample-label">Try:</span>
+      </div>
 
       <div id="empty-state" class="empty-state">
         <div class="icon">🧠</div>
-        <p>Enter a research topic above. The orchestrator will decompose it into sub-questions, spawn a sandbox per question, and synthesize a final report.</p>
+        <p>Enter a research topic above. The research lead will launch parallel sandboxed researchers, then a reviewer will hand the evidence to another research wave or the report writer.</p>
       </div>
 
-      <div id="agents-section" style="display:none;">
-        <div class="section-title">Research Agents</div>
-        <div class="agent-grid" id="agent-grid"></div>
-      </div>
+      <section id="architecture-section" class="architecture-section" aria-labelledby="architecture-title">
+        <div class="section-title" id="architecture-title">Live Agent Architecture</div>
+        <svg
+          class="architecture-diagram"
+          viewBox="0 0 900 300"
+          role="img"
+          aria-label="Research Lead launches a parallel research wave. The Reviewer conditionally sends gaps back to the Research Lead or approved evidence to the Report Writer."
+        >
+          <defs>
+            <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="context-stroke"></path>
+            </marker>
+          </defs>
+
+          <path class="architecture-arrow" id="architecture-arrow-lead-wave" d="M140 100 L140 180"></path>
+          <text class="architecture-edge-label" x="152" y="144">launches</text>
+
+          <path class="architecture-arrow" id="architecture-arrow-wave-reviewer" d="M240 220 L350 220"></path>
+          <text class="architecture-edge-label" x="270" y="207">dossier</text>
+
+          <path class="architecture-arrow conditional" id="architecture-arrow-reviewer-lead" d="M450 180 C450 78 320 60 240 60"></path>
+          <text class="architecture-decision-label" x="342" y="77">gaps → more research</text>
+
+          <path class="architecture-arrow conditional" id="architecture-arrow-reviewer-writer" d="M550 220 L660 220"></path>
+          <text class="architecture-decision-label" x="576" y="207">approved</text>
+
+          <g class="architecture-node" id="architecture-research_lead">
+            <rect class="node-box" x="40" y="20" width="200" height="80" rx="10"></rect>
+            <text class="node-title" x="58" y="50">🧭 Research Lead</text>
+            <text class="node-status" id="architecture-research_lead-status" x="58" y="75">Waiting</text>
+          </g>
+
+          <g class="architecture-node" id="architecture-research_wave">
+            <rect class="node-box" x="40" y="180" width="200" height="80" rx="10"></rect>
+            <text class="node-title" x="58" y="210">🔬 Parallel Research Wave</text>
+            <text class="node-status" id="architecture-research_wave-status" x="58" y="233">Waiting</text>
+            <text class="node-count" id="architecture-research_wave-count" x="58" y="250"></text>
+          </g>
+
+          <g class="architecture-node" id="architecture-reviewer">
+            <rect class="node-box" x="350" y="180" width="200" height="80" rx="10"></rect>
+            <text class="node-title" x="368" y="210">🔎 Reviewer</text>
+            <text class="node-status" id="architecture-reviewer-status" x="368" y="235">Waiting</text>
+          </g>
+
+          <g class="architecture-node" id="architecture-report_writer">
+            <rect class="node-box" x="660" y="180" width="200" height="80" rx="10"></rect>
+            <text class="node-title" x="678" y="210">✍️ Report Writer</text>
+            <text class="node-status" id="architecture-report_writer-status" x="678" y="235">Waiting</text>
+          </g>
+        </svg>
+      </section>
+
+      <section id="history-section" class="history-section" aria-labelledby="history-title">
+        <div class="section-title" id="history-title">Execution History</div>
+        <div class="history-list" id="history-list"></div>
+      </section>
 
       <div class="report-section" id="report-section">
-        <div class="section-title">📄 Synthesized Report</div>
+        <div class="section-title">📄 Final Report</div>
         <div class="report-box" id="report-content"></div>
       </div>
     </div>
@@ -502,7 +802,10 @@
 <script src="/vendor/markdown-it.min.js"></script>
 <script>
 let ws = null;
-const agents = {};
+let currentWave = 0;
+const waves = {};
+const activeAgentSteps = {};
+const agentStepCounts = {};
 const markdownRenderer = window.markdownit({
   html: false,
   linkify: true,
@@ -535,8 +838,11 @@ function connect() {
 
 function handleMessage(msg) {
   switch (msg.type) {
+    case 'stage':
+      handleStage(msg);
+      break;
     case 'questions':
-      showQuestions(msg.questions);
+      showQuestions(msg.questions, msg.wave);
       break;
     case 'agent':
       updateAgent(msg);
@@ -547,11 +853,15 @@ function handleMessage(msg) {
     case 'report':
       showReport(msg.markdown);
       break;
+    case 'review':
+      showReview(msg);
+      break;
     case 'log':
       addLog(msg.message, msg.level);
       break;
     case 'pipeline_error':
       addLog(msg.message, 'error');
+      markActiveArchitectureError();
       document.getElementById('research-btn').disabled = false;
       break;
     case 'sandbox_info_changed':
@@ -565,41 +875,123 @@ function startResearch() {
   const topic = input.value.trim();
   if (!topic || !ws || ws.readyState !== WebSocket.OPEN) return;
 
-  // Reset UI
+  currentWave = 0;
+  Object.keys(waves).forEach(key => delete waves[key]);
+  Object.keys(activeAgentSteps).forEach(key => delete activeAgentSteps[key]);
+  Object.keys(agentStepCounts).forEach(key => delete agentStepCounts[key]);
   document.getElementById('empty-state').style.display = 'none';
-  document.getElementById('agents-section').style.display = 'block';
-  document.getElementById('agent-grid').innerHTML = '';
+  document.getElementById('architecture-section').classList.add('visible');
+  document.getElementById('history-section').classList.add('visible');
+  document.getElementById('history-list').innerHTML = '';
   document.getElementById('report-section').classList.remove('visible');
   document.getElementById('report-content').innerHTML = '';
   document.getElementById('research-btn').disabled = true;
+  resetArchitecture();
   ws.send(JSON.stringify({ type: 'research', topic }));
   addLog(`Starting research: "${topic}"`, 'info');
 }
 
-function showQuestions(questions) {
-  const grid = document.getElementById('agent-grid');
-  grid.innerHTML = '';
+function showQuestions(questions, wave = 1) {
+  currentWave = wave;
+  waves[wave] = {
+    questions,
+    statuses: {},
+    completed: 0,
+  };
+
+  const historyList = document.getElementById('history-list');
+  const entry = document.createElement('article');
+  entry.className = 'history-entry active';
+  entry.id = `wave-entry-${wave}`;
+  const prompts = questions
+    .map(question => `<li>${escapeHtml(question)}</li>`)
+    .join('');
+  entry.innerHTML = `
+    <div class="wave-card active" id="wave-card-${wave}">
+      <div class="wave-header">
+        <h3>🔬 Parallel Research Wave ${wave}</h3>
+        <span class="status-badge status-researching" id="wave-status-${wave}">
+          0 / ${questions.length} complete
+        </span>
+      </div>
+      <details class="wave-prompts" open>
+        <summary>${questions.length} research prompts</summary>
+        <ol>${prompts}</ol>
+      </details>
+      <div class="agent-grid" id="agent-grid-${wave}"></div>
+    </div>
+  `;
+  historyList.appendChild(entry);
+  const grid = document.getElementById(`agent-grid-${wave}`);
 
   questions.forEach((q, i) => {
-    agents[i] = { question: q, status: 'provisioning' };
-
     const card = document.createElement('div');
     card.className = 'agent-card';
-    card.id = `agent-card-${i}`;
+    card.id = `agent-card-${wave}-${i}`;
     card.innerHTML = `
       <div class="agent-card-header">
         <span class="label">🔍 Agent ${i + 1}</span>
-        <span class="status-badge status-provisioning" id="status-${i}">Provisioning</span>
+        <span class="status-badge status-provisioning" id="status-${wave}-${i}">Provisioning</span>
       </div>
       <div class="agent-question">"${escapeHtml(q)}"</div>
-      <div class="agent-answer" id="answer-${i}"></div>
+      <div class="agent-answer" id="answer-${wave}-${i}"></div>
     `;
     grid.appendChild(card);
   });
+
+  updateArchitectureStage('research_lead', 'complete', `Dispatched wave ${wave}`);
+  updateAgentStepDetail(
+    'research_lead',
+    `Dispatched research wave ${wave} with ${questions.length} independent prompts.`,
+  );
+  updateArchitectureStage(
+    'research_wave',
+    'active',
+    `Wave ${wave} running`,
+    `0 of ${questions.length} researchers complete`,
+  );
+  setArchitectureArrow('lead-wave', true);
+}
+
+function showReview(msg) {
+  const destination = msg.status === 'needs_more_research'
+    ? 'Research Lead'
+    : 'Report Writer';
+  const followUps = msg.followUpQuestions || [];
+  const followUpMarkup = followUps.length
+    ? `<ol>${followUps.map(q => `<li>${escapeHtml(q)}</li>`).join('')}</ol>`
+    : '';
+  updateAgentStepDetail(
+    'reviewer',
+    `${escapeHtml(msg.rationale || '')}${followUpMarkup}`,
+    true,
+  );
+  appendHistoryEdge(
+    msg.status === 'needs_more_research'
+      ? `gaps → Research Lead for wave ${Number(msg.wave) + 1}`
+      : 'approved → Report Writer',
+  );
+
+  updateArchitectureStage('reviewer', 'complete', `Reviewed wave ${msg.wave}`);
+  if (msg.status === 'needs_more_research') {
+    setArchitectureArrow('reviewer-lead', true);
+    setArchitectureArrow('reviewer-writer', false);
+    updateArchitectureStage(
+      'research_lead',
+      'active',
+      `Planning wave ${Number(msg.wave) + 1}`,
+    );
+  } else {
+    setArchitectureArrow('reviewer-lead', false);
+    setArchitectureArrow('reviewer-writer', true);
+    updateArchitectureStage('report_writer', 'active', 'Writing final report');
+  }
 }
 
 function updateAgent(msg) {
-  const badge = document.getElementById(`status-${msg.index}`);
+  const wave = currentWave;
+  const waveState = waves[wave];
+  const badge = document.getElementById(`status-${wave}-${msg.index}`);
   if (!badge) return;
 
   badge.className = `status-badge status-${msg.status}`;
@@ -611,10 +1003,35 @@ function updateAgent(msg) {
     error: '✗ Error'
   };
   badge.innerHTML = labels[msg.status] || msg.status;
+
+  if (waveState && waveState.statuses[msg.index] !== msg.status) {
+    const previousStatus = waveState.statuses[msg.index];
+    waveState.statuses[msg.index] = msg.status;
+    if (msg.status === 'done' && previousStatus !== 'done') {
+      waveState.completed += 1;
+    }
+    const total = waveState.questions.length;
+    document.getElementById(`wave-status-${wave}`).textContent =
+      `${waveState.completed} / ${total} complete`;
+    updateArchitectureStage(
+      'research_wave',
+      waveState.completed === total ? 'complete' : 'active',
+      waveState.completed === total ? `Wave ${wave} complete` : `Wave ${wave} running`,
+      `${waveState.completed} of ${total} researchers complete`,
+    );
+    if (waveState.completed === total) {
+      document.getElementById(`wave-entry-${wave}`).classList.replace('active', 'complete');
+      document.getElementById(`wave-card-${wave}`).classList.replace('active', 'complete');
+      const waveBadge = document.getElementById(`wave-status-${wave}`);
+      waveBadge.className = 'status-badge status-done';
+      setArchitectureArrow('wave-reviewer', true);
+    }
+  }
 }
 
 function showResult(msg) {
-  const answerDiv = document.getElementById(`answer-${msg.index}`);
+  const wave = currentWave;
+  const answerDiv = document.getElementById(`answer-${wave}-${msg.index}`);
   if (!answerDiv) return;
 
   let html = `<div class="answer-body">${simpleMarkdown(msg.answer)}</div>`;
@@ -625,14 +1042,14 @@ function showResult(msg) {
     });
     html += '</div>';
   }
-  html += `<button class="answer-toggle" onclick="toggleAnswer(${msg.index})">Show more ▾</button>`;
+  html += `<button class="answer-toggle" onclick="toggleAnswer(${wave}, ${msg.index})">Show more ▾</button>`;
 
   answerDiv.innerHTML = html;
   answerDiv.classList.add('visible', 'collapsed');
 }
 
-function toggleAnswer(index) {
-  const answerDiv = document.getElementById(`answer-${index}`);
+function toggleAnswer(wave, index) {
+  const answerDiv = document.getElementById(`answer-${wave}-${index}`);
   if (!answerDiv) return;
   const btn = answerDiv.querySelector('.answer-toggle');
   const collapsed = answerDiv.classList.toggle('collapsed');
@@ -642,7 +1059,130 @@ function toggleAnswer(index) {
 function showReport(markdown) {
   document.getElementById('report-content').innerHTML = simpleMarkdown(markdown);
   document.getElementById('report-section').classList.add('visible');
+  updateArchitectureStage('report_writer', 'complete', 'Final report complete');
   document.getElementById('research-btn').disabled = false;
+}
+
+function handleStage(msg) {
+  updateArchitectureStage(msg.stage, msg.status);
+  if (msg.status === 'active') {
+    appendAgentStep(msg.stage);
+  } else if (msg.status === 'complete' || msg.status === 'error') {
+    completeAgentStep(msg.stage, msg.status);
+  }
+}
+
+function appendAgentStep(stage) {
+  const labels = {
+    research_lead: ['🧭 Research Lead', currentWave ? `Planning research wave ${currentWave + 1}.` : 'Decomposing the topic into independent research prompts.'],
+    reviewer: ['🔎 Reviewer', `Reviewing the accumulated evidence after wave ${currentWave}.`],
+    report_writer: ['✍️ Report Writer', 'Writing the final report from the approved evidence dossier.'],
+  };
+  const label = labels[stage];
+  if (!label) return;
+
+  const count = (agentStepCounts[stage] || 0) + 1;
+  agentStepCounts[stage] = count;
+  const stepId = `agent-step-${stage}-${count}`;
+  activeAgentSteps[stage] = stepId;
+
+  const entry = document.createElement('article');
+  entry.className = 'history-entry active';
+  entry.id = `${stepId}-entry`;
+  entry.innerHTML = `
+    <div class="agent-step-card active" id="${stepId}-card">
+      <div class="wave-header">
+        <h3>${label[0]}</h3>
+        <span class="status-badge status-researching" id="${stepId}-status">Active</span>
+      </div>
+      <div class="agent-step-detail" id="${stepId}-detail">${escapeHtml(label[1])}</div>
+    </div>
+  `;
+  document.getElementById('history-list').appendChild(entry);
+}
+
+function completeAgentStep(stage, status) {
+  const stepId = activeAgentSteps[stage];
+  if (!stepId) return;
+  const entry = document.getElementById(`${stepId}-entry`);
+  const card = document.getElementById(`${stepId}-card`);
+  const badge = document.getElementById(`${stepId}-status`);
+  const finalClass = status === 'error' ? 'error' : 'complete';
+  if (entry) entry.classList.replace('active', finalClass);
+  if (card) card.classList.replace('active', finalClass);
+  if (badge) {
+    badge.className = `status-badge status-${status === 'error' ? 'error' : 'done'}`;
+    badge.textContent = status === 'error' ? 'Failed' : 'Complete';
+  }
+  delete activeAgentSteps[stage];
+}
+
+function updateAgentStepDetail(stage, content, contentIsHtml = false) {
+  const stepId = activeAgentSteps[stage];
+  if (!stepId) return;
+  const detail = document.getElementById(`${stepId}-detail`);
+  if (!detail) return;
+  if (contentIsHtml) {
+    detail.innerHTML = content;
+  } else {
+    detail.textContent = content;
+  }
+}
+
+function appendHistoryEdge(label) {
+  const edge = document.createElement('div');
+  edge.className = 'history-edge';
+  edge.setAttribute('aria-label', `Handoff: ${label}`);
+  edge.innerHTML = `<span class="history-edge-label">${escapeHtml(label)}</span>`;
+  document.getElementById('history-list').appendChild(edge);
+}
+
+function resetArchitecture() {
+  ['research_lead', 'research_wave', 'reviewer', 'report_writer'].forEach(stage => {
+    const node = document.getElementById(`architecture-${stage}`);
+    node.classList.remove('active', 'complete', 'error');
+    document.getElementById(`architecture-${stage}-status`).textContent = 'Waiting';
+  });
+  document.getElementById('architecture-research_wave-count').textContent = '';
+  ['lead-wave', 'wave-reviewer', 'reviewer-lead', 'reviewer-writer'].forEach(name =>
+    setArchitectureArrow(name, false)
+  );
+}
+
+function updateArchitectureStage(stage, status, label, count = '') {
+  const node = document.getElementById(`architecture-${stage}`);
+  const statusElement = document.getElementById(`architecture-${stage}-status`);
+  if (!node || !statusElement) return;
+
+  node.classList.remove('active', 'complete', 'error');
+  if (status === 'active' || status === 'complete' || status === 'error') {
+    node.classList.add(status);
+  }
+
+  const defaultLabels = {
+    active: 'Active',
+    complete: 'Complete',
+    error: 'Error',
+  };
+  statusElement.textContent = label || defaultLabels[status] || 'Waiting';
+
+  if (stage === 'research_wave') {
+    document.getElementById('architecture-research_wave-count').textContent = count;
+  }
+}
+
+function setArchitectureArrow(name, active) {
+  const arrow = document.getElementById(`architecture-arrow-${name}`);
+  if (arrow) arrow.classList.toggle('active', active);
+}
+
+function markActiveArchitectureError() {
+  document.querySelectorAll('.architecture-node.active').forEach(node => {
+    node.classList.remove('active');
+    node.classList.add('error');
+    const status = node.querySelector('.node-status');
+    if (status) status.textContent = 'Failed';
+  });
 }
 
 function addLog(message, level = 'info') {
@@ -739,6 +1279,56 @@ setInterval(refreshSandboxInfo, 4000);
 document.getElementById('topic-input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') startResearch();
 });
+
+// Keep in sync with "Demo prompt ideas" in talk.md.
+const SAMPLE_QUERIES = [
+  {
+    label: '🌳 Native tree',
+    topic: 'optimal tree to plant for a native california garden for a lawn that faces north, has tough soil, and is near oak tree roots. tree cant grow more than 15 feet tall. tree is NOT shaded.',
+  },
+  {
+    label: '🚗 Forester upgrade',
+    topic: 'My family of four in California is deciding whether to replace our gas car (Subaru Forester 2001) with a hybrid version of the Forester in 2026. Compare the total five-year cost, charging practicality, winter range, reliability, insurance, and available incentives. Include the strongest reasons not to switch, identify assumptions that could change the recommendation, and produce a decision checklist.',
+  },
+  {
+    label: '🔥 Heat pump',
+    topic: 'Should I replace the gas furnace in my 1950s San Francisco Bay Area home with a heat pump? Compare upfront and installation costs, available rebates and tax credits, yearly operating costs, comfort in mild winters, and what electrical panel upgrades might be needed.',
+  },
+  {
+    label: '🌸 Kyoto with a toddler',
+    topic: 'Plan a 5-day trip to Kyoto in early April with a toddler. Cover cherry blossom timing and crowds, stroller-friendly sights, family-friendly places to stay, getting around without a car, and toddler-friendly food.',
+  },
+  {
+    label: '🐍 Python tooling',
+    topic: 'Which Python project and dependency manager should a team of five adopt for a new web app: pip with venv, Poetry, or uv? Compare install speed, lockfile support, Python version management, Docker friendliness, and ecosystem maturity.',
+  },
+];
+
+function renderSampleQueries() {
+  const container = document.getElementById('sample-queries');
+  for (const sample of SAMPLE_QUERIES) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'sample-query';
+    button.textContent = sample.label;
+    button.title = sample.topic;
+    button.addEventListener('click', () => {
+      if (document.getElementById('research-btn').disabled) return;
+      document.getElementById('topic-input').value = sample.topic;
+      startResearch();
+    });
+    container.appendChild(button);
+  }
+  // Disable sample buttons whenever the Research button is disabled (during a run).
+  const researchBtn = document.getElementById('research-btn');
+  const syncDisabled = () => {
+    container.querySelectorAll('.sample-query').forEach(b => { b.disabled = researchBtn.disabled; });
+  };
+  new MutationObserver(syncDisabled).observe(researchBtn, { attributes: true, attributeFilter: ['disabled'] });
+  syncDisabled();
+}
+
+renderSampleQueries();
 
 connect();
 refreshSandboxInfo();

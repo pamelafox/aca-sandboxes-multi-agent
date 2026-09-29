@@ -20,7 +20,7 @@ import traceback
 import requests
 from flask import Flask, jsonify
 
-# ADC sandbox egress proxy does TLS interception — disable SSL verification
+# Sandbox egress proxy does TLS interception — disable SSL verification
 os.environ.setdefault("CURL_CA_BUNDLE", "")
 os.environ.setdefault("REQUESTS_CA_BUNDLE", "")
 os.environ.setdefault("SSL_CERT_FILE", "")
@@ -140,7 +140,7 @@ async def _run_agent_research(question: str) -> dict:
         async def __aexit__(self, *exc: object) -> None:
             return None
 
-    # ADC egress proxy does TLS interception — disable cert verification on both
+    # Sandbox egress proxy does TLS interception — disable cert verification on both
     # the AIProjectClient transport and the OpenAI (Responses) client it builds.
     project_client = AIProjectClient(
         endpoint=project_endpoint,
@@ -221,7 +221,7 @@ def _test_connectivity(endpoint: str) -> str:
     except Exception as e:
         results.append(f"TCP_FAIL:{host}:{port}:{e}")
 
-    # HTTPS test (skip SSL verification — ADC proxy uses self-signed certs)
+    # HTTPS test (skip SSL verification — sandbox egress proxy uses self-signed certs)
     try:
         resp = requests.get(f"https://{host}/", timeout=5, verify=False)
         results.append(f"HTTPS:{resp.status_code}")

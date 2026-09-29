@@ -34,10 +34,15 @@ def build_agent(shell: LocalShellTool, client: OpenAIChatClient) -> Agent:
     )
 
 
-async def run_agent(prompt: str, *, endpoint: str, deployment: str, token: str) -> str:
+# The sandbox holds no model credential. The egress proxy replaces this placeholder
+# with an Entra token for the sandbox group's managed identity on the way out.
+PROXY_INJECTED_AUTH = "injected-by-egress-proxy"
+
+
+async def run_agent(prompt: str, *, endpoint: str, deployment: str) -> str:
     async with AsyncOpenAI(
         base_url=endpoint.rstrip("/") + "/openai/v1/",
-        api_key=token,
+        api_key=PROXY_INJECTED_AUTH,
     ) as openai_client:
         client = OpenAIChatClient(model=deployment, async_client=openai_client)
         async with LocalShellTool(
@@ -69,7 +74,6 @@ def main() -> None:
         os.environ["AGENT_PROMPT"],
         endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
         deployment=os.environ["AZURE_OPENAI_DEPLOYMENT"],
-        token=os.environ["AZURE_OPENAI_TOKEN"],
     ))
 
 

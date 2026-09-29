@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 EmitFn = Callable[[dict], Awaitable[None]]
 
-# Poll-loop resilience: a single transient error (e.g. a 502 from the ADC
+# Poll-loop resilience: a single transient error (e.g. a 502 from the sandbox
 # egress proxy while the sandbox port warms up) must not kill a researcher.
 POLL_TIMEOUT_SECONDS = 360
 MAX_CONSECUTIVE_POLL_ERRORS = 8
@@ -88,11 +88,11 @@ def build_researcher_agent(
         await agent_status("researching")
         await log(f"Sandbox {sandbox_id} running", "success")
 
-        # Poll until done/error. Tolerate transient errors (e.g. the ADC egress
+        # Poll until done/error. Tolerate transient errors (e.g. the sandbox port
         # proxy occasionally returns 502 on /status while the sandbox port warms
         # up). A single transient failure must NOT kill the researcher, otherwise
-        # its executor fails, never delivers to the fan-in, and the synthesizer
-        # runs with partial results while the UI is stuck on "researching".
+        # its executor fails, never delivers to the fan-in, and the reviewer
+        # receives partial results while the UI is stuck on "researching".
         result: AgentResult | None = None
         poll_deadline = asyncio.get_event_loop().time() + POLL_TIMEOUT_SECONDS
         consecutive_errors = 0

@@ -4,7 +4,7 @@ Research Agent Swarm — Orchestrator (Python + Microsoft Agent Framework).
 A FastAPI app that:
 - Serves the DevUI from wwwroot/
 - Accepts research topics over WebSocket /ws/agents
-- Runs a MAF Workflow (decompose → fan-out research → fan-in synthesize)
+- Runs a MAF Workflow (lead → parallel research → review/handoff → report)
 - Streams workflow events to the UI in real time
 - Each researcher branch provisions an Azure Container Apps Sandbox via
   the `run_in_sandbox` tool
@@ -31,6 +31,7 @@ load_dotenv(override=False)
 
 from agents import (                            # noqa: E402
     MAX_RESEARCHERS,
+    MAX_RESEARCH_WAVES,
     ResearchInput,
     build_research_workflow,
 )
@@ -168,6 +169,7 @@ async def diag() -> dict:
         "diskImageId":       os.environ.get("DISK_IMAGE_ID"),
         "defaultRegion":     os.environ.get("DEFAULT_REGION", "westus2"),
         "maxResearchers":    MAX_RESEARCHERS,
+        "maxResearchWaves":  MAX_RESEARCH_WAVES,
     }
 
 
@@ -343,7 +345,7 @@ async def _run_research_pipeline(ws: WebSocket, topic: str) -> None:
 
         await emit({
             "type": "log",
-            "message": "Starting MAF workflow (decompose → fan-out → synthesize)...",
+            "message": "Starting MAF workflow (lead → parallel wave → review → report)...",
             "level": "info",
         })
 
@@ -353,13 +355,14 @@ async def _run_research_pipeline(ws: WebSocket, topic: str) -> None:
         workflow = build_research_workflow(sandbox_mgr, emit)
 
         # Run the workflow streaming. The events we map to UI messages:
-        #   - WorkflowEvent(type="output") from decomposer  → {type: questions}
-        #   - WorkflowEvent(type="output") from synthesizer → {type: report}
+        #   - executor lifecycle for mesh agents             → {type: stage}
+        #   - WorkflowEvent(type="output") from research lead → {type: questions}
+        #   - WorkflowEvent(type="output") from reviewer      → {type: review}
+        #   - WorkflowEvent(type="output") from report writer → {type: report}
         #   - WorkflowEvent(type="executor_failed")          → log error
         #   (per-agent {type: "agent"|"result"|"log"} are emitted directly by
         #    the researcher tool through the `emit` callback above.)
         final_report: str | None = None
-        questions_seen = False
 
         stream = workflow.run(
             ResearchInput(topic=topic),
@@ -372,25 +375,74 @@ async def _run_research_pipeline(ws: WebSocket, topic: str) -> None:
 
             etype = event.type
 
-            if etype in ("output", "data"):
+            if etype == "executor_invoked":
+                source = event.executor_id or ""
+                if source in {"research_lead", "reviewer", "report_writer"}:
+                    await emit({
+                        "type": "stage",
+                        "stage": source,
+                        "status": "active",
+                    })
+
+            elif etype in ("output", "data"):
                 source = event.executor_id or ""
                 data = event.data
-                if source == "decomposer" and isinstance(data, list) and not questions_seen:
-                    questions_seen = True
-                    await emit({"type": "questions", "questions": data})
+                if (
+                    source == "research_lead"
+                    and isinstance(data, dict)
+                    and data.get("kind") == "questions"
+                ):
+                    questions = data.get("questions") or []
+                    wave = int(data.get("wave") or 1)
+                    await emit({
+                        "type": "questions",
+                        "questions": questions,
+                        "wave": wave,
+                    })
                     await emit({
                         "type": "log",
-                        "message": f"Generated {len(data)} sub-questions",
+                        "message": (
+                            f"Research Lead dispatched wave {wave} "
+                            f"with {len(questions)} questions"
+                        ),
                         "level": "success",
                     })
-                elif source.startswith("synthesizer"):
+                elif (
+                    source == "reviewer"
+                    and isinstance(data, dict)
+                    and data.get("kind") == "review"
+                ):
+                    await emit({
+                        "type": "review",
+                        "status": data.get("status"),
+                        "rationale": data.get("rationale"),
+                        "wave": data.get("wave"),
+                        "followUpQuestions": data.get("follow_up_questions") or [],
+                    })
+                    destination = (
+                        "Research Lead"
+                        if data.get("status") == "needs_more_research"
+                        else "Report Writer"
+                    )
+                    await emit({
+                        "type": "log",
+                        "message": f"Reviewer handed off to {destination}: {data.get('rationale')}",
+                        "level": "info",
+                    })
+                elif source == "report_writer":
                     extracted = _extract_text(data)
                     if extracted:
                         final_report = extracted
 
             elif etype == "executor_completed":
                 source = event.executor_id or ""
-                if source.startswith("synthesizer") and not final_report:
+                if source in {"research_lead", "reviewer", "report_writer"}:
+                    await emit({
+                        "type": "stage",
+                        "stage": source,
+                        "status": "complete",
+                    })
+                if source == "report_writer" and not final_report:
                     extracted = _extract_text(event.data)
                     if extracted:
                         final_report = extracted

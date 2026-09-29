@@ -14,12 +14,27 @@ from websockets.asyncio.client import connect
 
 async def smoke(url: str, topic: str, timeout: int, artifacts: Path) -> None:
     parsed = urlparse(url)
-    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
-        raise ValueError("Provide the deployed orchestrator HTTPS URL without credentials.")
-    websocket_url = urlunparse(("wss", parsed.netloc, "/ws/agents", "", "", ""))
-    questions = []
-    results = {}
-    statuses = {}
+    is_loopback = parsed.hostname in {"127.0.0.1", "localhost", "::1"}
+    if (
+        parsed.scheme not in {"http", "https"}
+        or (parsed.scheme == "http" and not is_loopback)
+        or not parsed.hostname
+        or parsed.username
+        or parsed.password
+    ):
+        raise ValueError(
+            "Provide an HTTPS orchestrator URL, or an HTTP loopback URL for local testing."
+        )
+    websocket_scheme = "wss" if parsed.scheme == "https" else "ws"
+    websocket_url = urlunparse(
+        (websocket_scheme, parsed.netloc, "/ws/agents", "", "", "")
+    )
+    questions_by_wave = {}
+    results_by_wave = {}
+    statuses_by_wave = {}
+    reviews = []
+    active_stages = set()
+    current_wave = 0
     errors = []
     async with asyncio.timeout(timeout):
         async with connect(websocket_url, open_timeout=30, close_timeout=10, max_size=4 * 1024 * 1024) as socket:
@@ -31,16 +46,45 @@ async def smoke(url: str, topic: str, timeout: int, artifacts: Path) -> None:
                     events.write(json.dumps(event) + "\n")
                     events.flush()
                     kind = event.get("type")
-                    if kind == "questions":
-                        questions = event["questions"]
-                        print(f"Decomposed into {len(questions)} questions", flush=True)
+                    if kind == "stage":
+                        if event.get("status") == "active":
+                            active_stages.add(event.get("stage"))
+                    elif kind == "questions":
+                        current_wave = int(event.get("wave") or 1)
+                        questions_by_wave[current_wave] = event["questions"]
+                        results_by_wave[current_wave] = {}
+                        statuses_by_wave[current_wave] = {}
+                        print(
+                            f"Research wave {current_wave}: "
+                            f"{len(event['questions'])} questions",
+                            flush=True,
+                        )
                     elif kind == "agent":
-                        statuses[event["index"]] = event["status"]
-                        print(f"Researcher {event['index']}: {event['status']} ({event.get('sandboxId', 'unknown')})", flush=True)
+                        statuses_by_wave.setdefault(current_wave, {})[
+                            event["index"]
+                        ] = event["status"]
+                        print(
+                            f"Wave {current_wave} researcher {event['index']}: "
+                            f"{event['status']} "
+                            f"({event.get('sandboxId', 'unknown')})",
+                            flush=True,
+                        )
                         if event["status"] == "error":
-                            errors.append(f"Researcher {event['index']} failed")
+                            errors.append(
+                                f"Wave {current_wave} researcher "
+                                f"{event['index']} failed"
+                            )
                     elif kind == "result":
-                        results[event["index"]] = event
+                        results_by_wave.setdefault(current_wave, {})[
+                            event["index"]
+                        ] = event
+                    elif kind == "review":
+                        reviews.append(event)
+                        print(
+                            f"Reviewer handed off to "
+                            f"{'Research Lead' if event.get('status') == 'needs_more_research' else 'Report Writer'}",
+                            flush=True,
+                        )
                     elif kind == "log" and event.get("level") == "error":
                         errors.append(event.get("message", "Server error"))
                     elif kind == "pipeline_error":
@@ -50,17 +94,59 @@ async def smoke(url: str, topic: str, timeout: int, artifacts: Path) -> None:
                         (artifacts / "report.md").write_text(report)
                         if errors:
                             raise RuntimeError("Pipeline reported errors: " + "; ".join(errors))
-                        if not isinstance(questions, list) or len(questions) < 2:
-                            raise RuntimeError("Expected at least two decomposed questions to exercise fan-out")
-                        expected = set(range(len(questions)))
-                        if set(results) != expected or any(statuses.get(index) != "done" for index in expected):
-                            raise RuntimeError("Report arrived without successful results from every researcher")
-                        for index, result in results.items():
-                            if not result.get("answer", "").strip() or not result.get("sources"):
-                                raise RuntimeError(f"Researcher {index} returned no answer or sources")
+                        if not questions_by_wave:
+                            raise RuntimeError("Expected at least one parallel research wave")
+                        for wave, questions in questions_by_wave.items():
+                            if not isinstance(questions, list) or len(questions) < 2:
+                                raise RuntimeError(
+                                    f"Wave {wave} did not exercise parallel fan-out"
+                                )
+                            expected = set(range(len(questions)))
+                            results = results_by_wave.get(wave, {})
+                            statuses = statuses_by_wave.get(wave, {})
+                            if set(results) != expected or any(
+                                statuses.get(index) != "done"
+                                for index in expected
+                            ):
+                                raise RuntimeError(
+                                    f"Wave {wave} completed without successful "
+                                    "results from every researcher"
+                                )
+                            for index, result in results.items():
+                                if (
+                                    not result.get("answer", "").strip()
+                                    or not result.get("sources")
+                                ):
+                                    raise RuntimeError(
+                                        f"Wave {wave} researcher {index} "
+                                        "returned no answer or sources"
+                                    )
+                        if not reviews or reviews[-1].get("status") != "approved":
+                            raise RuntimeError(
+                                "Report arrived without reviewer approval"
+                            )
+                        expected_stages = {
+                            "research_lead",
+                            "reviewer",
+                            "report_writer",
+                        }
+                        if not expected_stages.issubset(active_stages):
+                            missing = sorted(expected_stages - active_stages)
+                            raise RuntimeError(
+                                "Missing active lifecycle events for: "
+                                + ", ".join(missing)
+                            )
                         if not report.strip():
-                            raise RuntimeError("Synthesizer returned an empty report")
-                        print(f"PASS: {len(results)} researchers returned answers and sources; synthesis completed.", flush=True)
+                            raise RuntimeError("Report Writer returned an empty report")
+                        total_results = sum(
+                            len(results) for results in results_by_wave.values()
+                        )
+                        print(
+                            f"PASS: {total_results} researchers completed across "
+                            f"{len(questions_by_wave)} wave(s); reviewer approved "
+                            "the final report.",
+                            flush=True,
+                        )
                         return
     raise RuntimeError("WebSocket closed before a final report")
 

@@ -4,14 +4,15 @@ Shared Azure OpenAI chat client factory for MAF agents in the orchestrator.
 import os
 
 from agent_framework.openai import OpenAIChatClient
-from azure.identity.aio import DefaultAzureCredential
+
+from azure_credentials import build_async_credential
 
 
 def build_chat_client() -> OpenAIChatClient:
     """
     Returns an OpenAIChatClient configured for Azure OpenAI from environment
-    variables. Auth is keyless: uses DefaultAzureCredential (managed identity
-    in Azure, `azd auth login` locally) to mint Cognitive Services bearer tokens.
+    variables. Auth is keyless: uses managed identity in Azure and the selected
+    Azure CLI tenant locally to mint Cognitive Services bearer tokens.
     The orchestrator's principal needs 'Cognitive Services OpenAI User' on
     the AOAI account (granted by infra/main.bicep).
     """
@@ -21,5 +22,5 @@ def build_chat_client() -> OpenAIChatClient:
     return OpenAIChatClient(
         model=deployment,
         azure_endpoint=endpoint,
-        credential=DefaultAzureCredential(),
+        credential=build_async_credential(),
     )

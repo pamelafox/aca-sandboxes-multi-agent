@@ -35,8 +35,8 @@ from typing import Any
 from urllib.parse import urlparse
 
 import httpx
-from azure.identity import DefaultAzureCredential as SyncCredential
-from azure.identity.aio import DefaultAzureCredential as AsyncCredential
+from azure.core.credentials import TokenCredential
+from azure.core.credentials_async import AsyncTokenCredential
 
 from azure.containerapps.sandbox import (
     AddPortRequest,
@@ -50,6 +50,7 @@ from azure.containerapps.sandbox import (
     SandboxGroupClient,
     endpoint_for_region,
 )
+from azure_credentials import build_async_credential, build_sync_credential
 
 logger = logging.getLogger(__name__)
 
@@ -210,8 +211,8 @@ class SandboxManager:
         # Long-lived credentials + group client (lazy; closed on shutdown).
         # The SDK's SandboxGroupClient is bound to a single (region, group),
         # so we rebuild it when the active region/group changes.
-        self._sync_credential: SyncCredential | None = None
-        self._async_credential: AsyncCredential | None = None
+        self._sync_credential: TokenCredential | None = None
+        self._async_credential: AsyncTokenCredential | None = None
         self._group_client: SandboxGroupClient | None = None
         self._group_client_key: tuple[str, str] | None = None  # (region, group)
 
@@ -251,7 +252,7 @@ class SandboxManager:
                 pass
 
         if self._sync_credential is None:
-            self._sync_credential = SyncCredential()
+            self._sync_credential = build_sync_credential()
 
         self._group_client = SandboxGroupClient(
             endpoint_for_region(self.current_region),
@@ -272,7 +273,7 @@ class SandboxManager:
             return None
 
         if self._async_credential is None:
-            self._async_credential = AsyncCredential()
+            self._async_credential = build_async_credential()
 
         now = int(time.time())
         if self._aoai_token and now < self._aoai_token_expires_on - 60:
@@ -294,7 +295,7 @@ class SandboxManager:
             return None
 
         if self._async_credential is None:
-            self._async_credential = AsyncCredential()
+            self._async_credential = build_async_credential()
 
         now = int(time.time())
         if self._foundry_token and now < self._foundry_token_expires_on - 60:
@@ -337,7 +338,7 @@ class SandboxManager:
             raise RuntimeError(
                 f"Cannot reach sandbox group '{group_name}' in {region}. "
                 "Ensure it was provisioned via infra/main.bicep and that this "
-                "principal has 'Dev Compute SandboxGroup Data Owner' on it. "
+                "principal has 'Container Apps SandboxGroup Data Owner' on it. "
                 f"Underlying error: {ex}"
             ) from ex
 
@@ -367,7 +368,7 @@ class SandboxManager:
         """
         try:
             if self._async_credential is None:
-                self._async_credential = AsyncCredential()
+                self._async_credential = build_async_credential()
             aad = await self._async_credential.get_token(
                 "https://management.azure.com/.default"
             )
