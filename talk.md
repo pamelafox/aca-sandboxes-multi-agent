@@ -524,7 +524,7 @@ Links: [aka.ms/AgentFramework](https://aka.ms/AgentFramework) (redirects to the 
 
 ### Slide 27. Takeaways
 
-**On slide:** Four cards (the ones that used to be on the final takeaways slide): **One task** (one bounded workspace), **Explicit boundaries** (isolation, egress, identity, data), **Explicit lifecycle** (create, stop, resume, delete), **One trace** (across every sandbox). Replaces the old "Recap: where agent runtimes break" slide, which covered the same ground.
+**On slide:** Four cards, each with an icon and a red "Without" / green "With sandboxes" pair: **⚡ On-demand compute** (sub-second start, zero idle cost), **Explicit boundaries** (isolation, egress, identity, data), **Explicit lifecycle** (create, stop, resume, delete), **One trace** (across every sandbox). Replaces the old "Recap: where agent runtimes break" slide, which covered the same ground.
 
 **Speaker notes:** Tie each card back to the runtime problems from the start: untrusted code, cold starts, runaway budgets, workspaces that vanish on restart, tooling stitched together by hand.
 
@@ -569,9 +569,9 @@ Links: [aka.ms/AgentFramework](https://aka.ms/AgentFramework) (redirects to the 
 
 The orchestrator stays a standard Container App, not a Container Apps Express app, because Express isn't compatible with `azd` yet. If asked why not Express, say so, and mention Express's own gains (under-a-minute provisioning, sub-second cold start) as one of the products built on Sandboxes (slide 6).
 
-### Slide 30. Learning resources
+### Slide 30. Keep learning
 
-**On slide:** Links: the sample repo, the Sandboxes docs (Learn overview and sandboxes.azure.com/docs), the Sandboxes Agent Skill quickstart, Microsoft Agent Framework (aka.ms/AgentFramework), the OpenTelemetry GenAI semantic conventions, and the Azure portal.
+**On slide:** Links: these slides (pamelafox.github.io/aca-sandboxes-multi-agent), the sample repo, the Sandboxes docs (Learn overview and sandboxes.azure.com/docs), the Sandboxes Agent Skill quickstart, Microsoft Agent Framework (aka.ms/AgentFramework), the OpenTelemetry GenAI semantic conventions, and the Azure portal.
 
 **Speaker notes:** Start with one sandbox from the portal, CLI, or SDK without deploying the swarm; `create_sandbox.py` is the quickest path, and `azd up` deploys the whole swarm.
 

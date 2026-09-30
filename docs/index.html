@@ -497,6 +497,17 @@
 
 		.reveal .slides img { box-shadow: none; }
 
+		/* Takeaways */
+		.reveal .tk-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 8px; }
+		.reveal .tk-card { display: flex; flex-direction: column; padding: 16px 18px; border: 1px solid var(--deck-border); border-top: 5px solid var(--deck-accent); border-radius: 14px; background: #fff; }
+		.reveal .tk-icon { font-size: 1.3em; line-height: 1; margin-bottom: 8px; }
+		.reveal .tk-card h4 { margin: 0; font-family: 'Outfit', sans-serif; font-size: 0.72em; line-height: 1.15; min-height: 2.3em; display: flex; align-items: flex-end; color: var(--deck-heading); }
+		.reveal .tk-sub { margin: 6px 0 14px; min-height: 2.8em; font-size: 0.5em; line-height: 1.4; color: var(--deck-muted); }
+		.reveal .tk-before, .reveal .tk-after { margin: 0; padding: 8px 10px; border-radius: 8px; font-size: 0.46em; line-height: 1.35; }
+		.reveal .tk-before { min-height: 4.1em; }
+		.reveal .tk-before { background: #fbeeec; color: #7a2e25; }
+		.reveal .tk-after { margin-top: 8px; flex: 1; background: var(--deck-sandbox-bg); color: #2f5510; }
+
 		/* Learning resources */
 		.reveal .resources-list { margin: 10px 0 0 0; list-style: none; font-size: 0.7em; }
 		.reveal .resources-list li { margin-bottom: 18px; }
@@ -2852,14 +2863,38 @@ tracer.start_as_current_span(
 				<!-- 45 -->
 				<section>
 					<h3>Takeaways</h3>
-					<div class="grid3" style="grid-template-columns: repeat(4, 1fr);">
-						<div class="card"><h4>One task</h4>One bounded workspace</div>
-						<div class="card"><h4>Explicit boundaries</h4>Isolation, egress, identity, data</div>
-						<div class="card"><h4>Explicit lifecycle</h4>Create, stop, resume, delete</div>
-						<div class="card"><h4>One trace</h4>Across every sandbox</div>
+					<div class="tk-grid">
+						<div class="tk-card">
+							<div class="tk-icon" aria-hidden="true">⚡</div>
+							<h4>On-demand compute</h4>
+							<p class="tk-sub">Sub-second start, zero idle cost</p>
+							<p class="tk-before"><strong>Without:</strong> You pre-provision servers for the peak</p>
+							<p class="tk-after"><strong>With sandboxes:</strong> Sandboxes start in under a second and scale to zero</p>
+						</div>
+						<div class="tk-card">
+							<div class="tk-icon" aria-hidden="true">🛡️</div>
+							<h4>Explicit boundaries</h4>
+							<p class="tk-sub">Isolation, egress, identity, data</p>
+							<p class="tk-before"><strong>Without:</strong> Agents can reach anything and hold API keys</p>
+							<p class="tk-after"><strong>With sandboxes:</strong> Egress rules, proxy-injected credentials, volumes</p>
+						</div>
+						<div class="tk-card">
+							<div class="tk-icon" aria-hidden="true">🔁</div>
+							<h4>Explicit lifecycle</h4>
+							<p class="tk-sub">Create, stop, resume, delete</p>
+							<p class="tk-before"><strong>Without:</strong> Workspaces vanish on restart or keep burning budget</p>
+							<p class="tk-after"><strong>With sandboxes:</strong> Suspend, resume, snapshot, and auto-delete policies</p>
+						</div>
+						<div class="tk-card">
+							<div class="tk-icon" aria-hidden="true">📈</div>
+							<h4>One trace</h4>
+							<p class="tk-sub">Across every sandbox</p>
+							<p class="tk-before"><strong>Without:</strong> Parallel failures are hard to find</p>
+							<p class="tk-after"><strong>With sandboxes:</strong> One distributed trace from planner to every sandbox</p>
+						</div>
 					</div>
 					<aside class="notes">
-						Four things to take away. One task, one bounded workspace: give each unit of agent work its own sandbox, created on demand and deleted after. Explicit boundaries: decide what each sandbox can run, reach (egress and ingress), authenticate as (the group's managed identity, injected by the proxy), and keep (volumes, snapshots). Explicit lifecycle: create, stop, resume, and delete are API calls, with policies as a backstop. One trace: propagate trace context into every sandbox so the whole run is one trace.
+						Four things to take away. On-demand compute: sandboxes start in under a second from prewarmed pools, so you create one per unit of work instead of provisioning for the peak, and stopped or deleted sandboxes cost nothing for compute. Explicit boundaries: decide what each sandbox can reach (egress and ingress), authenticate as (the group's managed identity, injected by the proxy), and keep (volumes, snapshots); each one runs in its own microVM. Explicit lifecycle: create, stop, resume, and delete are API calls, with policies as a backstop. One trace: propagate trace context into every sandbox so the whole run is one trace.
 						These answer the runtime problems from the start of the talk: untrusted code, cold starts, runaway budgets, workspaces that vanish on restart, and tooling stitched together by hand.
 					</aside>
 				</section>
@@ -2940,7 +2975,7 @@ tracer.start_as_current_span(
 					</table>
 					<div class="callout">
 						The swarm uses an <strong>App</strong> for orchestration and <strong>Sandboxes</strong> for isolated research.
-						A standalone sandbox doesn't need an ACA environment.
+						<br>A standalone sandbox does <em>not</em> need an ACA environment.
 					</div>
 					<p class="smaller muted" style="margin-top: 14px;">Source: <a href="https://learn.microsoft.com/azure/container-apps/sandboxes-overview" target="_blank">📎 Sandboxes overview</a></p>
 					<aside class="notes">
@@ -2952,30 +2987,17 @@ tracer.start_as_current_span(
 
 				<!-- 49 -->
 				<section>
-					<h3>Learning resources</h3>
+					<h3>Keep learning</h3>
 					<ul class="resources-list">
+						<li>🎞️ These slides: <a target="_blank" href="https://pamelafox.github.io/aca-sandboxes-multi-agent/">pamelafox.github.io/aca-sandboxes-multi-agent</a></li>
 						<li>📦 Sample repo: <a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent">github.com/pamelafox/aca-sandboxes-multi-agent</a></li>
-						<li>📖 Sandboxes docs: <a target="_blank" href="https://learn.microsoft.com/azure/container-apps/sandboxes-overview">Sandboxes overview</a> · latest details: <a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/">sandboxes.azure.com/docs</a></li>
+						<li>📖 Sandboxes docs: <a target="_blank" href="https://learn.microsoft.com/azure/container-apps/sandboxes-overview">Sandboxes overview</a> · More details: <a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/">sandboxes.azure.com/docs</a></li>
 						<li>🧰 Agent Skill: <a target="_blank" href="https://learn.microsoft.com/azure/container-apps/sandboxes-quickstart-agent-skills?tabs=copilot">Sandboxes Agent Skill quickstart</a></li>
 						<li>🤖 Microsoft Agent Framework: <a target="_blank" href="https://aka.ms/AgentFramework">aka.ms/AgentFramework</a></li>
-						<li>📈 OpenTelemetry GenAI conventions: <a target="_blank" href="https://github.com/open-telemetry/semantic-conventions-genai">semantic-conventions-genai</a></li>
-						<li>🖥️ Try it: <a target="_blank" href="https://portal.azure.com">portal.azure.com</a></li>
+						<li>🖥️ Try it: <a target="_blank" href="https://portal.azure.com">portal.azure.com</a> or <a target="_blank" href="https://sandboxes.azure.com">sandboxes.azure.com</a></li>
 					</ul>
 					<aside class="notes">
 						You can start with one sandbox from the portal, CLI, or SDK, without deploying the swarm. The repo's create_sandbox.py is the quickest path, and azd up deploys the whole swarm.
-					</aside>
-				</section>
-
-				<!-- 50 -->
-				<section class="heading-only">
-					<h2>Questions?</h2>
-					<p style="font-size: 0.8em; margin-top: 18px;">Repo: <a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent">github.com/pamelafox/aca-sandboxes-multi-agent</a></p>
-					<p style="font-size: 0.8em;">Portal: <a target="_blank" href="https://portal.azure.com">portal.azure.com</a></p>
-					<p style="font-size: 0.7em; margin-top: 24px;">Pamela Fox · <a target="_blank" href="https://pamelafox.org">pamelafox.org</a> · <a target="_blank" href="https://github.com/pamelafox">github.com/pamelafox</a></p>
-					<aside class="notes">
-						Reserve the final five minutes. Don't spend Q&amp;A waiting for a demo.
-						If triggers come up: they're preview; they wake or invoke a sandbox on a connector event (email, SharePoint upload, Teams message, GitHub PR).
-						Network-traffic resume is part of the GA lifecycle, not triggers.
 					</aside>
 				</section>
 
