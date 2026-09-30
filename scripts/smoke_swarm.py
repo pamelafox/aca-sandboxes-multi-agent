@@ -82,7 +82,7 @@ async def smoke(url: str, topic: str, timeout: int, artifacts: Path) -> None:
                         reviews.append(event)
                         print(
                             f"Reviewer handed off to "
-                            f"{'Research Lead' if event.get('status') == 'needs_more_research' else 'Report Writer'}",
+                            f"{'Planner' if event.get('status') == 'needs_more_research' else 'Report Writer'}",
                             flush=True,
                         )
                     elif kind == "log" and event.get("level") == "error":
@@ -126,7 +126,7 @@ async def smoke(url: str, topic: str, timeout: int, artifacts: Path) -> None:
                                 "Report arrived without reviewer approval"
                             )
                         expected_stages = {
-                            "research_lead",
+                            "planner",
                             "reviewer",
                             "report_writer",
                         }

@@ -356,7 +356,7 @@ async def _run_research_pipeline(ws: WebSocket, topic: str) -> None:
 
         # Run the workflow streaming. The events we map to UI messages:
         #   - executor lifecycle for mesh agents             → {type: stage}
-        #   - WorkflowEvent(type="output") from research lead → {type: questions}
+        #   - WorkflowEvent(type="output") from planner → {type: questions}
         #   - WorkflowEvent(type="output") from reviewer      → {type: review}
         #   - WorkflowEvent(type="output") from report writer → {type: report}
         #   - WorkflowEvent(type="executor_failed")          → log error
@@ -377,7 +377,7 @@ async def _run_research_pipeline(ws: WebSocket, topic: str) -> None:
 
             if etype == "executor_invoked":
                 source = event.executor_id or ""
-                if source in {"research_lead", "reviewer", "report_writer"}:
+                if source in {"planner", "reviewer", "report_writer"}:
                     await emit({
                         "type": "stage",
                         "stage": source,
@@ -388,7 +388,7 @@ async def _run_research_pipeline(ws: WebSocket, topic: str) -> None:
                 source = event.executor_id or ""
                 data = event.data
                 if (
-                    source == "research_lead"
+                    source == "planner"
                     and isinstance(data, dict)
                     and data.get("kind") == "questions"
                 ):
@@ -402,7 +402,7 @@ async def _run_research_pipeline(ws: WebSocket, topic: str) -> None:
                     await emit({
                         "type": "log",
                         "message": (
-                            f"Research Lead dispatched wave {wave} "
+                            f"Planner dispatched wave {wave} "
                             f"with {len(questions)} questions"
                         ),
                         "level": "success",
@@ -420,7 +420,7 @@ async def _run_research_pipeline(ws: WebSocket, topic: str) -> None:
                         "followUpQuestions": data.get("follow_up_questions") or [],
                     })
                     destination = (
-                        "Research Lead"
+                        "Planner"
                         if data.get("status") == "needs_more_research"
                         else "Report Writer"
                     )
@@ -436,7 +436,7 @@ async def _run_research_pipeline(ws: WebSocket, topic: str) -> None:
 
             elif etype == "executor_completed":
                 source = event.executor_id or ""
-                if source in {"research_lead", "reviewer", "report_writer"}:
+                if source in {"planner", "reviewer", "report_writer"}:
                     await emit({
                         "type": "stage",
                         "stage": source,
@@ -464,7 +464,7 @@ async def _run_research_pipeline(ws: WebSocket, topic: str) -> None:
             await emit({"type": "report", "markdown": final_report})
             await emit({"type": "log", "message": "Research complete!", "level": "success"})
         else:
-            raise RuntimeError("Workflow completed without a synthesized report")
+            raise RuntimeError("Workflow completed without a final report")
 
         # Notify the UI that disk-image / stats panels should refresh.
         # NOTE: We deliberately do NOT delete the disk image here — it is

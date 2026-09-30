@@ -139,10 +139,10 @@ The UI shows each research wave, researcher progress, the reviewer's decision, a
 You provide a topic
   |
   v
-Research Lead plans a parallel research wave
+Planner creates a parallel research wave
   |
   +--> researcher 1 --> Sandbox 1 --+
-  +--> researcher 2 --> Sandbox 2 --+--> Reviewer --+-- gaps --> Research Lead (one more wave)
+  +--> researcher 2 --> Sandbox 2 --+--> Reviewer --+-- gaps --> Planner (one more wave)
   +--> researcher N --> Sandbox N --+               |
                                                     +-- approved --> Report Writer --> Final report
 ```
@@ -153,8 +153,9 @@ Research Lead plans a parallel research wave
 | Researcher | Azure Container Apps Sandboxes | Answers one question with Foundry hosted web search, in its own sandbox |
 | Sandbox group | Azure Container Apps Sandboxes | Holds the disk images, the managed identity, and the sandboxes |
 
-* **Parallel fan-out:** [orchestrator/agents/workflow.py](orchestrator/agents/workflow.py) creates a separate workflow edge from the Research Lead to each researcher, so Agent Framework runs the researchers concurrently. A single fan-out edge group would deliver the messages one after another. The reviewer can send the lead back for at most one follow-up wave.
-* **One sandbox per question:** each researcher agent has a single tool, `run_in_sandbox` ([orchestrator/agents/researcher_agent.py](orchestrator/agents/researcher_agent.py)). It creates a sandbox, waits for the research result, and deletes the sandbox.
+* **Structured outputs:** the planner, reviewer, and in-sandbox researcher each pass a Pydantic model as `response_format` ([planner_agent.py](orchestrator/agents/planner_agent.py), [reviewer_agent.py](orchestrator/agents/reviewer_agent.py), [research-agent/app.py](research-agent/app.py)), so their replies are typed objects instead of JSON text to parse.
+* **Parallel fan-out:** [orchestrator/agents/workflow.py](orchestrator/agents/workflow.py) creates a separate workflow edge from the Planner to each researcher, so Agent Framework runs the researchers concurrently. A single fan-out edge group would deliver the messages one after another. The reviewer can send the lead back for at most one follow-up wave.
+* **One sandbox per question:** each research question goes to a plain workflow executor that calls `run_in_sandbox` directly ([orchestrator/agents/sandbox_researcher.py](orchestrator/agents/sandbox_researcher.py)). It creates a sandbox, waits for the research result, and deletes the sandbox. There's no LLM on the orchestrator side of a branch; the research agent runs inside the sandbox. A failed branch still reports an error finding, so the reviewer sees what's missing.
 * **Locked-down network access:** [orchestrator/sandbox_manager.py](orchestrator/sandbox_manager.py) creates every sandbox with a default-deny egress policy. The only destinations are the Foundry project and Azure OpenAI hosts, through `Transform` rules, and the Application Insights ingestion endpoints. Web search runs inside Foundry, so the sandbox never talks to a search engine.
 * **Keyless model access:** no key or token is ever placed in a sandbox. The `Transform` rules have the egress proxy set the `Authorization` header to a Microsoft Entra token for the sandbox group's managed identity, which has the Foundry User and Cognitive Services OpenAI User roles. The researcher code in [research-agent/app.py](research-agent/app.py) hands its SDK a placeholder credential.
 * **Baked researcher image:** the researcher code and dependencies are built into the `research-agent` image in the registry, then turned into a sandbox disk image. The orchestrator reuses a disk image only when its stored digest matches the registry's current digest, and prepares it at startup so the first request doesn't wait.
@@ -187,6 +188,7 @@ Useful options:
 | `--disk ubuntu` | Uses the built-in Ubuntu image instead of the agent image. |
 | `--disk-id <id>` | Reuses a prepared disk image (the launcher prints `disk_image_id`), skipping preparation. |
 | `--name <name>` | Adds a `name` label, so you can find the sandbox in the portal. |
+| `--suspend-mode Disk` | Keeps only files across stop and resume. The default, `Memory`, also keeps running processes. |
 | `--show-egress` | Prints the egress proxy's allowed and denied requests after the run. |
 | `--volume <name>` | Mounts a sandbox group volume at `/workspace/out`, creating it if needed. |
 | `--snapshot-after-run <name>` | Snapshots the sandbox after the run and prints the snapshot ID. |

@@ -211,6 +211,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--name", help="Add a name label, which shows in the portal's sandbox list.",
     )
     parser.add_argument(
+        "--suspend-mode", choices=["Memory", "Disk"], default="Memory",
+        help="What survives stop and resume: Memory (default) keeps running processes, Disk keeps only files.",
+    )
+    parser.add_argument(
         "--show-egress", action="store_true",
         help="After the run, print the egress proxy's allowed and denied requests for this sandbox.",
     )
@@ -283,6 +287,7 @@ def main(argv: list[str] | None = None) -> None:
                 cpu="500m",
                 memory="1Gi",
                 auto_suspend_seconds=300,
+                auto_suspend_mode=args.suspend_mode,
                 labels={"demo": "standalone", **({"name": args.name} if args.name else {})},
                 egress_policy=egress_policy,
                 volumes=volumes,

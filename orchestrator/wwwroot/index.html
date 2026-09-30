@@ -713,7 +713,7 @@
 
       <div id="empty-state" class="empty-state">
         <div class="icon">🧠</div>
-        <p>Enter a research topic above. The research lead will launch parallel sandboxed researchers, then a reviewer will hand the evidence to another research wave or the report writer.</p>
+        <p>Enter a research topic above. The planner will launch parallel sandboxed researchers, then a reviewer will hand the evidence to another research wave or the report writer.</p>
       </div>
 
       <section id="architecture-section" class="architecture-section" aria-labelledby="architecture-title">
@@ -722,7 +722,7 @@
           class="architecture-diagram"
           viewBox="0 0 900 300"
           role="img"
-          aria-label="Research Lead launches a parallel research wave. The Reviewer conditionally sends gaps back to the Research Lead or approved evidence to the Report Writer."
+          aria-label="Planner launches a parallel research wave. The Reviewer conditionally sends gaps back to the Planner or approved evidence to the Report Writer."
         >
           <defs>
             <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
@@ -742,10 +742,10 @@
           <path class="architecture-arrow conditional" id="architecture-arrow-reviewer-writer" d="M550 220 L660 220"></path>
           <text class="architecture-decision-label" x="576" y="207">approved</text>
 
-          <g class="architecture-node" id="architecture-research_lead">
+          <g class="architecture-node" id="architecture-planner">
             <rect class="node-box" x="40" y="20" width="200" height="80" rx="10"></rect>
-            <text class="node-title" x="58" y="50">🧭 Research Lead</text>
-            <text class="node-status" id="architecture-research_lead-status" x="58" y="75">Waiting</text>
+            <text class="node-title" x="58" y="50">🧭 Planner</text>
+            <text class="node-status" id="architecture-planner-status" x="58" y="75">Waiting</text>
           </g>
 
           <g class="architecture-node" id="architecture-research_wave">
@@ -939,9 +939,9 @@ function showQuestions(questions, wave = 1) {
     grid.appendChild(card);
   });
 
-  updateArchitectureStage('research_lead', 'complete', `Dispatched wave ${wave}`);
+  updateArchitectureStage('planner', 'complete', `Dispatched wave ${wave}`);
   updateAgentStepDetail(
-    'research_lead',
+    'planner',
     `Dispatched research wave ${wave} with ${questions.length} independent prompts.`,
   );
   updateArchitectureStage(
@@ -955,7 +955,7 @@ function showQuestions(questions, wave = 1) {
 
 function showReview(msg) {
   const destination = msg.status === 'needs_more_research'
-    ? 'Research Lead'
+    ? 'Planner'
     : 'Report Writer';
   const followUps = msg.followUpQuestions || [];
   const followUpMarkup = followUps.length
@@ -968,7 +968,7 @@ function showReview(msg) {
   );
   appendHistoryEdge(
     msg.status === 'needs_more_research'
-      ? `gaps → Research Lead for wave ${Number(msg.wave) + 1}`
+      ? `gaps → Planner for wave ${Number(msg.wave) + 1}`
       : 'approved → Report Writer',
   );
 
@@ -977,7 +977,7 @@ function showReview(msg) {
     setArchitectureArrow('reviewer-lead', true);
     setArchitectureArrow('reviewer-writer', false);
     updateArchitectureStage(
-      'research_lead',
+      'planner',
       'active',
       `Planning wave ${Number(msg.wave) + 1}`,
     );
@@ -1074,7 +1074,7 @@ function handleStage(msg) {
 
 function appendAgentStep(stage) {
   const labels = {
-    research_lead: ['🧭 Research Lead', currentWave ? `Planning research wave ${currentWave + 1}.` : 'Decomposing the topic into independent research prompts.'],
+    planner: ['🧭 Planner', currentWave ? `Planning research wave ${currentWave + 1}.` : 'Planning independent research questions for the topic.'],
     reviewer: ['🔎 Reviewer', `Reviewing the accumulated evidence after wave ${currentWave}.`],
     report_writer: ['✍️ Report Writer', 'Writing the final report from the approved evidence dossier.'],
   };
@@ -1138,7 +1138,7 @@ function appendHistoryEdge(label) {
 }
 
 function resetArchitecture() {
-  ['research_lead', 'research_wave', 'reviewer', 'report_writer'].forEach(stage => {
+  ['planner', 'research_wave', 'reviewer', 'report_writer'].forEach(stage => {
     const node = document.getElementById(`architecture-${stage}`);
     node.classList.remove('active', 'complete', 'error');
     document.getElementById(`architecture-${stage}-status`).textContent = 'Waiting';

@@ -1,18 +1,12 @@
 """
-Researcher Agent — MAF agent with a single `run_in_sandbox` tool.
+Sandbox research runner, called directly by each researcher executor in the workflow.
 
-The tool delegates the actual web research to an Azure Container Apps
-**Sandbox** spun up on demand by `SandboxManager`. Each parallel branch in
-the workflow runs its own instance of this agent with its own question.
+Each parallel branch provisions an Azure Container Apps sandbox, polls the research
+agent running inside it, and returns the sandbox's JSON result. There's no LLM on
+this side: the research agent (model calls and web search) runs in the sandbox.
 
-Notes:
-- `sandbox_mgr`, the per-WebSocket `emit` callable, and the agent `index`
-  are bound via closure when the agent is built. This is more reliable than
-  routing them through `function_invocation_kwargs`, which is filtered by
-  the LLM tool-runner before reaching the tool body.
-- The tool returns a JSON string the agent can include verbatim in its
-  output — we do NOT ask the LLM to re-summarize, so the cost stays low and
-  the trace remains faithful to what the sandbox produced.
+`sandbox_mgr`, the per-WebSocket `emit` callable, and the branch `index` are bound
+via closure when the runner is built.
 """
 import asyncio
 import json
@@ -20,13 +14,7 @@ import logging
 import uuid
 from typing import Awaitable, Callable
 
-from agent_framework import Agent
-from pydantic import Field
-from typing_extensions import Annotated
-
 from sandbox_manager import AgentResult, SandboxManager
-
-from .chat_client import build_chat_client
 
 logger = logging.getLogger(__name__)
 
@@ -39,28 +27,14 @@ POLL_TIMEOUT_SECONDS = 360
 MAX_CONSECUTIVE_POLL_ERRORS = 8
 
 
-RESEARCHER_INSTRUCTIONS = (
-    "You are a research dispatcher. For the user's question, you MUST call the "
-    "`run_in_sandbox` tool exactly once with that question to obtain the "
-    "research result, then return the tool's JSON output verbatim — do not "
-    "rewrite, summarize, or omit any field."
-)
-
-
-def build_researcher_agent(
+def build_sandbox_researcher(
     agent_id: str,
     sandbox_mgr: SandboxManager,
     emit: EmitFn,
     index: int,
-) -> Agent:
-    """
-    Build a researcher agent with a single tool. `sandbox_mgr`, `emit`, and
-    `index` are captured via closure so the tool always has them available
-    regardless of how the agent framework routes invocation kwargs.
-    """
-    async def run_in_sandbox(
-        question: Annotated[str, Field(description="The research question to investigate.")],
-    ) -> str:
+) -> Callable[[str], Awaitable[str]]:
+    """Bind one branch's sandbox lifecycle and progress reporting."""
+    async def run_in_sandbox(question: str) -> str:
         """Provision an ACA Sandbox, run the research agent, return JSON results."""
         sandbox_id = f"agent-{index}-{uuid.uuid4().hex[:8]}"
 
@@ -169,10 +143,4 @@ def build_researcher_agent(
             "confidence": result.confidence,
         })
 
-    return Agent(
-        client=build_chat_client(),
-        instructions=RESEARCHER_INSTRUCTIONS,
-        name=agent_id,
-        tools=[run_in_sandbox],
-        default_options={"reasoning": {"effort": "low"}},
-    )
+    return run_in_sandbox

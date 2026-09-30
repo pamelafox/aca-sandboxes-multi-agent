@@ -74,7 +74,7 @@ Use the research swarm as the running example, but make Sandboxes the subject. C
 
 1. **Introducing the swarm** (after the title slide): one question, many parallel researchers.
 2. **Sandboxes 101** (before "What is a sandbox?"): create, configure, secure, and keep state.
-3. **Back to the swarm** (before "Swarm architecture, revisited"): sandboxes as a tool for parallel agents.
+3. **Back to the swarm** (before "Swarm architecture on Azure"): sandboxes as a tool for parallel agents.
 4. **Wrapping up** (before the recap): recap, where else sandboxes fit, and takeaways.
 
 ### Slide 1. When One Agent Isn't Enough
@@ -91,7 +91,7 @@ Use the research swarm as the running example, but make Sandboxes the subject. C
 
 **On slide:** Screenshot of the swarm UI running the Forester question, after a second research wave.
 
-**Demo 1: End-to-end swarm.** Submit the question. Use the architecture minimap to show ownership moving from Research Lead to a parallel research wave to Reviewer, then point to the append-only history when the Reviewer requests another wave. The earlier prompts and results remain visible rather than being replaced. Inspect the resulting report, and briefly show the live sandboxes in the Azure portal while they exist.
+**Demo 1: End-to-end swarm.** Submit the question. Use the architecture minimap to show ownership moving from Planner to a parallel research wave to Reviewer, then point to the append-only history when the Reviewer requests another wave. The earlier prompts and results remain visible rather than being replaced. Inspect the resulting report, and briefly show the live sandboxes in the Azure portal while they exist.
 
 **Speaker notes:** Start the run early and explain progress while it works. Keep a completed report and captured sandbox list ready rather than waiting silently for the live run.
 
@@ -99,7 +99,7 @@ Use the research swarm as the running example, but make Sandboxes the subject. C
 
 **Slides / main idea:** One combined diagram answers "how does the work flow?" and "where does it run?" Reveal the hosting boundaries after introducing the agent workflow. Keep the hosting labels vendor-neutral (container versus sandbox); Azure services are named starting on slide 6.
 
-**ASCII prototype:** Three branches shown for readability; the sample supports up to six. Each researcher agent calls `run_in_sandbox`; the actual research process runs across that boundary in a separate sandbox.
+**ASCII prototype:** Three branches shown for readability; the sample supports up to six. Each research question goes to an executor that calls `run_in_sandbox`; the actual research process runs across that boundary in a separate sandbox.
 
 ```text
 				 User question
@@ -109,7 +109,7 @@ Use the research swarm as the running example, but make Sandboxes the subject. C
 | CONTAINER                                |   | SANDBOXES                     |
 | Orchestrator                             |   | One per task                  |
 |                                          |   |                               |
-| Research Lead                             |   | +---------------------------+ |
+| Planner                                   |   | +---------------------------+ |
 |   |                                      |   | | Sandbox 1                 | |
 |   +--> Researcher agent 1 --tool call-----|-->| | Research process          | |
 |   |                       <--result------|---| +---------------------------+ |
@@ -129,7 +129,7 @@ Use the research swarm as the running example, but make Sandboxes the subject. C
 | Collector (fan-in) --> Reviewer           |   |                               |
 |        ^                |                 |   |                               |
 |        | gaps           +--> Report Writer   |                               |
-|        +-- Research Lead      |           |   |                               |
+|        +-- Planner            |           |   |                               |
 +--------------------------------|---------+   +-------------------------------+
                                  |
                                  v
@@ -138,11 +138,11 @@ Use the research swarm as the running example, but make Sandboxes the subject. C
 Tool-call lifecycle: create sandbox -> run research -> collect result -> delete
 ```
 
-The three branches run concurrently. Results return to their researcher agents, then flow through the collector to the reviewer. The reviewer either hands specific gaps back to the research lead for one bounded follow-up wave or hands the approved dossier to the report writer. Tool-call arrows summarize the SDK lifecycle, not a direct model-to-sandbox connection.
+The three branches run concurrently. Results return to their researcher agents, then flow through the collector to the reviewer. The reviewer either hands specific gaps back to the planner for one bounded follow-up wave or hands the approved dossier to the report writer. Tool-call arrows summarize the SDK lifecycle, not a direct model-to-sandbox connection.
 
 **Possible progressive reveal (or Reveal.js fragments):**
 
-1. **The work:** Question, research lead, parallel research branches, fan-in, reviewer handoff, and report writer. Introduce the problem before naming supporting Azure services.
+1. **The work:** Question, planner, parallel research branches, fan-in, reviewer handoff, and report writer. Introduce the problem before naming supporting Azure services.
 2. **Where it runs:** Add the container and sandbox outlines, individual sandbox boundaries, and the researcher-agent versus research-process labels. This is the combined view to walk through right after the live demo.
 3. **How it is supplied and connected:** Reuse the same layout later with the supporting relationships below. Distinguish image preparation, service calls, and telemetry from the main task-flow arrows.
 
@@ -393,71 +393,120 @@ Source: [portal lifecycle docs](https://sandboxes.azure.com/docs/sandboxes/sandb
 
 **Main point:** Resume continues the same sandbox; a snapshot (next slide) creates a new one. The suspend mode decides what survives.
 
-**On slide:** One code strip (`begin_create_sandbox(..., auto_suspend_mode="Memory")`, `begin_stop()`, `begin_resume()`), then two panels. **Disk:** files ✓, running processes ✗ (restart them); resumed in 0.9 s; required with a data-disk volume. **Memory:** files ✓, running processes and memory ✓; resumed in 0.6 s; keeps in-process credentials too. Footer: stopped sandboxes have no compute charges and don't count against the cores quota. It's followed by an optional demo slide (screenshot placeholder); skip it if short on time.
+**On slide:** One code strip (`begin_create_sandbox(..., auto_suspend_mode="Memory")`, `begin_stop()`, `begin_resume()`), then two panels. **Disk:** files ✓, running processes ✗ (restart them); resumed in 0.9 s; required with a data-disk volume. **Memory:** files ✓, running processes and memory ✓; resumed in 0.6 s; keeps in-process credentials too. Footer: stopped sandboxes have no compute charges and don't count against the cores quota. It's followed by a demo slide with three portal screenshots: running, stopped, and resumed.
 
 **Verified September 28 (westus group):** a background counter plus a file, then `begin_stop` and `begin_resume`. Memory mode: the counter continued from where it stopped. Disk mode: the file survived, the process didn't. Stopping in Memory mode took about 8 s versus about 1 s for Disk.
 
 **Speaker notes:** The mode is set per sandbox (`auto_suspend_mode`) or in the lifecycle policy (`AutoSuspendPolicy(mode=...)`). The swarm never suspends; every researcher sandbox is deleted after its result is collected. Suspend fits long-lived agents that wait on people or events. CLI: `aca sandbox stop` / `aca sandbox start`.
 
-### Slide 20. Keep the agent's work: volumes and snapshots
+### Slide 20. Snapshots: new sandboxes from saved state
 
-**Main point:** Files in a sandbox are private and disappear when it's deleted. Volumes and snapshots are the two deliberate ways to keep work, shown with the standalone agent before returning to the swarm.
+**Main point:** Suspend and resume continues the same sandbox. A snapshot captures that state (files, memory, running processes) so you can create new sandboxes from it.
 
-**On slide:** Two panels, each with code and verified outcomes.
+**On slide:** Code on the left (`begin_create_snapshot(name="first-draft")`, delete, `begin_create_sandbox(snapshot_id=...)`, `set_egress_policy(policy)`). Flow on the right: Sandbox → Snapshot "first-draft" (owned by the group) → two new sandboxes. Results: ✓ files, running processes, memory, env vars; ✗ egress policy: set it again.
 
-* **Volume: files outlive the sandbox.** `group.create_volume("agent-output")` and `volumes=[SandboxVolume(volume_name="agent-output", mountpoint="/workspace/out")]`. Sandbox A writes `report.md` and is deleted ✓; sandbox B mounts the volume and reads it ✓; a `read_only=True` mount rejects writes ✗. Footer: Azure Blob storage owned by the sandbox group, mounted like a folder.
-* **Snapshot: freeze and continue.** `begin_create_snapshot(name="first-draft")`, delete, `begin_create_sandbox(snapshot_id=...)`, `set_egress_policy(policy)`. Files ✓; running processes, memory, env vars ✓; egress policy ✗, set it again. Footer: restore took under a second; one snapshot can start many sandboxes.
+**Verified September 28:** the snapshot took about 1.6 s and a restore about 0.4 s. A background counter kept counting after restore. A restore accepts no configuration and uses the snapshot's CPU and memory. **The egress policy isn't restored:** the restored sandbox reported `default_action='Allow'` and reached bing.com until `set_egress_policy` ran.
 
-**Demo (optional):** [create_sandbox.py](create_sandbox.py) `--volume agent-output --snapshot-after-run first-draft --prompt "Write report.md: three bullets on why agents need sandboxes. Keep your outline in notes.md."`, then `--snapshot-id <id> --prompt "Add a fourth bullet about cost to the report."`, then `--disk ubuntu --volume agent-output --command "cat /workspace/out/report.md"` shows the four-bullet report.
+**Ask the ACA team:** Is dropping the egress policy on restore intended?
 
-**Verified September 28 (westus group):**
+### Slide 20b. Volumes: storage that outlives sandboxes
 
-* The volume is Azure Blob mounted with blobfuse2; a sandbox with a volume was created in about 1 s; files survived deleting the writer.
-* The snapshot took about 1.6 s and a restore about 0.4 s. A background counter kept counting after restore, so memory and processes come back, not just disk; env vars too (so in-process credentials would come back).
-* A restore accepts no configuration (the SDK rejects labels, environment, egress policy, volumes, ports) and uses the snapshot's CPU and memory. **The egress policy isn't restored:** the restored sandbox reported `default_action='Allow'` and reached bing.com until `set_egress_policy` ran. Volumes mounted at snapshot time stayed mounted.
+**Main point:** Files in a sandbox are private and deleted with it. A volume is the deliberate way to keep files and share them across sandboxes.
 
-**Speaker notes:** The docs list fanning out many sandboxes from one prepared snapshot; the swarm starts from a disk image instead. Snapshots belong to the group and outlive their source, with no automatic retention; deleting the group removes everything. Disk images should hold code and dependencies, not credentials or another task's data. Retained storage (disk images, snapshots including the automatic ones taken on stop, volumes) will be billed at Premium Blob ZRS rates (coming soon).
+**On slide:** Code on the left (`create_volume("agent-output")`, a writer sandbox mounting it at `/workspace/out`, a reader mounting it read-only at `/data`). Flow on the right: Writer sandbox → Volume "agent-output" (Azure Blob, owned by the group) → Reader sandbox. Results: ✓ reads `/data/report.md`; ✗ writes to `/data` fail (read-only file system).
 
-**Ask the ACA team:** Is dropping the egress policy on restore intended? There's a window between restore and `set_egress_policy` where resumed processes have open egress.
+**Verified September 28:** the volume is Azure Blob mounted with blobfuse2; files survived deleting the writer; a read-only mount rejected writes; a volume mount survived a snapshot restore.
 
-### Slide 21. Resource and lifecycle limits: how much can it consume?
+**Speaker notes:** Unlike a snapshot, a volume holds only the files you put in it. Other types: DataDisk (Disk suspend mode only) and AzureBlobByo (your own container). Disk images should hold code and dependencies, not credentials or task data. Snapshots and volumes aren't deleted with the sandbox; retained storage will be billed at Premium Blob ZRS rates (coming soon).
 
-* Bound CPU, memory, and disk allocations per sandbox; separately bound fan-out, execution time, and retries in the application. Size tiers run from XS (0.25 cores, 0.5 GB) through M (1 core, 2 GB, the default) to XL (4 cores, 8 GB, 80 GB disk).
-* Three layers of caps on fan-out: the application's own concurrency limit, the group's `maxSandboxCount` (plus group defaults such as `defaultTimeoutSeconds`), and the subscription's **Sandbox Cores** quota, which counts concurrent active cores per region. Stopped sandboxes don't count; at the quota, new creates and starts are blocked. API calls can also be rate-limited (HTTP 429). Don't cite a default quota number.
-* Explain cleanup on success and failure, plus lifecycle policies as a backstop: auto-suspend after idle time, then auto-delete for sandboxes left stopped (slide 14). Distinguish auto-suspend from a hard execution deadline.
-* Compute isolation and scale-to-zero do not cap model tokens or external API spending. Platform caps bound sandbox count and cores, not what each sandbox spends on the services it's allowed to call.
-
-**Visual / demo beat:** Show the lifecycle with its concurrency cap, timeout, and cleanup points. Return to actual deletion and timing evidence in the observability section.
-
-**Code excerpt:** Reuse the resource and auto-suspend arguments from the configuration slide (slide 13), then show the cleanup path in [create_sandbox.py](create_sandbox.py). Explain the distinction between closing the client and deleting the remote sandbox: the script registers `group.close` and `sandbox.close` on an `ExitStack`, which only release local connections, and adds `sandbox.delete` only when `--delete-after-run` is passed. Without it, the sandbox keeps existing and relies on `auto_suspend_seconds=300` to stop, so a lifecycle policy with auto-delete is the backstop.
-
-### Slide 21b. Swarm architecture, revisited
+### Slide 21b. Swarm architecture on Azure
 
 **On slide:** The slide 4 architecture diagram again, now with callouts that build one at a time beside the sandboxes: **Disk image** (research-agent, built from ACR), **Egress** (Deny, except Foundry + App Insights), **Identity** (group identity signs Foundry calls), **Lifecycle** (one per question, deleted after), and **No volumes or snapshots** (results return via the tool call).
 
 **Speaker notes:** Same picture as the start; now every piece on the right has a name. This is the transition from the Sandboxes deep dive back to the orchestration code.
 
-### Slide 22. Turn compute into an agent tool
+### Slide 21c. Microsoft Agent Framework
 
-**Slides / main idea:** Return to the architecture with the trust boundaries labeled: ACA hosts the orchestrator; Sandboxes host researchers. Show the small lifecycle behind `run_in_sandbox`: create -> execute -> collect result -> delete.
+**On slide:** Right after the Azure architecture. Tagline "Open-source SDK for building AI agents and multi-agent workflows" with Python, .NET, and Go (preview) pills, then four feature cards from the [overview](https://learn.microsoft.com/agent-framework/overview/), each with where this repo uses it:
 
-**Demo beat:** Brief code walkthrough of the tool and custom disk image setup. Explain how Foundry-hosted search works without opening sandbox egress to the whole internet.
+* **🤖 Agents** (LLM plus tools and MCP servers, many providers): planner, researcher, reviewer, report writer.
+* **🔀 Workflows** (graph-based paths connecting agents and functions): the swarm's parallel research waves.
+* **🧰 Harness agent** (planning, todos, context compaction, file access, memory, tool approval): the standalone sandbox agent.
+* **🔌 Integrations** (providers, services, tools, context providers, middleware, evaluation, observability): Foundry web search, OpenTelemetry tracing.
 
-**Code reveal 1: Define the Agent Framework agent.** Show the `Agent(...)` construction in [orchestrator/agents/researcher_agent.py](orchestrator/agents/researcher_agent.py), highlighting `client=build_chat_client()`, `instructions=RESEARCHER_INSTRUCTIONS`, `name=agent_id`, and `tools=[run_in_sandbox]`. Explain how the model client, instructions, and registered tool come together: the agent can request sandbox execution because the application explicitly exposes that capability as a tool. Registering the tool does not itself create a sandbox.
+Links: [aka.ms/AgentFramework](https://aka.ms/AgentFramework) (redirects to the GitHub repo) and the overview. Deliberately leaves out the Semantic Kernel and AutoGen lineage.
 
-**Code reveal 2: Implement the tool.** Replace the agent-definition excerpt with successive lifecycle-sized excerpts of `run_in_sandbox`: create -> execute -> collect result -> delete. Connect the registered tool name to the implementation and show how its result returns to the agent. Keep full error-handling and cleanup paths in speaker notes or the editor. Refer back to the image and egress slides instead of explaining those again.
+### Slide 22. The swarm as a workflow graph
 
-**Presentation pacing:** Both reveals belong to slide 22; no additional slide. Keep the researcher agent in the orchestrator visually distinct from the research process it launches inside the sandbox. Slide 23 then shows how these agents are wired into the workflow.
+**Main point:** The whole swarm is one Agent Framework workflow. Show the graph first, then zoom into its parts.
 
-**Speaker notes: other ways to hand compute to an agent.** This repo writes its own `run_in_sandbox` tool. Sandboxes also ship an **Agent Skill** ([quickstart](https://learn.microsoft.com/azure/container-apps/sandboxes-quickstart-agent-skills?tabs=copilot)), so a coding agent can create and use sandboxes directly. Mention it as a shortcut for self-provisioning without writing a custom tool. Install in GitHub Copilot CLI with `/plugin marketplace add microsoft/azure-container-apps`, then `/plugin install sandboxes@Azure-Container-Apps`; it also works with Claude Code or any agent's skills folder. It covers groups, sandboxes, exec, egress, snapshots, volumes, disk images, secrets, and identity.
+**On slide:** Left, the `WorkflowBuilder` code from [orchestrator/agents/workflow.py](orchestrator/agents/workflow.py) (planner → each researcher → collector → reviewer, reviewer → planner or report_writer). Right, an SVG of the same graph: 🤖 planner, three `researcher_i` nodes marked "📦 in a sandbox", collector, 🤖 reviewer, 🤖 report_writer, with labels for fan-out, fan-in, the dashed plan edge to the collector, "gaps: one more wave", and "approved". Caption: one edge per researcher, so the branches run concurrently.
 
-### Slide 23. Compose handoffs with parallel research
+**Speaker notes:** Agent Framework's fan-out edge runner delivers messages one after another, so separate edges keep the branches concurrent. The planner → collector edge carries a `ResearchPlan` with the expected answer count.
 
-**Code:** Show the graph construction in [orchestrator/agents/workflow.py](orchestrator/agents/workflow.py), mapping the code to the architecture arrows from slide 4. Start with the individual research-lead-to-researcher edges that make each sandbox branch concurrent. Then reveal the reviewer edges: reviewer to research lead when evidence has gaps, or reviewer to report writer when the dossier is approved. Explain that `WorkflowBuilder` composes fan-out/fan-in and agent-directed handoffs in one typed graph; `HandoffBuilder` packages a conversational mesh but is not required for this mixed topology.
+### Slide 22b. Planner agent
 
-**Speaker notes:** The reviewer returns a structured decision rather than application code choosing a fixed next step. `needs_more_research` includes 2-4 standalone follow-up questions and transfers ownership back to the research lead, which launches another parallel wave. `approved` transfers the dossier to the report writer. `MAX_RESEARCH_WAVES = 2` bounds cost and prevents an unattended loop. This is the precise sense in which the demo is both a swarm and parallel: handoffs choose the next owner, while research waves put multiple agents to work at once.
+**On slide:** Minimap with the planner highlighted, an abridged `PLANNER_INSTRUCTIONS` from [orchestrator/agents/planner_agent.py](orchestrator/agents/planner_agent.py), and the `Agent(...)` that uses it. Caption: each researcher only sees its own question, so every question has to stand on its own.
 
-**Speaker notes:** This is where the full deployment adds an ACA environment and orchestrator Container App. Briefly point to `azd up` and [azure.yaml](azure.yaml) for provisioning, image builds, and deployment; do not run a deployment on stage. The standalone setup remains independent of that larger stack. The [Sandboxes docs](https://sandboxes.azure.com/docs/sandboxes/sandboxes) show the same fan-out pattern with the async client and `asyncio.gather`, so this isn't a sample-specific trick. The platform caps from slide 21 (`maxSandboxCount`, Sandbox Cores quota) sit underneath the workflow's own fan-out limit.
+**Speaker notes:** The prompt also bans references like "the shortlist" or "the options". The output shape comes from a `ResearchQuestions` Pydantic model passed as `response_format` (structured outputs), so the prompt has no JSON instructions and `validate_questions` only checks the 4-6 count.
+
+### Slide 22b2. Fan-out planned questions to research nodes
+
+**On slide:** Minimap with the planner highlighted, and simplified `PlannerExecutor` code: run the agent, `self.agent.run(topic, options={"response_format": ResearchQuestions})` and `validate_questions(result.value)`, send a `ResearchPlan` to the collector, then one `AgentExecutorRequest` per question with `target_id=f"researcher_{i}"`.
+
+**Speaker notes:** `ctx.send_message` sends a typed message along one of the executor's edges; `target_id` picks the connected executor, and the runtime calls that executor's handler whose parameter type matches (`ResearchPlan` → collector, `AgentExecutorRequest` → researcher). Messages sent in one step are delivered together in the next superstep, so all researcher branches start at once. On a follow-up wave the reviewer supplies the questions and the planner skips its agent.
+
+### Slide 22c. Send each question to a sandbox
+
+**On slide:** Minimap with the researcher row highlighted. Intro line: each researcher node passes the question directly to a sandbox and returns either the response or an error. Code: simplified `ResearcherExecutor` from [orchestrator/agents/workflow.py](orchestrator/agents/workflow.py).
+
+**Speaker notes:** No LLM on the orchestrator side of a branch. An earlier version used a dispatcher agent whose only tool was `run_in_sandbox`; that cost a model call per question and could garble the JSON, so this repo (like upstream jkalis-MS/Agent-Fan-Out-ACA-Sandboxes) calls it directly.
+
+### Slide 22d. Start sandbox with research agent and tools
+
+**On slide:** Minimap with the researcher row highlighted, and the simplified `run_in_sandbox` lifecycle from [orchestrator/agents/sandbox_researcher.py](orchestrator/agents/sandbox_researcher.py): create, poll until done, collect, always delete.
+
+**Speaker notes:** Inside the sandbox, `research-agent/app.py` runs the researcher agent with Foundry's hosted web search, reaching Foundry only through the egress rules and proxy-injected token. Real code tolerates transient poll errors and times out after 360 s. To let an agent decide when to use a sandbox, make `run_in_sandbox` an agent tool, or use the Sandboxes Agent Skill.
+
+### Slide 22e. Research agent inside the sandbox
+
+**On slide:** Minimap with the researcher row highlighted. The `ResearchFinding` Pydantic model (answer, sources, confidence) and the `Agent(...)` from [research-agent/app.py](research-agent/app.py): `FoundryChatClient`, short research instructions, the web search tool, and `run(question, options={"response_format": ResearchFinding})`.
+
+**Speaker notes:** Search runs inside Foundry. The project client gets a placeholder credential that the egress proxy replaces. The Flask wrapper reports status and the result that `run_in_sandbox` polls for.
+
+### Slide 22f. Collect answers for each wave
+
+**On slide:** Minimap with the collector highlighted. Simplified `ResearchCollector`: a `set_plan` handler (from the planner) and a `collect_response` handler (from each researcher), both calling `release_if_ready`, which sends one `ResearchDossier` to the reviewer once every expected answer is in.
+
+**Speaker notes:** Handlers are picked by message type; the plan and answers can arrive in either order. The dossier includes findings from earlier waves.
+
+### Slide 22g. Reviewer agent: approve or research more
+
+**On slide:** Minimap with the reviewer highlighted. The `ReviewDecision` Pydantic model (`status: Literal["approved", "needs_more_research"]`, rationale, follow-up questions), passed as `response_format`, then `validate_review_decision` and the routing: `FollowUpResearch` to the planner if more research is needed and waves remain, otherwise `ApprovedDossier` to the report writer.
+
+**Speaker notes:** The agent decides; the code enforces `MAX_RESEARCH_WAVES = 2`, so after the second wave it always approves and notes limitations.
+
+### Slide 22h. Report writer agent
+
+**On slide:** Minimap with the report writer highlighted. `REPORT_WRITER_INSTRUCTIONS` (executive summary, themed findings, limitations, conclusion, cite sources, don't invent evidence) and `ctx.yield_output(result.text)`.
+
+**Speaker notes:** `yield_output` returns results to the workflow's caller; the orchestrator streams the report (and the planner's questions and reviewer decisions) to the web UI.
+
+### Slide 23b. Observability with OpenTelemetry (OTel)
+
+**On slide:** Intro (OTel standardizes traces, metrics, and logs across languages and vendors), then three cards with examples from this swarm: **Traces** (`sandbox.create` → `research-agent.run` → `invoke_agent ResearchAgent`), **Metrics** (Agent Framework's `gen_ai.client.operation.duration` and `gen_ai.client.token.usage`, shortened), **Logs** (real orchestrator log lines).
+
+### Slide 23c. OpenTelemetry GenAI semantic conventions
+
+**On slide:** A real span from Application Insights for this swarm, `invoke_agent ResearchAgent` (26.6 s), with its `gen_ai.*` attributes: operation name, agent name, request model, tool definitions (web search), input tokens (22518), output tokens (2450). Link to [semantic-conventions-genai](https://github.com/open-telemetry/semantic-conventions-genai).
+
+**Speaker notes:** The span also records system instructions and input/output messages (including web search calls) because `ENABLE_SENSITIVE_DATA` is on. Other operation names: `chat`, `execute_tool`.
+
+### Slide 23d. Using OpenTelemetry with Agent Framework
+
+**On slide:** `configure_azure_monitor(connection_string=...)` plus `enable_instrumentation()`, with two bullets: the same two calls run in the orchestrator and every sandbox; sandboxes need the connection string in their environment and the Application Insights endpoints in their egress policy.
+
+**Speaker notes:** The orchestrator also instruments FastAPI and adds a custom `sandbox.create` span. `research-agent/app.py` disables certificate verification for `requests` because the egress proxy intercepts TLS (sample shortcut). Next slide: joining the two sides into one trace.
 
 ### Slide 24. Carry a trace across the sandbox boundary
 
@@ -473,21 +522,13 @@ Source: [portal lifecycle docs](https://sandboxes.azure.com/docs/sandboxes/sandb
 
 **Speaker notes:** Open Azure Monitor / Application Insights for the swarm run, inspect parallel branches and one sandbox's work, then verify deletion of the ephemeral sandboxes. Use a captured trace when telemetry ingestion is delayed. Optionally show the sandbox group's `RunningCores` metric in Azure Monitor rising during the fan-out and dropping back to zero after cleanup.
 
-### Slide 27. Recap: where agent runtimes break
+### Slide 27. Takeaways
 
-**On slide:** Five places an agent runtime breaks, as a five-column grid, each paired with the Sandboxes capability the talk showed for it:
+**On slide:** Four cards (the ones that used to be on the final takeaways slide): **One task** (one bounded workspace), **Explicit boundaries** (isolation, egress, identity, data), **Explicit lifecycle** (create, stop, resume, delete), **One trace** (across every sandbox). Replaces the old "Recap: where agent runtimes break" slide, which covered the same ground.
 
-| Runtime pain | Covered on |
-|---|---|
-| Untrusted code on a developer's laptop or shared host | Slide 11 (inside a sandbox) |
-| Cold starts that throttle the agent loop | Slide 6 (prewarmed, sub-second start) |
-| Budgets that burn unattended | Slide 21 (resource and lifecycle limits) |
-| Workspaces that die on every restart | Slides 14 and 26 (lifecycle, suspend and resume) |
-| Tooling stitched together by hand | Slide 22 (compute as an agent tool) |
+**Speaker notes:** Tie each card back to the runtime problems from the start: untrusted code, cold starts, runaway budgets, workspaces that vanish on restart, tooling stitched together by hand.
 
-**Speaker notes:** Keep this quick: the audience has now seen each fix, so name the pain and point back to where it was addressed.
-
-### Slide 28. Where else Sandboxes fit
+### Slide 28. Scenarios for sandboxes
 
 **On slide:** Six use cases, one line each. Highlight the two this talk demonstrated (agent workflows and AI code execution) so the audience can map the rest to their own workloads.
 
@@ -501,6 +542,17 @@ Source: [portal lifecycle docs](https://sandboxes.azure.com/docs/sandboxes/sandb
 | **Interactive user sessions** | Give each user their own isolated compute environment |
 
 **Speaker notes:** Keep this brisk (under a minute). The swarm is one instance of the first two rows; the same lifecycle, egress, and identity patterns carry over to the others.
+
+### Slide 26b. Connecting sandboxes to your systems
+
+**Why:** ACA team feedback. The swarm only sends results back over HTTP; connectors and triggers are the integrations that let sandboxes react to events and take actions. Present as a "you can also" in the wrap-up, right after "Scenarios for sandboxes": that slide covers which workloads fit, this one covers how sandboxes connect to events and services.
+
+**On slide:** A flow: 📬 Event (new email or SharePoint upload) → ⚡ Trigger (runs a command or calls a port) → 📦 Sandbox (your agent does the work) → 🔌 Connector (Teams, SharePoint, Jira, GitHub, 100+ more). Two cards underneath:
+
+* **Connectors:** attach once to the sandbox group; each sandbox opts in at create time. MCP connectors give agents tools to discover; API connectors give app code REST endpoints. The group's identity authorizes calls, so there are no OAuth flows or tokens in the sandbox.
+* **Triggers (preview):** watch a connector event by polling on a schedule or by webhook; run a command in a sandbox or POST to a port on a long-lived sandbox; authenticate with a managed identity.
+
+**Speaker notes:** Swarm idea: a Teams trigger could start a research run and a Teams or SharePoint connector could post the report back. Docs scenarios: email triage to a Teams channel, invoice extraction from SharePoint, an hourly SharePoint audit, a daily email digest. Not tried in this repo. Sources: [connectors](https://sandboxes.azure.com/docs/sandboxes/connectors), [triggers](https://sandboxes.azure.com/docs/sandboxes/triggers).
 
 ### Slide 29. Choose the execution surface
 
@@ -517,9 +569,11 @@ Source: [portal lifecycle docs](https://sandboxes.azure.com/docs/sandboxes/sandb
 
 The orchestrator stays a standard Container App, not a Container Apps Express app, because Express isn't compatible with `azd` yet. If asked why not Express, say so, and mention Express's own gains (under-a-minute provisioning, sub-second cold start) as one of the products built on Sandboxes (slide 6).
 
-### Slide 30. Takeaways and getting started
+### Slide 30. Learning resources
 
-**On slide:** One task, one bounded workspace, explicit lifecycle, one trace. Link to the repo, [Sandboxes docs](https://learn.microsoft.com/en-us/azure/container-apps/sandboxes-overview) (plus the more detailed [portal docs](https://sandboxes.azure.com/docs/sandboxes/), which the team recommends for the latest), the [Agent Skill](https://learn.microsoft.com/azure/container-apps/sandboxes-quickstart-agent-skills?tabs=copilot), and the [Azure portal](https://portal.azure.com). Remind the audience they can start with one sandbox without deploying the swarm.
+**On slide:** Links: the sample repo, the Sandboxes docs (Learn overview and sandboxes.azure.com/docs), the Sandboxes Agent Skill quickstart, Microsoft Agent Framework (aka.ms/AgentFramework), the OpenTelemetry GenAI semantic conventions, and the Azure portal.
+
+**Speaker notes:** Start with one sandbox from the portal, CLI, or SDK without deploying the swarm; `create_sandbox.py` is the quickest path, and `azd up` deploys the whole swarm.
 
 ### Slide 31. Q&A
 
@@ -607,6 +661,7 @@ Docs checked (September 2026): [overview](https://learn.microsoft.com/azure/cont
 8. **Disabled state (slide 14):** What causes a sandbox to become disabled (admin action, policy violation, quota)?
    * **Status:** Partly answered. The [portal docs](https://sandboxes.azure.com/docs/sandboxes/sandboxes) list three states: Running, Stopped, and Disabled ("Disabled sandboxes can't be started unless enabled"). Slide 14 can keep its Disabled line.
    * **Still ask:** What puts a sandbox into Disabled? Is reaching the "Sandbox Cores" quota one cause (see question 9)? The Learn lifecycle page also says Stopped "is distinct from **Suspended**" without defining Suspended. Ask the team to reconcile that wording.
+   * **Checked September 29 (live API, westus group):** all 7 stopped sandboxes, including auto-suspended ones, reported `state: Stopped` with `stateDetails.stoppedReason: Idle`. None reported `Suspended`. The SDK (0.1.0b4) still lists `Suspended` in its state type hints (with transitional `Stopping`, `Resuming`, `Creating`, `Deleting`), and its `begin_stop()` poller accepts `Stopped`, `Suspended`, or `Idle`. It models `Disabled` as a stop reason (`Idle`, `UserStopped`, `Disabled`), not a separate state. Slide 16 now lists the stop reasons.
 9. **Limits (slides 6 and 21):** What are the current size tiers (S/M/L) and the maximum sandboxes per group? Is there a per-subscription quota to cite alongside "zero to thousands"?
    * **Status:** Partly answered.
    * **Docs:** Five tiers: XS (0.25 cores, 0.5 GB, 20 GB disk), S (0.5, 1 GB, 20 GB), M default (1, 2 GB, 20 GB), L (2, 4 GB, 40 GB), XL (4, 8 GB, 80 GB). A group can set `maxSandboxCount`, `defaultTimeoutSeconds`, and default CPU/memory/disk in Bicep. That gives slide 21 a platform-level cap on fan-out.

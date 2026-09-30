@@ -15,14 +15,18 @@ from agent_framework import (
     handler,
 )
 from agents import workflow as workflow_module
+from agents.planner_agent import ResearchQuestions
+from agents.reviewer_agent import ReviewDecision
 from agents.workflow import (
     MAX_RESEARCHERS,
     ResearchCollector,
     ResearchDossier,
     ResearchInput,
     ResearchPlan,
-    _parse_questions,
-    _parse_review_decision,
+    ResearcherExecutor,
+    parse_research_response,
+    validate_questions,
+    validate_review_decision,
     build_research_workflow,
 )
 
@@ -55,11 +59,16 @@ def make_response(index: int) -> FakeExecutorResponse:
 
 
 class FakeAgent:
-    def __init__(self, outputs: list[str]) -> None:
+    """Returns each output in turn: structured outputs as .value, strings as .text."""
+
+    def __init__(self, outputs: list[Any]) -> None:
         self._outputs = iter(outputs)
 
-    async def run(self, prompt: str) -> SimpleNamespace:
-        return SimpleNamespace(text=next(self._outputs))
+    async def run(self, prompt: str, options: dict | None = None) -> SimpleNamespace:
+        output = next(self._outputs)
+        if isinstance(output, str):
+            return SimpleNamespace(text=output, value=None)
+        return SimpleNamespace(text=output.model_dump_json(), value=output)
 
 
 class FakeResearcher(Executor):
@@ -82,6 +91,45 @@ class FakeResearcher(Executor):
             agent_response=response,
             full_conversation=[*payload.messages, *response.messages],
         ))
+
+
+class ResearcherExecutorTests(unittest.IsolatedAsyncioTestCase):
+    def make_executor(self, run_in_sandbox: Any) -> ResearcherExecutor:
+        with patch.object(workflow_module, "build_sandbox_researcher", return_value=run_in_sandbox):
+            return ResearcherExecutor(sandbox_mgr=None, emit=None, index=2)  # type: ignore[arg-type]
+
+    def make_request(self, question: str) -> AgentExecutorRequest:
+        return AgentExecutorRequest(messages=[Message("user", [question])], should_respond=True)
+
+    async def test_passes_sandbox_result_through_without_an_llm(self) -> None:
+        questions: list[str] = []
+
+        async def run_in_sandbox(question: str) -> str:
+            questions.append(question)
+            return json.dumps({"question": question, "answer": "Found it", "sources": ["https://example.com"], "confidence": 0.9})
+
+        executor = self.make_executor(run_in_sandbox)
+        context = FakeContext()
+        await executor.run(self.make_request("What is a sandbox?"), context)  # type: ignore[arg-type]
+
+        self.assertEqual(executor.id, "researcher_2")
+        self.assertEqual(questions, ["What is a sandbox?"])
+        finding = parse_research_response(context.sent[0])
+        self.assertEqual(finding["answer"], "Found it")
+        self.assertEqual(finding["sources"], ["https://example.com"])
+
+    async def test_failed_branch_still_reports_an_error_finding(self) -> None:
+        async def run_in_sandbox(question: str) -> str:
+            raise RuntimeError("Sandbox creation failed")
+
+        executor = self.make_executor(run_in_sandbox)
+        context = FakeContext()
+        await executor.run(self.make_request("What is a sandbox?"), context)  # type: ignore[arg-type]
+
+        finding = parse_research_response(context.sent[0])
+        self.assertEqual(finding["question"], "What is a sandbox?")
+        self.assertEqual(finding["error"], "Sandbox creation failed")
+        self.assertEqual(finding["sources"], [])
 
 
 class ResearchCollectorTests(unittest.IsolatedAsyncioTestCase):
@@ -183,70 +231,70 @@ class ResearchCollectorTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(context.sent[1].findings), 2)
 
 
-class ParseQuestionsTests(unittest.TestCase):
-    def test_parses_valid_questions(self) -> None:
+class ValidateQuestionsTests(unittest.TestCase):
+    def test_accepts_valid_questions(self) -> None:
         questions = [f"Question {index}?" for index in range(4)]
 
-        self.assertEqual(_parse_questions(json.dumps(questions)), questions)
+        self.assertEqual(validate_questions(ResearchQuestions(questions=questions)), questions)
 
-    def test_rejects_invalid_json_instead_of_falling_back(self) -> None:
-        with self.assertRaisesRegex(ValueError, "invalid JSON"):
-            _parse_questions("not json")
+    def test_rejects_missing_structured_output(self) -> None:
+        with self.assertRaisesRegex(ValueError, "no structured output"):
+            validate_questions(None)
 
     def test_rejects_wrong_question_count(self) -> None:
         with self.assertRaisesRegex(ValueError, "4-6 questions"):
-            _parse_questions(json.dumps(["Only one?"]))
+            validate_questions(ResearchQuestions(questions=["Only one?"]))
 
 
-class ParseReviewDecisionTests(unittest.TestCase):
-    def test_parses_approved_decision(self) -> None:
-        decision = _parse_review_decision(json.dumps({
-            "status": "approved",
-            "rationale": "Coverage is sufficient.",
-            "follow_up_questions": [],
-        }))
+class ValidateReviewDecisionTests(unittest.TestCase):
+    def test_accepts_approved_decision(self) -> None:
+        decision = validate_review_decision(ReviewDecision(
+            status="approved",
+            rationale="Coverage is sufficient.",
+            follow_up_questions=[],
+        ))
 
         self.assertEqual(decision.status, "approved")
         self.assertEqual(decision.follow_up_questions, [])
 
-    def test_parses_follow_up_decision(self) -> None:
-        decision = _parse_review_decision(json.dumps({
-            "status": "needs_more_research",
-            "rationale": "Two material gaps remain.",
-            "follow_up_questions": ["Question one?", "Question two?"],
-        }))
+    def test_accepts_follow_up_decision(self) -> None:
+        decision = validate_review_decision(ReviewDecision(
+            status="needs_more_research",
+            rationale="Two material gaps remain.",
+            follow_up_questions=["Question one?", "Question two?"],
+        ))
 
         self.assertEqual(decision.status, "needs_more_research")
         self.assertEqual(len(decision.follow_up_questions), 2)
 
     def test_rejects_invalid_follow_up_count(self) -> None:
         with self.assertRaisesRegex(ValueError, "2-4 follow-up"):
-            _parse_review_decision(json.dumps({
-                "status": "needs_more_research",
-                "rationale": "A gap remains.",
-                "follow_up_questions": ["Only one?"],
-            }))
+            validate_review_decision(ReviewDecision(
+                status="needs_more_research",
+                rationale="A gap remains.",
+                follow_up_questions=["Only one?"],
+            ))
 
 
 class ResearchWorkflowTests(unittest.IsolatedAsyncioTestCase):
     async def test_routes_follow_up_wave_then_writes_report(self) -> None:
-        initial_questions = json.dumps([
+        initial_questions = ResearchQuestions(questions=[
             "Question one?",
             "Question two?",
             "Question three?",
             "Question four?",
         ])
         review_decisions = [
-            json.dumps({
-                "status": "needs_more_research",
-                "rationale": "Two gaps remain.",
-                "follow_up_questions": ["Follow-up one?", "Follow-up two?"],
-            }),
-            json.dumps({
-                "status": "approved",
-                "rationale": "The dossier now covers the material questions.",
-                "follow_up_questions": [],
-            }),
+            ReviewDecision(
+                status="needs_more_research",
+                rationale="Two gaps remain.",
+                follow_up_questions=["Follow-up one?", "Follow-up two?"],
+            ),
+            ReviewDecision(
+                status="approved",
+                rationale="The dossier now covers the material questions.",
+                follow_up_questions=[],
+            ),
         ]
         researchers = [
             FakeResearcher(id=f"researcher_{index}")
@@ -259,7 +307,7 @@ class ResearchWorkflowTests(unittest.IsolatedAsyncioTestCase):
         with (
             patch.object(
                 workflow_module,
-                "build_decomposer_agent",
+                "build_planner_agent",
                 return_value=FakeAgent([initial_questions]),
             ),
             patch.object(
@@ -287,9 +335,9 @@ class ResearchWorkflowTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             [executor_id for executor_id, _ in outputs],
             [
-                "research_lead",
+                "planner",
                 "reviewer",
-                "research_lead",
+                "planner",
                 "reviewer",
                 "report_writer",
             ],

@@ -22,7 +22,3 @@ def build_report_writer_agent() -> Agent:
         default_options={"reasoning": {"effort": "medium"}},
     )
 
-
-def build_synthesizer_agent() -> Agent:
-    """Backward-compatible alias for callers outside the workflow module."""
-    return build_report_writer_agent()

@@ -2,7 +2,7 @@
 
 Shape::
 
-    [ResearchLeadExecutor]
+    [PlannerExecutor]
             ↓
     [Researcher_0..N]  ← parallel fan-out
             ↓
@@ -10,20 +10,19 @@ Shape::
             ↓
        [ReviewerExecutor] ── approved ──> [ReportWriterExecutor]
             │
-            └── gaps ──> [ResearchLeadExecutor]  (one bounded follow-up wave)
+            └── gaps ──> [PlannerExecutor]  (one bounded follow-up wave)
 """
 from __future__ import annotations
 
 import json
 import logging
-import re
 from dataclasses import dataclass
 from typing import Awaitable, Callable
 
 from agent_framework import (
-    AgentExecutor,
     AgentExecutorRequest,
     AgentExecutorResponse,
+    AgentResponse,
     Executor,
     Message,
     Workflow,
@@ -35,10 +34,10 @@ from typing_extensions import Never
 
 from sandbox_manager import SandboxManager
 
-from .decomposer_agent import build_decomposer_agent
-from .researcher_agent import build_researcher_agent
-from .reviewer_agent import build_reviewer_agent
-from .synthesizer_agent import build_report_writer_agent
+from .planner_agent import ResearchQuestions, build_planner_agent
+from .sandbox_researcher import build_sandbox_researcher
+from .reviewer_agent import ReviewDecision, build_reviewer_agent
+from .report_writer_agent import build_report_writer_agent
 
 logger = logging.getLogger(__name__)
 
@@ -91,22 +90,14 @@ class ApprovedDossier:
     wave: int
 
 
-@dataclass
-class ReviewDecision:
-    """Structured routing decision returned by the reviewer agent."""
-    status: str
-    rationale: str
-    follow_up_questions: list[str]
+# ── Stage 1: Planner ──────────────────────────────────────────────────
 
-
-# ── Stage 1: Research lead ──────────────────────────────────────────────────
-
-class ResearchLeadExecutor(Executor):
+class PlannerExecutor(Executor):
     """Plan initial research and dispatch initial or reviewer-requested waves."""
 
-    def __init__(self, id: str = "research_lead"):
+    def __init__(self, id: str = "planner"):
         super().__init__(id=id)
-        self._agent = build_decomposer_agent()
+        self.agent = build_planner_agent()
 
     @handler
     async def start_research(
@@ -114,8 +105,8 @@ class ResearchLeadExecutor(Executor):
         payload: ResearchInput,
         ctx: WorkflowContext[AgentExecutorRequest | ResearchPlan, dict[str, object]],
     ) -> None:
-        result = await self._agent.run(payload.topic)
-        questions = _parse_questions((result.text or "").strip())
+        result = await self.agent.run(payload.topic, options={"response_format": ResearchQuestions})
+        questions = validate_questions(result.value)
         await self._dispatch_wave(
             topic=payload.topic,
             questions=questions,
@@ -172,24 +163,51 @@ class ResearchLeadExecutor(Executor):
             )
 
 
-# ── Stage 2: Researchers (one AgentExecutor per parallel branch) ────────────
+# ── Stage 2: Researchers (one deterministic executor per parallel branch) ──
+
+class ResearcherExecutor(Executor):
+    """Run one question in a sandbox directly, with no LLM dispatch step.
+
+    Failures become an error finding, so the branch still reaches the collector
+    and the reviewer sees what's missing.
+    """
+
+    def __init__(self, sandbox_mgr: SandboxManager, emit: EmitFn, index: int):
+        super().__init__(id=f"researcher_{index}")
+        self.run_in_sandbox = build_sandbox_researcher(self.id, sandbox_mgr, emit, index)
+
+    @handler
+    async def run(
+        self,
+        request: AgentExecutorRequest,
+        ctx: WorkflowContext[AgentExecutorResponse],
+    ) -> None:
+        question = request.messages[-1].text if request.messages else ""
+        try:
+            text = await self.run_in_sandbox(question)
+        except Exception as ex:
+            logger.exception("[%s] sandbox research failed", self.id)
+            text = json.dumps({
+                "question": question,
+                "answer": f"Research failed: {ex}",
+                "sources": [],
+                "confidence": 0.0,
+                "error": str(ex),
+            })
+        reply = Message("assistant", [text])
+        await ctx.send_message(AgentExecutorResponse(
+            executor_id=self.id,
+            agent_response=AgentResponse(messages=[reply]),
+            full_conversation=[*request.messages, reply],
+        ))
+
 
 def _build_researcher_executors(
     sandbox_mgr: SandboxManager,
     emit: EmitFn,
-) -> list[AgentExecutor]:
-    """
-    Build a fixed pool of MAX_RESEARCHERS researcher AgentExecutors. Each one
-    has a unique id (`researcher_0`, `researcher_1`, ...) so DecomposeExecutor
-    can target by index. The sandbox manager + emit callback are bound via
-    closure on each researcher's tool.
-    """
-    pool: list[AgentExecutor] = []
-    for i in range(MAX_RESEARCHERS):
-        agent_id = f"researcher_{i}"
-        agent = build_researcher_agent(agent_id, sandbox_mgr, emit, i)
-        pool.append(AgentExecutor(agent=agent, id=agent_id))
-    return pool
+) -> list[ResearcherExecutor]:
+    """Build a fixed pool of researcher executors, `researcher_0` to `researcher_5`."""
+    return [ResearcherExecutor(sandbox_mgr, emit, i) for i in range(MAX_RESEARCHERS)]
 
 
 # ── Stage 3: Collect dynamically ────────────────────────────────────────────
@@ -199,29 +217,29 @@ class ResearchCollector(Executor):
 
     def __init__(self, id: str = "research_collector"):
         super().__init__(id=id)
-        self._plan: ResearchPlan | None = None
-        self._responses: list[AgentExecutorResponse] = []
-        self._pending_responses: list[AgentExecutorResponse] = []
-        self._released = False
+        self.plan: ResearchPlan | None = None
+        self.responses: list[AgentExecutorResponse] = []
+        self.pending_responses: list[AgentExecutorResponse] = []
+        self.released = False
 
-    async def _release_if_ready(
+    async def release_if_ready(
         self,
         ctx: WorkflowContext[ResearchDossier],
     ) -> None:
         if (
-            not self._released
-            and self._plan is not None
-            and len(self._responses) >= self._plan.expected_responses
+            not self.released
+            and self.plan is not None
+            and len(self.responses) >= self.plan.expected_responses
         ):
-            self._released = True
+            self.released = True
             findings = [
-                *_copy_findings(self._plan.previous_findings),
-                *[_parse_research_response(response) for response in self._responses],
+                *copy_findings(self.plan.previous_findings),
+                *[parse_research_response(response) for response in self.responses],
             ]
             await ctx.send_message(ResearchDossier(
-                topic=self._plan.topic,
+                topic=self.plan.topic,
                 findings=findings,
-                wave=self._plan.wave,
+                wave=self.plan.wave,
             ))
 
     @handler
@@ -230,13 +248,13 @@ class ResearchCollector(Executor):
         plan: ResearchPlan,
         ctx: WorkflowContext[ResearchDossier],
     ) -> None:
-        if self._plan is not None and not self._released:
+        if self.plan is not None and not self.released:
             raise RuntimeError("Cannot start a research wave before the current wave completes")
-        self._plan = plan
-        self._responses = self._pending_responses
-        self._pending_responses = []
-        self._released = False
-        await self._release_if_ready(ctx)
+        self.plan = plan
+        self.responses = self.pending_responses
+        self.pending_responses = []
+        self.released = False
+        await self.release_if_ready(ctx)
 
     @handler
     async def collect_response(
@@ -244,11 +262,11 @@ class ResearchCollector(Executor):
         response: AgentExecutorResponse,
         ctx: WorkflowContext[ResearchDossier],
     ) -> None:
-        if self._plan is None or self._released:
-            self._pending_responses.append(response)
+        if self.plan is None or self.released:
+            self.pending_responses.append(response)
         else:
-            self._responses.append(response)
-        await self._release_if_ready(ctx)
+            self.responses.append(response)
+        await self.release_if_ready(ctx)
 
 
 # ── Stage 4: Review and route ───────────────────────────────────────────────
@@ -258,7 +276,7 @@ class ReviewerExecutor(Executor):
 
     def __init__(self, id: str = "reviewer"):
         super().__init__(id=id)
-        self._agent = build_reviewer_agent()
+        self.agent = build_reviewer_agent()
 
     @handler
     async def review(
@@ -267,7 +285,7 @@ class ReviewerExecutor(Executor):
         ctx: WorkflowContext[FollowUpResearch | ApprovedDossier, dict],
     ) -> None:
         waves_remaining = MAX_RESEARCH_WAVES - dossier.wave
-        prompt = _format_dossier(
+        prompt = format_dossier(
             dossier.topic,
             dossier.findings,
             heading="Research dossier to review",
@@ -276,8 +294,8 @@ class ReviewerExecutor(Executor):
             f"\n\nResearch wave: {dossier.wave} of {MAX_RESEARCH_WAVES}. "
             f"Additional research waves remaining: {waves_remaining}."
         )
-        result = await self._agent.run(prompt)
-        decision = _parse_review_decision((result.text or "").strip())
+        result = await self.agent.run(prompt, options={"response_format": ReviewDecision})
+        decision = validate_review_decision(result.value)
 
         if decision.status == "needs_more_research" and waves_remaining > 0:
             await ctx.yield_output({
@@ -294,7 +312,7 @@ class ReviewerExecutor(Executor):
                     previous_findings=dossier.findings,
                     wave=dossier.wave + 1,
                 ),
-                target_id="research_lead",
+                target_id="planner",
             )
             return
 
@@ -326,7 +344,7 @@ class ReportWriterExecutor(Executor):
 
     def __init__(self, id: str = "report_writer"):
         super().__init__(id=id)
-        self._agent = build_report_writer_agent()
+        self.agent = build_report_writer_agent()
 
     @handler
     async def write_report(
@@ -334,7 +352,7 @@ class ReportWriterExecutor(Executor):
         dossier: ApprovedDossier,
         ctx: WorkflowContext[Never, str],
     ) -> None:
-        prompt = _format_dossier(
+        prompt = format_dossier(
             dossier.topic,
             dossier.findings,
             heading="Reviewer-approved research dossier",
@@ -343,7 +361,7 @@ class ReportWriterExecutor(Executor):
             f"\n\n## Reviewer assessment\n{dossier.review_rationale}\n\n"
             f"The dossier was approved after research wave {dossier.wave}."
         )
-        result = await self._agent.run(prompt)
+        result = await self.agent.run(prompt)
         await ctx.yield_output(result.text or "")
 
 
@@ -355,110 +373,62 @@ def build_research_workflow(
 ) -> Workflow:
     """
     Construct the agent-directed workflow:
-        research lead → parallel researchers → collector → reviewer
-        reviewer → research lead (gaps) OR report writer (approved)
+        planner → parallel researchers → collector → reviewer
+        reviewer → planner (gaps) OR report writer (approved)
 
-    The workflow is built per request so each researcher's tool closes over
-    the right WebSocket emit callback.
+    The workflow is built per request so each researcher closes over the
+    right WebSocket emit callback.
     """
-    research_lead = ResearchLeadExecutor()
+    planner = PlannerExecutor()
     researchers = _build_researcher_executors(sandbox_mgr, emit)
     collector = ResearchCollector()
     reviewer = ReviewerExecutor()
     report_writer = ReportWriterExecutor()
 
-    # NOTE: We use individual edges (research lead → researcher_i) instead of a
+    # NOTE: We use individual edges (planner → researcher_i) instead of a
     # single `add_fan_out_edges` group on purpose. MAF's fan-out edge runner
     # delivers the N targeted messages sequentially within a single edge
     # runner (`for message in source_messages: await deliver(...)`), which
-    # serializes the LLM calls for all 6 researchers. Using 6 separate edge
+    # serializes all 6 researcher branches. Using 6 separate edge
     # runners lets MAF parallelize them via `asyncio.gather` in the runner.
-    builder = WorkflowBuilder(start_executor=research_lead)
-    builder = builder.add_edge(research_lead, collector)
+    builder = WorkflowBuilder(start_executor=planner)
+    builder = builder.add_edge(planner, collector)
     for r in researchers:
-        builder = builder.add_edge(research_lead, r)
+        builder = builder.add_edge(planner, r)
         builder = builder.add_edge(r, collector)
     builder = builder.add_edge(collector, reviewer)
-    builder = builder.add_edge(reviewer, research_lead)
+    builder = builder.add_edge(reviewer, planner)
     wf = builder.add_edge(reviewer, report_writer).build()
     return wf
 
 
-def per_agent_kwargs_for_run(
-    sandbox_mgr: SandboxManager,
-    emit,  # async callable taking a dict
-) -> dict[str, dict]:
-    """
-    Per-researcher kwargs supplied via `function_invocation_kwargs`. Each
-    branch gets its index injected so the tool can correlate WebSocket events.
-    """
-    out: dict[str, dict] = {}
-    for i in range(MAX_RESEARCHERS):
-        out[f"researcher_{i}"] = {
-            "sandbox_mgr": sandbox_mgr,
-            "emit": emit,
-            "index": i,
-        }
-    return out
-
-
 # ── helpers ─────────────────────────────────────────────────────────────────
 
-_FENCE_RE = re.compile(r"^```(?:json)?\s*\n?|\n?```$", re.MULTILINE)
+def validate_questions(plan: ResearchQuestions | None) -> list[str]:
+    """Check the rules the planner's output schema can't express."""
+    if plan is None:
+        raise ValueError("Planner returned no structured output")
+    questions = [question.strip() for question in plan.questions if question.strip()]
+    if not 4 <= len(questions) <= MAX_RESEARCHERS:
+        raise ValueError("Planner must return 4-6 questions")
+    return questions
 
 
-def _strip_code_fences(text: str) -> str:
-    return _FENCE_RE.sub("", text).strip()
-
-
-def _parse_questions(raw: str) -> list[str]:
-    raw = _strip_code_fences(raw)
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise ValueError("Decomposer returned invalid JSON") from exc
-    if not isinstance(data, list) or not 4 <= len(data) <= MAX_RESEARCHERS:
-        raise ValueError("Decomposer must return an array of 4-6 questions")
-    if not all(isinstance(question, str) and question.strip() for question in data):
-        raise ValueError("Decomposer questions must be non-empty strings")
-    return data
-
-
-def _parse_review_decision(raw: str) -> ReviewDecision:
-    raw = _strip_code_fences(raw)
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise ValueError("Reviewer returned invalid JSON") from exc
-    if not isinstance(data, dict):
-        raise ValueError("Reviewer decision must be a JSON object")
-
-    status = data.get("status")
-    rationale = data.get("rationale")
-    follow_up_questions = data.get("follow_up_questions")
-    if status not in {"approved", "needs_more_research"}:
-        raise ValueError("Reviewer status must be 'approved' or 'needs_more_research'")
-    if not isinstance(rationale, str) or not rationale.strip():
-        raise ValueError("Reviewer rationale must be a non-empty string")
-    if not isinstance(follow_up_questions, list) or not all(
-        isinstance(question, str) and question.strip()
-        for question in follow_up_questions
-    ):
-        raise ValueError("Reviewer follow_up_questions must be an array of non-empty strings")
-    if status == "approved" and follow_up_questions:
+def validate_review_decision(decision: ReviewDecision | None) -> ReviewDecision:
+    """Check the rules the reviewer's output schema can't express."""
+    if decision is None:
+        raise ValueError("Reviewer returned no structured output")
+    if not decision.rationale.strip():
+        raise ValueError("Reviewer rationale must be non-empty")
+    if decision.status == "approved" and decision.follow_up_questions:
         raise ValueError("Approved reviewer decisions cannot include follow-up questions")
-    if status == "needs_more_research" and not 2 <= len(follow_up_questions) <= 4:
+    if decision.status == "needs_more_research" and not 2 <= len(decision.follow_up_questions) <= 4:
         raise ValueError("Reviewer must provide 2-4 follow-up questions")
-
-    return ReviewDecision(
-        status=status,
-        rationale=rationale.strip(),
-        follow_up_questions=follow_up_questions,
-    )
+    return decision
 
 
-def _parse_research_response(response: AgentExecutorResponse) -> dict:
-    text = _strip_code_fences((response.agent_response.text or "").strip())
+def parse_research_response(response: AgentExecutorResponse) -> dict:
+    text = (response.agent_response.text or "").strip()
     try:
         finding = json.loads(text)
     except json.JSONDecodeError:
@@ -478,11 +448,11 @@ def _parse_research_response(response: AgentExecutorResponse) -> dict:
     return finding
 
 
-def _copy_findings(findings: list[dict]) -> list[dict]:
+def copy_findings(findings: list[dict]) -> list[dict]:
     return [dict(finding) for finding in findings]
 
 
-def _format_dossier(topic: str, findings: list[dict], *, heading: str) -> str:
+def format_dossier(topic: str, findings: list[dict], *, heading: str) -> str:
     prompt_lines = [
         f"# {heading}",
         "",

@@ -357,7 +357,6 @@
 			margin: 0 auto;
 			border: 1px solid var(--deck-border);
 			border-radius: 10px;
-			box-shadow: 0 10px 28px rgba(39, 94, 128, 0.14);
 		}
 
 		/* Network ingress: reuse the egress flow styles in blue */
@@ -375,7 +374,7 @@
 		.reveal .port-cols .eg-box { padding: 8px 14px; }
 		.reveal .port-link { margin: 0 0 0 18px; line-height: 1; }
 
-		.reveal .ig-steps pre { margin: 0 0 30px; box-shadow: none; }
+		.reveal .ig-steps pre { margin: 0 0 30px; }
 		.reveal .ig-step {
 			display: flex;
 			align-items: center;
@@ -412,23 +411,124 @@
 		.reveal .auth-panel { padding: 14px 18px; border: 1px solid var(--deck-border); border-radius: 14px; background: #fff; }
 		.reveal .auth-entra { border: 2px solid var(--deck-accent); }
 		.reveal .auth-title { margin: 0 0 8px; font-family: 'Outfit', sans-serif; font-size: 0.7em; font-weight: 700; color: var(--deck-heading); }
-		.reveal .auth-panel pre { margin: 0 0 10px; box-shadow: none; }
+		.reveal .auth-panel pre { margin: 0 0 10px; }
 		.reveal .auth-who { flex: 1; font-size: 0.52em; }
 		.reveal .auth-foot { margin: 12px 0 0; font-size: 0.46em; color: var(--deck-muted); }
 
 		/* Suspend and resume */
-		.reveal pre.resume-code { margin: 0 0 18px; box-shadow: none; }
+		.reveal pre.resume-code { margin: 0 0 18px; }
 		.reveal .resume-foot { margin: 16px 0 0; font-size: 0.5em; font-weight: 700; color: var(--deck-heading); }
 
+		/* Snapshots and volumes */
+		.reveal .store-box { border: 2px solid var(--deck-accent); background: var(--deck-accent-bg); }
+		.reveal .snap-box { border: 2px solid #c98a12; background: #fff6e2; }
+		.reveal .code-link .eg-arrow { color: #075274; }
+		.reveal .code-link code { padding: 0; background: none; font-size: 0.5em; }
+		.reveal .fork-link { margin: 4px 0 2px; }
+		.reveal .fork-link code { display: block; text-align: center; }
+		.reveal .fork-arrows { display: flex; gap: 10px; line-height: 1; }
+		.reveal .fork-arrows span { flex: 1; text-align: center; }
+
+		/* Connectors and triggers */
+		.reveal .ct-flow { display: flex; align-items: stretch; gap: 8px; }
+		.reveal .ct-step { flex: 1; padding: 10px 14px; border-radius: 12px; }
+		.reveal .ct-step p { margin: 0; font-size: 0.48em; line-height: 1.35; }
+		.reveal .ct-step .eg-title { margin-bottom: 4px; font-family: 'Outfit', sans-serif; font-size: 0.6em; font-weight: 700; color: var(--deck-heading); }
+		.reveal .ct-event { border: 2px solid var(--deck-border); background: #fff; }
+		.reveal .ct-trigger { border: 2px solid var(--deck-violet); background: #f6f2ff; }
+		.reveal .ct-connector { border: 2px solid var(--deck-accent); background: var(--deck-accent-bg); }
+		.reveal .ct-arrow { align-self: center; font-size: 0.8em; font-weight: 700; color: var(--deck-muted); }
+		.reveal .ct-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+		.reveal .ct-cards .card { text-align: left; }
+		.reveal .ct-cards ul { margin: 6px 0 0 1em; font-size: 0.72em; }
+		.reveal .ct-preview { margin-left: 6px; padding: 2px 8px; border-radius: 999px; background: var(--deck-violet); color: #fff; font-family: 'Atkinson Hyperlegible', sans-serif; font-size: 0.6em; vertical-align: middle; }
+
+		/* Microsoft Agent Framework */
+		.reveal .af-tagline { margin: 0 0 16px; font-size: 0.62em; color: var(--deck-ink); }
+		.reveal .af-lang { display: inline-block; margin-left: 6px; padding: 2px 12px; border: 1px solid var(--deck-border); border-radius: 999px; background: #fff; font-size: 0.85em; font-weight: 700; color: var(--deck-heading); }
+		.reveal .af-lang small { font-weight: 400; color: var(--deck-muted); }
+		.reveal .af-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+		.reveal .af-card { padding: 12px 20px; border: 1px solid var(--deck-border); border-top: 5px solid var(--deck-accent); border-radius: 12px; background: #fff; }
+		.reveal .af-card h4 { margin: 0 0 6px; font-family: 'Outfit', sans-serif; font-size: 0.72em; font-weight: 700; color: var(--deck-heading); }
+		.reveal .af-card p { margin: 0; font-size: 0.5em; line-height: 1.4; color: var(--deck-ink); }
+		.reveal .af-card p.af-here { margin-top: 8px; font-weight: 700; color: var(--deck-accent); }
+
+		/* Workflow graph */
+		.reveal .wg-cols { align-items: center; gap: 30px; }
+		.reveal .wg-code { flex: 1.05; min-width: 0; }
+		.reveal .wg-svg { flex: 1; width: 100%; max-width: 520px; height: auto; }
+		.reveal .wg-svg .wg-node rect { fill: #fff; stroke: var(--deck-sandbox); stroke-width: 2; }
+		.reveal .wg-svg .wg-agent rect { fill: var(--deck-accent-bg); stroke: var(--deck-accent); }
+		.reveal .wg-svg .wg-node text { font-family: 'Atkinson Hyperlegible', sans-serif; font-size: 21px; font-weight: 700; fill: var(--deck-heading); }
+		.reveal .wg-svg .wg-edge { fill: none; stroke: #5b6b78; stroke-width: 1.8; }
+		.reveal .wg-svg .wg-dashed { stroke-dasharray: 6 5; }
+		.reveal .wg-svg .wg-label { font-family: 'Atkinson Hyperlegible', sans-serif; font-size: 18px; font-weight: 700; fill: var(--deck-violet); }
+		.reveal .wg-svg .wg-note { font-weight: 400; fill: var(--deck-muted); font-size: 16px; }
+		.reveal .wg-svg .wg-node text.wg-sub { font-size: 16px; font-weight: 400; fill: var(--deck-muted); }
+		.reveal .wg-mini .wg-sub { display: none; }
+		.reveal section.wg-zoom h3 { padding-right: 180px; font-size: 1.1em; margin-bottom: 44px; }
+		.reveal .wg-intro { margin: 0 0 14px; font-size: 0.6em; color: var(--deck-ink); }
+		.reveal .wg-mini { position: absolute; top: 30px; right: 40px; width: 140px; height: auto; padding: 4px; border: 1px solid var(--deck-border); border-radius: 10px; background: #fff; }
+		.reveal .wg-mini .wg-node rect { fill: #f2f5f7; stroke: #b8c4cc; stroke-width: 3; }
+		.reveal .wg-mini .wg-node text { display: none; }
+		.reveal .wg-mini .wg-edge { stroke: #b8c4cc; stroke-width: 3; }
+		.reveal .wg-mini .wg-hl rect { fill: var(--deck-violet); stroke: var(--deck-violet); }
+
+		/* OpenTelemetry */
+		.reveal .otel-intro { margin: 0 0 18px; font-size: 0.6em; color: var(--deck-ink); }
+		.reveal .otel-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+		.reveal .otel-card { padding: 14px 18px; border: 3px solid; border-radius: 22px; background: #fff; }
+		.reveal .otel-card h4 { margin: 0 0 10px; text-align: center; font-family: 'Outfit', sans-serif; font-size: 0.75em; color: var(--deck-heading); }
+		.reveal .otel-card p { margin: 12px 0 0; font-size: 0.48em; line-height: 1.4; color: var(--deck-ink); }
+		.reveal .otel-card pre.otel-sample { margin: 0; padding: 10px 12px; border: none; border-radius: 6px; font-family: 'Space Mono', monospace; font-size: 0.38em; line-height: 1.5; white-space: pre; overflow: hidden; color: var(--deck-heading); }
+		.reveal .otel-traces { border-color: #6f8fd8; }
+		.reveal .otel-traces pre.otel-sample { background: #dfe6f7; }
+		.reveal .otel-metrics { border-color: #3fa65a; }
+		.reveal .otel-metrics pre.otel-sample { background: #dcefd9; }
+		.reveal .otel-logs { border-color: #d99a3a; }
+		.reveal .otel-logs pre.otel-sample { background: #fbeccd; }
+		.reveal .otel-span { margin: 0 0 8px; font-size: 0.56em; }
+		.reveal .otel-table { width: 100%; border-collapse: collapse; font-family: 'Space Mono', monospace; font-size: 0.46em; }
+		.reveal .otel-table th { padding: 8px 14px; text-align: left; background: var(--deck-accent); color: #fff; }
+		.reveal .otel-table td { padding: 8px 14px; border: 1px solid var(--deck-border); background: #fff; }
+		.reveal .otel-table td:first-child { font-weight: 700; color: var(--deck-heading); }
+		.reveal .otel-list { margin: 16px 0 0 1em; font-size: 0.56em; }
+		.reveal .otel-list li { margin-bottom: 6px; }
+
+		.reveal .slides img { box-shadow: none; }
+
+		/* Learning resources */
+		.reveal .resources-list { margin: 10px 0 0 0; list-style: none; font-size: 0.7em; }
+		.reveal .resources-list li { margin-bottom: 18px; }
+
+		/* Suspend and resume demo */
+		.reveal .resume-steps { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+		.reveal .resume-step { display: flex; align-items: center; gap: 22px; }
+		.reveal .resume-caption { flex: 0 0 330px; display: grid; grid-template-columns: 34px 1fr; column-gap: 12px; margin: 0; font-size: 0.5em; line-height: 1.35; color: var(--deck-ink); }
+		.reveal .resume-caption strong { display: block; font-family: 'Outfit', sans-serif; font-size: 1.25em; color: var(--deck-heading); }
+		.reveal .resume-num { grid-row: 1 / 3; width: 34px; height: 34px; margin-top: 2px; border-radius: 50%; background: var(--deck-accent); color: #fff; font-weight: 700; line-height: 34px; text-align: center; }
+		.reveal .resume-step img { height: 150px; width: auto; margin: 0; border: 1px solid var(--deck-border); border-radius: 8px; box-shadow: none; }
+
 		/* Back to the swarm */
-		.reveal .arch.arch-recall { grid-template-columns: 1fr 120px 0.85fr 1fr; grid-template-rows: 40px repeat(5, auto); row-gap: 8px; max-width: 1180px; column-gap: 0; margin-bottom: 22px; }
+		.reveal .arch.arch-compact { grid-template-rows: 40px repeat(6, 54px); row-gap: 6px; }
+		.reveal .arch.arch-compact .box.sandbox { padding: 3px 10px; }
+		.reveal .arch.arch-compact .box { padding: 5px 10px; font-size: 0.5em; }
+		.reveal .arch.arch-compact .box small { font-size: 0.85em; }
+		.reveal .arch.arch-compact .arrow { font-size: 0.44em; }
+		.reveal .arch.arch-compact .cell.left { align-self: center; }
+		.reveal .arch.arch-recall { grid-template-columns: 1fr 96px 0.95fr 104px 0.95fr; grid-template-rows: 40px repeat(6, 60px); row-gap: 8px; max-width: 1180px; column-gap: 0; margin-bottom: 22px; }
 		.reveal .arch.arch-recall .box { padding: 5px 10px; font-size: 0.5em; }
 		.reveal .arch.arch-recall .box small { font-size: 0.85em; }
 		.reveal .arch.arch-recall .arrow { font-size: 0.44em; }
-		.reveal .arch.arch-recall .zone-title { padding: 10px 14px 0; font-size: 0.4em; white-space: nowrap; }
-		.reveal .arch.arch-recall .recall { grid-column: 4; align-self: center; margin-left: 14px; padding: 6px 12px; border-left: 4px solid var(--deck-violet); border-radius: 8px; background: #f6f2ff; font-size: 0.46em; line-height: 1.3; }
-		.reveal .arch.arch-recall .recall strong { display: block; font-family: 'Outfit', sans-serif; color: var(--deck-heading); }
-		.reveal .arch.arch-recall .recall span { color: var(--deck-ink); }
+		.reveal .arch.arch-recall .zone-title { padding: 10px 12px 0; font-family: 'Atkinson Hyperlegible', sans-serif; font-size: 0.5em; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--deck-heading); white-space: nowrap; }
+		.reveal .arch.arch-recall .azure { grid-column: 5; }
+		.reveal .arch.arch-recall .cell.left { align-self: center; }
+		.reveal .arch.arch-recall .mid2 { grid-column: 4; align-self: center; text-align: center; white-space: nowrap; }
+		.reveal .arch.arch-recall .az-box { display: flex; align-items: center; gap: 8px; white-space: nowrap; text-align: left; border-color: var(--deck-accent); background: #fff; }
+		.reveal .arch.arch-recall .az-box img { width: 30px; height: 30px; margin: 0; flex: none; box-shadow: none; }
+		.reveal .arch.arch-recall .az-name { display: block; font-family: 'Atkinson Hyperlegible', sans-serif; font-size: 1em; font-weight: 700; color: var(--deck-heading); }
+		.reveal .arch.arch-recall .az-box small { font-size: 0.8em; }
+		.reveal .arch.arch-recall .zone-icon { width: 26px; height: 26px; margin: 0 8px 0 0; vertical-align: -5px; box-shadow: none; }
 
 		/* Keyless model access */
 		.reveal .mi-group { padding: 5px 10px 8px; border: 2px dashed var(--deck-border); border-radius: 14px; background: rgba(255, 255, 255, 0.6); }
@@ -455,7 +555,6 @@
 			margin: 0;
 			border: 1px solid var(--deck-border);
 			border-radius: 10px;
-			box-shadow: 0 10px 28px rgba(39, 94, 128, 0.14);
 		}
 
 		.reveal .portal-caption {
@@ -506,7 +605,6 @@
 		.reveal .prog-box pre {
 			flex: 1;
 			margin: 0;
-			box-shadow: none;
 		}
 
 		.reveal .prog-grid.group-code pre.code-tiny code {
@@ -782,14 +880,14 @@
 		.reveal .arch {
 			display: grid;
 			grid-template-columns: 1fr 190px 1fr;
-			grid-template-rows: 44px repeat(5, auto);
+			grid-template-rows: 44px repeat(6, auto);
 			row-gap: 10px;
 			margin: 0 auto;
 			max-width: 1080px;
 		}
 
 		.reveal .arch .zone-outline {
-			grid-row: 1 / 7;
+			grid-row: 1 / 8;
 			border: 2px dashed #555;
 			border-radius: 12px;
 			margin: 0 0 -10px;
@@ -817,6 +915,7 @@
 		.reveal .arch .r4 { grid-row: 4; }
 		.reveal .arch .r5 { grid-row: 5; }
 		.reveal .arch .r6 { grid-row: 6; }
+		.reveal .arch .r7 { grid-row: 7; }
 
 		.reveal .arch-endpoint {
 			text-align: center;
@@ -989,6 +1088,11 @@
 			padding: 36px 52px 40px;
 		}
 
+		/* Same panel size on every content slide */
+		.reveal .slides > section:not(.heading-only) {
+			height: 720px;
+		}
+
 		.reveal .slides > section.fit-sm {
 			font-size: 0.76em;
 		}
@@ -1043,7 +1147,6 @@
 			border-left: 6px solid var(--deck-accent);
 			border-radius: 10px;
 			background: #f5f9fc;
-			box-shadow: 0 14px 32px rgba(0, 0, 0, 0.24);
 		}
 
 		.reveal pre code,
@@ -1291,7 +1394,7 @@
 						Compare the total five-year cost, charging practicality, winter range, reliability, insurance, and available incentives.
 						Include the strongest reasons not to switch, identify assumptions that could change the recommendation, and produce a decision checklist.”
 					</div>
-					<p class="label" style="margin-top: 22px;">Example decomposition</p>
+					<p class="label" style="margin-top: 22px;">Example research plan</p>
 					<div class="grid3 fragment" style="grid-template-columns: repeat(4, 1fr);">
 						<div class="card">What's the five-year cost of the hybrid vs. keeping the 2001?</div>
 						<div class="card">Which California incentives apply?</div>
@@ -1303,7 +1406,7 @@
 						<li>But now <strong>several agents need compute, permissions, and cleanup at once</strong>.</li>
 					</ul>
 					<aside class="notes">
-						Preview the Forester question (the "Forester upgrade" sample button in the app). The sub-questions shown are an illustrative decomposition; the live decomposer
+						Preview the Forester question (the "Forester upgrade" sample button in the app). The sub-questions shown are an illustrative plan; the live planner
 						may split it differently (the sample returns 4-6 questions). The interesting part isn't the fan-out itself,
 						it's that each branch needs somewhere to run.
 					</aside>
@@ -1312,10 +1415,10 @@
 				<!-- 4 -->
 				<section>
 					<h3>Demo: the research swarm</h3>
-					<img class="demo-shot" src="images/demo-swarm.png" alt="The research swarm web app running the Forester upgrade sample topic. The live agent architecture shows Research Lead complete, a parallel research wave on wave 2 with 4 of 4 researchers complete, the Reviewer complete with a dashed 'gaps, more research' route back to the Research Lead, and the Report Writer waiting for approval.">
+					<img class="demo-shot" src="images/demo-swarm.png" alt="The research swarm web app running the Forester upgrade sample topic. The live agent architecture shows Planner complete, a parallel research wave on wave 2 with 4 of 4 researchers complete, the Reviewer complete with a dashed 'gaps, more research' route back to the Planner, and the Report Writer waiting for approval.">
 					<aside class="notes">
-						Screenshot: the Forester upgrade sample after a second research wave, with the Reviewer's two routes visible (gaps back to the Research Lead, approved on to the Report Writer).
-						Switch to the live app. Submit a sample topic early and narrate while it runs: decomposition, researchers provisioning,
+						Screenshot: the Forester upgrade sample after a second research wave, with the Reviewer's two routes visible (gaps back to the Planner, approved on to the Report Writer).
+						Switch to the live app. Submit a sample topic early and narrate while it runs: the planner's plan, researchers provisioning,
 						researching, done. Briefly open portal.azure.com and show the live sandboxes in the sandbox group while they exist.
 						Inspect the final report. Backup: have a completed report and a captured sandbox list ready rather than waiting silently.
 					</aside>
@@ -1324,35 +1427,35 @@
 				<!-- 5 -->
 				<section>
 					<h3>Swarm architecture</h3>
-					<div class="arch-endpoint" style="margin-bottom: 8px;">User question ↓</div>
-					<div class="arch" role="img" aria-label="Orchestrator running in a container with a decomposer, three researcher agents, and a collector and synthesizer. Each researcher agent makes a tool call to its own sandbox, which runs the research process and returns a result.">
+					<div class="arch-endpoint" style="margin-bottom: 4px;">User question ↓</div>
+					<div class="arch arch-compact" role="img" aria-label="Orchestrator running in a container with a planner, three research questions, a collector, a reviewer, and a report writer. Each question goes to its own sandbox, which runs a researcher agent and returns a result.">
 						<div class="zone-outline left fragment" data-fragment-index="1"></div>
 						<div class="zone-outline right fragment" data-fragment-index="1"></div>
 						<div class="zone-title left fragment" data-fragment-index="1">Container · orchestrator</div>
 						<div class="zone-title right fragment" data-fragment-index="1">Sandboxes</div>
 
-						<div class="cell left r2"><div class="box app">Decomposer</div></div>
-						<div class="cell left r3"><div class="box">↳ Researcher agent 1</div></div>
-						<div class="cell left r4"><div class="box">↳ Researcher agent 2</div></div>
-						<div class="cell left r5"><div class="box">↳ Researcher agent 3</div></div>
-						<div class="cell left r6"><div class="box app">Collector (fan-in) → Synthesizer</div></div>
+						<div class="cell left r2"><div class="box app">🤖 Planner</div></div>
+						<div class="cell left r3"><div class="box">↳ Research question 1</div></div>
+						<div class="cell left r4"><div class="box">↳ Research question 2</div></div>
+						<div class="cell left r5"><div class="box">↳ Research question 3</div></div>
+						<div class="cell left r6"><div class="box app">🤖 Reviewer</div></div>
+						<div class="cell left r7"><div class="box app">🤖 Report writer</div></div>
 
-						<div class="mid r3 arrow fragment" data-fragment-index="1">tool call →<br>← result</div>
-						<div class="mid r4 arrow fragment" data-fragment-index="1">tool call →<br>← result</div>
-						<div class="mid r5 arrow fragment" data-fragment-index="1">tool call →<br>← result</div>
+						<div class="mid r3 arrow fragment" data-fragment-index="1">question →<br>← result</div>
+						<div class="mid r4 arrow fragment" data-fragment-index="1">question →<br>← result</div>
+						<div class="mid r5 arrow fragment" data-fragment-index="1">question →<br>← result</div>
 
-						<div class="cell right r3 fragment" data-fragment-index="1"><div class="box sandbox">Sandbox 1<small>Research process</small></div></div>
-						<div class="cell right r4 fragment" data-fragment-index="1"><div class="box sandbox">Sandbox 2<small>Research process</small></div></div>
-						<div class="cell right r5 fragment" data-fragment-index="1"><div class="box sandbox">Sandbox 3<small>Research process</small></div></div>
+						<div class="cell right r3 fragment" data-fragment-index="1"><div class="box sandbox">Sandbox 1<small>🤖 Researcher</small></div></div>
+						<div class="cell right r4 fragment" data-fragment-index="1"><div class="box sandbox">Sandbox 2<small>🤖 Researcher</small></div></div>
+						<div class="cell right r5 fragment" data-fragment-index="1"><div class="box sandbox">Sandbox 3<small>🤖 Researcher</small></div></div>
 						<div class="cell right r6 fragment" data-fragment-index="1"><p class="smaller muted" style="margin: 0; text-align: center;">Each sandbox has its own execution boundary.</p></div>
 					</div>
-					<div class="arch-endpoint" style="margin-top: 14px;">↓ Final report</div>
-					<p class="smaller fragment" style="text-align: center; margin-top: 4px;"><strong>Tool-call lifecycle:</strong> create sandbox → run research → collect result → delete</p>
+					<div class="arch-endpoint" style="margin-top: 10px;">↓ Final report</div>
+					<p class="smaller fragment" style="text-align: center; margin-top: 4px;"><strong>Sandbox lifecycle:</strong> create sandbox → run research → collect result → delete</p>
 					<aside class="notes">
-						Build 1: the work. Question, decomposer, parallel researcher branches, fan-in, report. Three branches for readability; the sample supports up to six.
-						Build 2: where it runs. The orchestrator runs in an ordinary container. Each researcher agent calls a run_in_sandbox tool;
-						the actual research process runs across that boundary in its own sandbox. Tool-call arrows summarize the sandbox lifecycle,
-						not a direct model-to-sandbox connection. Keep this vendor-neutral: container versus sandbox. Azure names come on slide 6.
+						Build 1: the work. Question, planner, parallel researcher branches, fan-in, review, report. Three branches for readability; the sample supports up to six.
+						Build 2: where it runs. The orchestrator runs in an ordinary container. Each question goes straight to its own sandbox;
+						the research agent, with its model calls and web search, runs across that boundary. The arrows summarize the sandbox lifecycle (create, run, collect, delete). Keep this vendor-neutral: container versus sandbox. Azure names come on slide 6.
 						Walk back through what the audience just saw in the demo, now with the hosting boundaries named.
 					</aside>
 				</section>
@@ -1375,7 +1478,7 @@
 				<section>
 					<h3>What is a sandbox?</h3>
 					<div class="zoom-frame">
-						<svg class="isolation-diagram" viewBox="0 0 1120 372" role="img" aria-label="Sandbox 3 has its own processes, memory, and filesystem, separate from neighboring sandboxes 1 and 2 on the same host. Step 1: each sandbox has a short lifetime, starting in seconds and deleted when its task ends. Step 2: Sandbox 3 can reach the model API and telemetry but is blocked from any other site, and its CPU and memory are capped.">
+						<svg class="isolation-diagram" viewBox="0 0 1120 372" role="img" aria-label="Sandbox 3 has its own processes, memory, and filesystem, separate from neighboring sandboxes 1 and 2 on the same host. Step 1: each sandbox has a short lifetime, with sub-second startup, and is deleted when its task ends. Step 2: Sandbox 3 can reach the model API and telemetry but is blocked from any other site, and its CPU and memory are capped.">
 							<g opacity="0.55">
 								<rect x="2" y="30" width="136" height="200" rx="12" fill="#f4f6f8" stroke="#9aa7b2" stroke-width="2"/>
 								<text x="70" y="58" text-anchor="middle" font-size="17" font-weight="700" fill="#5f6e7b">Sandbox 1</text>
@@ -1420,7 +1523,7 @@
 									<path d="M454 326l12 12M466 326l-12 12"/>
 									<path d="M644 344l12 12M656 344l-12 12"/>
 								</g>
-								<text x="800" y="318" font-size="18" font-weight="700" fill="#065f80">● Starts in seconds</text>
+								<text x="800" y="318" font-size="18" font-weight="700" fill="#065f80">● Sub-second startup</text>
 								<text x="800" y="346" font-size="18" font-weight="700" fill="#b42318">✕ Deleted when done</text>
 							</g>
 
@@ -1452,13 +1555,13 @@
 					</div>
 					<div class="trait-row">
 						<div class="trait trait-isolated"><h4>Isolated</h4><p>Its own processes, memory, and filesystem. It can't see or change the host or other sandboxes.</p></div>
-						<div class="trait trait-fast fragment" data-fragment-index="1"><h4>Fast &amp; disposable</h4><p>Starts in seconds or less for one task, then gets deleted when the task is done.</p></div>
+						<div class="trait trait-fast fragment" data-fragment-index="1"><h4>Fast &amp; disposable</h4><p>Sub-second startup for one task, then gets deleted when the task is done.</p></div>
 						<div class="trait trait-bounded fragment" data-fragment-index="2"><h4>Bounded</h4><p>Gets only the network endpoints, credentials, and CPU and memory you allow for its task.</p></div>
 					</div>
 					<aside class="notes">
 						Before any Azure specifics: what is a sandbox? The architecture put each research process in one; here is what that means.
 						Isolated: separation you get by default. Each sandbox has its own processes, memory, and filesystem, so model-driven code can't see or change the host or the other branches. How that separation is enforced varies: containers share the host kernel, gVisor adds a user-space kernel, and microVMs give each sandbox its own kernel. We'll see which one Azure uses later.
-						Click 1, fast and disposable: the lifetime bars. Each sandbox is created for one task in seconds or less and deleted afterward, so six branches can start at once and nothing lingers.
+						Click 1, fast and disposable: the lifetime bars. Each sandbox starts in under a second for one task and is deleted afterward, so six branches can start at once and nothing lingers.
 						Click 2, bounded: limits you configure per task. The network allowlist and the CPU and memory numbers are examples, not defaults. Allowed network endpoints, scoped credentials, and CPU and memory caps, so a misbehaving branch can only call approved services and use its own resources.
 						Next: how Azure Container Apps provides this.
 					</aside>
@@ -1753,6 +1856,7 @@ CMD ["sleep", "infinity"]
 						Other real parameters, if asked: disk_size, labels, environment, connections, entrypoint/cmd.
 						Client setup (not shown): SandboxGroupClient(endpoint_for_region(region), credential, subscription_id=..., resource_group=..., sandbox_group=...). Creating a client doesn't create a sandbox; an async client exists for fan-out.
 						begin_create_sandbox is a long-running operation; .result() waits until it's running. Then sandbox.exec(...) runs commands and sandbox.delete() removes it.
+						Sizes: XS (0.25 cores, 0.5 GB) up to XL (4 cores, 8 GB, 80 GB disk); M (1 core, 2 GB) is the default. The swarm uses 0.5 cores and 1 GiB per researcher.
 					</aside>
 				</section>
 
@@ -1771,8 +1875,8 @@ CMD ["sleep", "infinity"]
 
 						<!-- Lifecycle policy boundary -->
 						<rect x="250" y="40" width="700" height="250" rx="125" fill="rgba(118, 87, 201, 0.04)" stroke="#7657c9" stroke-width="2" stroke-dasharray="8 7"/>
-						<rect x="485" y="23" width="230" height="36" rx="18" fill="#fff" stroke="#cfdae3" stroke-width="1.5"/>
-						<text x="600" y="47" text-anchor="middle" font-family="'Space Mono', monospace" font-size="15" font-weight="700" letter-spacing="2" fill="#49677d">LIFECYCLE POLICY</text>
+						<rect x="450" y="18" width="300" height="44" rx="22" fill="#fff" stroke="#cfdae3" stroke-width="1.5"/>
+						<text x="600" y="48" text-anchor="middle" font-family="'Space Mono', monospace" font-size="21" font-weight="700" letter-spacing="2" fill="#49677d">LIFECYCLE POLICY</text>
 
 						<!-- Create -->
 						<text x="30" y="179" font-size="30" font-weight="700" fill="#49677d">Create</text>
@@ -1813,13 +1917,6 @@ CMD ["sleep", "infinity"]
 						<text x="985" y="157" text-anchor="middle" font-size="16" font-weight="700" fill="#10243a" stroke="#fff" stroke-width="6" stroke-linejoin="round" paint-order="stroke">policy</text>
 						<text x="1062" y="180" font-size="30" font-weight="700" fill="#9f2a1b">Delete</text>
 					</svg>
-					<div class="disabled-state">
-						<svg viewBox="0 0 40 40" width="40" height="40" aria-hidden="true">
-							<circle cx="20" cy="20" r="18" fill="#f7f9fa" stroke="#5f6e7b" stroke-width="1.8"/>
-							<line x1="13" y1="27" x2="27" y2="13" stroke="#46525e" stroke-width="3.2" stroke-linecap="round"/>
-						</svg>
-						<p>Sandboxes can enter a third state, <strong>Disabled</strong>.<br>A disabled sandbox cannot start until it is re-enabled.</p>
-					</div>
 					<p class="smaller muted"><a href="https://sandboxes.azure.com/docs/sandboxes/sandbox/lifecycle" target="_blank">📎 Sandbox lifecycle docs</a></p>
 					<aside class="notes">
 						The lifecycle policy has two parts: auto-suspend (idle timeout plus a suspend mode, Memory or Disk) and auto-delete for sandboxes that stay stopped.
@@ -1827,13 +1924,178 @@ CMD ["sleep", "infinity"]
 						Policies move sandboxes between states, so your application doesn't have to poll. Stopped sandboxes have no compute charges and don't count against the Sandbox Cores quota.
 						Sandboxes with a data-disk volume can only use Disk mode.
 						SDK: sandbox.set_lifecycle_policy(LifecyclePolicy(auto_suspend=AutoSuspendPolicy(...), auto_delete=AutoDeletePolicy(...))). CLI: aca sandbox lifecycle set.
-						stop() and resume() are explicit alternatives. Don't explain what causes Disabled; the docs only say it can't start until re-enabled.
-						We'll come back to this for cleanup (limits slide) and memory snapshots (suspend/resume slide).
-						Next: the boundary questions, starting with where code inside a sandbox can connect.
+						stop() and resume() are explicit alternatives. Don't explain what causes Disabled; the docs only say it can't start until re-enabled. States, checked September 29: the docs and the live API use Running and Stopped. Every stopped sandbox in our group, including auto-suspended ones, reported state Stopped with stoppedReason Idle; the SDK also lists UserStopped for manual stops. The SDK's type hints still list a Suspended state (and Stopping, Resuming, Creating, Deleting as transitions), but the service didn't return Suspended. The docs call Disabled a third state; the SDK models it as a stop reason.
+						We'll come back to cleanup on the limits slide.
+						Next: what survives a stop, depending on the suspend mode.
+						Close isn't delete: closing an SDK client (close(), or an ExitStack callback) only releases local connections. Delete the sandbox explicitly, and keep an auto-delete policy as the backstop for sandboxes left stopped. Auto-suspend isn't a hard execution deadline.
 					</aside>
 				</section>
 
 				<!-- 17 -->
+				<section class="no-code-badge">
+					<h3>Auto suspend mode with memory or disk</h3>
+					<pre class="resume-code"><code class="language-python" data-trim>
+sandbox = group.begin_create_sandbox(
+      ...,
+      auto_suspend_mode="Memory"  # or "Disk"
+	).result()  
+sandbox.begin_stop().result()     # also happens after auto_suspend_seconds idle
+sandbox.begin_resume().result()   # or send it network traffic
+					</code></pre>
+					<div class="auth-grid" role="img" aria-label="What survives stop and resume in each suspend mode. Disk mode: files are kept, running processes are gone and must restart; resume took 0.9 seconds; required with a data-disk volume. Memory mode: files, running processes, and memory are kept, so a background counter kept counting; resume took 0.6 seconds; in-process credentials are kept too.">
+						<div class="auth-panel">
+							<p class="auth-title">Disk</p>
+							<div class="ipac-row"><span class="auth-who">Files</span><span class="eg-result eg-allow">✓</span></div>
+							<div class="ipac-row"><span class="auth-who">Running processes: <strong>restart them</strong></span><span class="eg-result eg-deny">✗</span></div>
+							<p class="auth-foot">Resumed in 0.9 s. Required with a data-disk volume.</p>
+						</div>
+						<div class="auth-panel">
+							<p class="auth-title">Memory</p>
+							<div class="ipac-row"><span class="auth-who">Files</span><span class="eg-result eg-allow">✓</span></div>
+							<div class="ipac-row"><span class="auth-who">Running processes and memory</span><span class="eg-result eg-allow">✓</span></div>
+							<p class="auth-foot">Resumed in 0.6 s. Keeps in-process credentials too.</p>
+						</div>
+					</div>
+					<p style="font-size:0.7em;">Stopped sandboxes have no compute charges and don't count against your cores quota.</p>
+					<aside class="notes">
+						Resume continues the same sandbox; a snapshot creates a new one. Both bring local state forward.
+						Tested against our sandbox group: a background counter plus a file, then begin_stop and begin_resume. Memory mode: the counter kept counting from where it stopped, resume 0.6 s. Disk mode: the file was there but the process was gone, resume 0.9 s. Stopping in Memory mode took longer (about 8 s, versus about 1 s for Disk) because it captures memory.
+						The mode is set per sandbox at create time (auto_suspend_mode) or in the lifecycle policy (AutoSuspendPolicy(mode=...)); stop() uses it. Sandboxes with a data-disk volume can only use Disk mode.
+						The swarm doesn't suspend: every researcher sandbox is deleted after its result is collected. Suspend fits long-lived agents that wait on people or events.
+						CLI: aca sandbox stop / aca sandbox start.
+					</aside>
+				</section>
+
+				<!-- 18 -->
+				<section class="no-code-badge">
+					<h3>Demo: Suspend and resume a sandbox</h3>
+					<div class="resume-steps">
+						<div class="resume-step">
+							<p class="resume-caption"><span class="resume-num">1</span><strong>Running</strong><span>A background counter adds 1 every second.</span></p>
+							<img src="images/resume-1-running.png" alt="Sandbox f2cb684b, Running, with a Stop button. The terminal reads the counter twice, two seconds apart: 1211, then 1213.">
+						</div>
+						<div class="resume-step">
+							<p class="resume-caption"><span class="resume-num">2</span><strong>Stopped</strong><span>Memory and processes are saved. No compute charges.</span></p>
+							<img src="images/resume-2-stopped.png" alt="The same sandbox, Stopped, with a Resume button. The terminal area says the terminal is available when the sandbox is running.">
+						</div>
+						<div class="resume-step">
+							<p class="resume-caption"><span class="resume-num">3</span><strong>Resumed</strong><span>The same process keeps counting, not back at 1.</span></p>
+							<img src="images/resume-3-resumed.png" alt="The same sandbox, Running again after Resume. The counter reads 1347, then 1349.">
+						</div>
+					</div>
+					<aside class="notes">
+						Portal walkthrough on sandbox f2cb684b (name: suspend-demo, Memory suspend mode, plain Ubuntu). A background loop writes an incrementing number to /tmp/counter once a second:
+						nohup sh -c 'i=0; while true; do i=$((i+1)); echo $i &gt; /tmp/counter; sleep 1; done' &gt;/dev/null 2&gt;&amp;1 &amp;
+						In the terminal: cat /tmp/counter; sleep 2; cat /tmp/counter. Then Stop, wait for Stopped, Resume, and run it again.
+						The counter continues from where it was, and it's still climbing, so the same process survived. In Disk mode, the file would survive but the loop would not.
+						Creating it: python create_sandbox.py --disk ubuntu --name suspend-demo --suspend-mode Memory. Stopping in Memory mode takes a few seconds longer because it captures memory.
+					</aside>
+				</section>
+
+				<!-- 19 -->
+				<section class="no-code-badge">
+					<h3>Snapshots: new sandboxes from saved state</h3>
+					<div class="cols egress-cols">
+						<div class="egress-code">
+							<pre class="code-small"><code class="language-python" data-trim style="font-size: 1em;">
+snap = sandbox.begin_create_snapshot(
+    name=&quot;first-draft&quot;).result()
+sandbox.delete()
+
+restored = group.begin_create_sandbox(
+    snapshot_id=snap.id).result()
+							</code></pre>
+							<p class="code-example-link"><a target="_blank" href="https://learn.microsoft.com/azure/container-apps/sandboxes-snapshots-state-management">📎 Lifecycle and snapshots</a> · <a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/create_sandbox.py">📎 create_sandbox.py</a></p>
+						</div>
+						<div class="egress-flow" role="img" aria-label="Snapshot flow. A sandbox is captured as the snapshot first-draft, which belongs to the sandbox group and outlives the source sandbox. New sandboxes created from the snapshot get back the files, running processes, memory, and environment variables.">
+							<div class="eg-box eg-sandbox">
+								<p class="eg-title">📦 Sandbox</p>
+							</div>
+							<div class="eg-link code-link"><span class="eg-arrow">↓</span><code>begin_create_snapshot()</code></div>
+							<div class="eg-box snap-box">
+								<p class="eg-title">📸 Snapshot: first-draft</p>
+								<p>Owned by the sandbox group, outlives the sandbox</p>
+							</div>
+							<div class="fork-link code-link">
+								<code>begin_create_sandbox(snapshot_id=...)</code>
+								<div class="fork-arrows"><span class="eg-arrow">↓</span><span class="eg-arrow">↓</span></div>
+							</div>
+							<div class="mi-row">
+								<div class="eg-box eg-sandbox"><p class="eg-title">📦 New sandbox</p></div>
+								<div class="eg-box eg-sandbox"><p class="eg-title">📦 New sandbox</p></div>
+							</div>
+							<div class="eg-out">
+								<div class="eg-result eg-allow">✓ Files, running processes, memory, env vars</div>
+							</div>
+						</div>
+					</div>
+					<aside class="notes">
+						Suspend and resume continues the same sandbox. A snapshot captures that same state (files, memory, running processes) and lets you create new sandboxes from it: a checkpoint before a risky step, or one warmed-up state that many sandboxes start from.
+						Tried with the standalone agent: create_sandbox.py --snapshot-after-run first-draft captures the sandbox after the run; --snapshot-id starts a new one from it. The snapshot took about 1.6 s and the restore about 0.4 s. A background process kept counting after restore, so memory comes back, not just disk. That also means in-process credentials and environment variables come back.
+						A restore uses the snapshot's CPU, memory, and disk; you can't resize on restore. Our swarm starts from a disk image instead, but a snapshot is the way to fan out from a warmed-up state.
+						Snapshots belong to the group and outlive their source sandbox, with no automatic retention; clean them up. Retained storage will be billed at Premium Blob ZRS rates (coming soon).
+						Demo: python create_sandbox.py --snapshot-after-run first-draft --delete-after-run --prompt "Write report.md: three bullets on why agents need sandboxes." Then: python create_sandbox.py --snapshot-id &lt;id&gt; --delete-after-run --prompt "Add a fourth bullet about cost to the report."
+					</aside>
+				</section>
+
+				<!-- 20 -->
+				<section class="no-code-badge">
+					<h3>Volumes: storage that outlives sandboxes</h3>
+					<div class="cols egress-cols">
+						<div class="egress-code">
+							<pre class="code-tiny"><code class="language-python" data-trim style="font-size: 0.8em;">
+group.create_volume(&quot;agent-output&quot;)
+
+writer = group.begin_create_sandbox(
+    disk_id=agent_disk.id,
+    volumes=[SandboxVolume(
+        volume_name=&quot;agent-output&quot;,
+        mountpoint=&quot;/workspace/out&quot;)],
+).result()
+
+reader = group.begin_create_sandbox(
+    disk=&quot;ubuntu&quot;,
+    volumes=[SandboxVolume(
+        volume_name=&quot;agent-output&quot;,
+        mountpoint=&quot;/data&quot;, read_only=True)],
+).result()
+							</code></pre>
+							<p class="code-example-link"><a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes">📎 Sandboxes docs</a> · <a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/create_sandbox.py">📎 create_sandbox.py</a></p>
+						</div>
+						<div class="egress-flow" role="img" aria-label="Volume flow. The writer sandbox saves report.md to the agent-output volume, mounted at /workspace/out, and is then deleted. The volume is Azure Blob storage owned by the sandbox group. A reader sandbox mounts the same volume read-only at /data and reads report.md; its writes are rejected.">
+							<div class="eg-box eg-sandbox">
+								<p class="eg-title">📦 Writer sandbox</p>
+								<p>Saves <code>report.md</code> to <code>/workspace/out</code>, then is deleted</p>
+							</div>
+							<div class="eg-link"><span class="eg-arrow">↓</span><span class="eg-tag">write</span></div>
+							<div class="eg-box store-box">
+								<p class="eg-title">🗄️ Volume: agent-output</p>
+								<p>Azure Blob storage owned by the sandbox group</p>
+							</div>
+							<div class="eg-link"><span class="eg-arrow">↓</span><span class="eg-tag">mount read-only</span></div>
+							<div class="eg-box eg-sandbox">
+								<p class="eg-title">📦 Reader sandbox</p>
+								<p>Any image, any time later</p>
+							</div>
+							<div class="eg-out">
+								<div class="eg-result eg-allow">✓ Reads <code>/data/report.md</code></div>
+								<div class="eg-result eg-deny">✗ Writes to <code>/data</code>: read-only file system</div>
+							</div>
+						</div>
+					</div>
+					<aside class="notes">
+						Files inside a sandbox are private to it and gone when it's deleted. A volume is the deliberate way to keep files and share them across the boundary.
+						Tried with the standalone agent: create_sandbox.py --volume agent-output mounts a group volume at /workspace/out, and the agent is told to save final deliverables there. Delete the sandbox, then mount the same volume in a new one (even plain Ubuntu) and the report is there. It's Azure Blob storage mounted with blobfuse; a read-only mount really rejects writes ("Read-only file system").
+						Unlike a snapshot, a volume holds only the files you put in it: no memory, no processes. It can be mounted by many sandboxes and outlives all of them. A volume mount also survived a snapshot restore in testing.
+						Other volume types: DataDisk (a sized disk; sandboxes using one can only suspend in Disk mode) and AzureBlobByo (your own storage container, authenticated with a managed identity).
+						Disk images should be trusted starting points: code and dependencies, not credentials or another task's data. Put task outputs in volumes instead.
+						Volumes aren't deleted with the sandbox; clean them up. Retained storage will be billed at Premium Blob ZRS rates (coming soon).
+						Demo: python create_sandbox.py --volume agent-output --delete-after-run --prompt "Write report.md: three bullets on why agents need sandboxes." Then: python create_sandbox.py --disk ubuntu --volume agent-output --delete-after-run --command "cat /workspace/out/report.md"
+							Next: the network boundary, starting with where code inside a sandbox can connect.
+					</aside>
+				</section>
+
+				<!-- 21 -->
 				<section class="no-code-badge">
 					<h3>Network egress: Making outbound calls</h3>
 					<div class="cols egress-cols">
@@ -1887,7 +2149,7 @@ group.begin_create_sandbox(..., egress_policy=policy)
 					</aside>
 				</section>
 
-				<!-- 18 -->
+				<!-- 22 -->
 				<section class="no-code-badge">
 					<h3>Outbound calls with credential injection</h3>
 					<div class="cols egress-cols">
@@ -1960,7 +2222,7 @@ AsyncOpenAI(base_url=endpoint + &quot;/openai/v1/&quot;,
 					</aside>
 				</section>
 
-				<!-- 19 -->
+				<!-- 23 -->
 				<section>
 					<h3>Demo: Allowed and blocked requests</h3>
 					<img class="demo-shot" src="images/demo-egress.png" alt="Azure portal view of sandbox 9328c0ee, labeled standalone and running. The browser terminal runs curl: GET api.github.com/zen returns 200; POST api.github.com/markdown, pypi.org, and example.com return 403; and a request to the Azure OpenAI responses endpoint with no key returns a completed model response. The Egress Network Traffic panel lists the model POST and the GitHub GET as allowed, and the GitHub POST and pypi.org as denied.">
@@ -1975,7 +2237,7 @@ AsyncOpenAI(base_url=endpoint + &quot;/openai/v1/&quot;,
 					</aside>
 				</section>
 
-				<!-- 20 -->
+				<!-- 24 -->
 				<section>
 					<h3>Network ingress: exposing internal ports</h3>
 					<div class="cols egress-cols">
@@ -2022,7 +2284,7 @@ print(port.url)
 					</aside>
 				</section>
 
-				<!-- 21 -->
+				<!-- 25 -->
 				<section class="no-code-badge">
 					<h3>Network ingress: IP access control</h3>
 					<div class="cols egress-cols">
@@ -2060,7 +2322,7 @@ sandbox.add_port(8080, anonymous=True,
 					</aside>
 				</section>
 
-				<!-- 22 -->
+				<!-- 26 -->
 				<section class="no-code-badge">
 					<h3>Network ingress: Allowed users</h3>
 					<div class="auth-grid" role="img" aria-label="Two ports compared. Anonymous port: anyone with the URL can call it, including a teammate, a stranger, or a script, so your app must handle authentication. Entra ID port limited to pamela@contoso.com: that signed-in user is allowed, other Entra users are denied, and callers who aren't signed in are denied.">
@@ -2095,140 +2357,6 @@ sandbox.add_port(8080, email=&quot;pamela@contoso.com&quot;)
 					</aside>
 				</section>
 
-				<!-- 23 -->
-				<section class="no-code-badge">
-					<h3>Suspend and resume: same sandbox, later</h3>
-					<pre class="code-tiny resume-code"><code class="language-python" data-trim>
-sandbox = group.begin_create_sandbox(..., auto_suspend_mode=&quot;Memory&quot;).result()  # or &quot;Disk&quot;
-sandbox.begin_stop().result()     # also happens after auto_suspend_seconds idle
-sandbox.begin_resume().result()   # or send it network traffic
-					</code></pre>
-					<div class="auth-grid" role="img" aria-label="What survives stop and resume in each suspend mode. Disk mode: files are kept, running processes are gone and must restart; resume took 0.9 seconds; required with a data-disk volume. Memory mode: files, running processes, and memory are kept, so a background counter kept counting; resume took 0.6 seconds; in-process credentials are kept too.">
-						<div class="auth-panel">
-							<p class="auth-title">Disk</p>
-							<div class="ipac-row"><span class="auth-who">Files</span><span class="eg-result eg-allow">✓</span></div>
-							<div class="ipac-row"><span class="auth-who">Running processes: <strong>restart them</strong></span><span class="eg-result eg-deny">✗</span></div>
-							<p class="auth-foot">Resumed in 0.9 s. Required with a data-disk volume.</p>
-						</div>
-						<div class="auth-panel">
-							<p class="auth-title">Memory</p>
-							<div class="ipac-row"><span class="auth-who">Files</span><span class="eg-result eg-allow">✓</span></div>
-							<div class="ipac-row"><span class="auth-who">Running processes and memory</span><span class="eg-result eg-allow">✓</span></div>
-							<p class="auth-foot">Resumed in 0.6 s. Keeps in-process credentials too.</p>
-						</div>
-					</div>
-					<p class="resume-foot">Stopped sandboxes have no compute charges and don't count against your cores quota.</p>
-					<aside class="notes">
-						Resume continues the same sandbox; a snapshot (next slide) creates a new one. Both bring local state forward.
-						Tested against our sandbox group: a background counter plus a file, then begin_stop and begin_resume. Memory mode: the counter kept counting from where it stopped, resume 0.6 s. Disk mode: the file was there but the process was gone, resume 0.9 s. Stopping in Memory mode took longer (about 8 s, versus about 1 s for Disk) because it captures memory.
-						The mode is set per sandbox at create time (auto_suspend_mode) or in the lifecycle policy (AutoSuspendPolicy(mode=...)); stop() uses it. Sandboxes with a data-disk volume can only use Disk mode.
-						The swarm doesn't suspend: every researcher sandbox is deleted after its result is collected. Suspend fits long-lived agents that wait on people or events.
-						CLI: aca sandbox stop / aca sandbox start. The next slide is an optional demo; skip it if short on time.
-					</aside>
-				</section>
-
-				<!-- 24 -->
-				<section>
-					<p class="label" style="margin-bottom: 0;">Optional</p>
-					<h3 style="margin-top: 0;">Demo: suspend and resume</h3>
-					<div class="placeholder" style="height: 460px;" role="img" aria-label="Screenshot placeholder: stateful process before suspension and after resuming">
-						<p><strong>Screenshot placeholder</strong></p>
-						<p>The same small stateful process before suspension and after resuming, with visible continuity of state.</p>
-						<p class="muted">Save as <code>images/demo-resume.png</code>.</p>
-					</div>
-					<aside class="notes">
-						Prepare and verify separately. Show what memory-preserving resume adds beyond retaining files.
-						Use up to the four-minute flex budget only if earlier delays didn't consume it; otherwise skip this slide.
-					</aside>
-				</section>
-
-				<!-- 25 -->
-				<section class="no-code-badge">
-					<h3>Keep the agent's work: volumes and snapshots</h3>
-					<div class="auth-grid" role="img" aria-label="Two ways to keep an agent's work. Volume: a sandbox group volume mounted at /workspace/out. Sandbox A writes report.md there and is deleted; sandbox B mounts the same volume and reads report.md. Snapshot: capture the sandbox after the agent's first draft, delete it, and create a new sandbox from the snapshot. The files, running processes and memory, and environment variables come back. The egress policy doesn't, so it must be set again.">
-						<div class="auth-panel">
-							<p class="auth-title">Volume: files outlive the sandbox</p>
-							<pre class="code-tiny"><code class="language-python" data-trim>
-group.create_volume(&quot;agent-output&quot;)
-sandbox = group.begin_create_sandbox(
-    disk_id=agent_disk.id,
-    volumes=[SandboxVolume(
-        volume_name=&quot;agent-output&quot;,
-        mountpoint=&quot;/workspace/out&quot;)],
-).result()
-							</code></pre>
-							<div class="ipac-row"><span class="auth-who">Sandbox A writes <code>report.md</code>, then is deleted</span><span class="eg-result eg-allow">✓</span></div>
-							<div class="ipac-row"><span class="auth-who">Sandbox B mounts the volume, reads it</span><span class="eg-result eg-allow">✓</span></div>
-							<div class="ipac-row"><span class="auth-who">Mount with <code>read_only=True</code>, try to write</span><span class="eg-result eg-deny">✗</span></div>
-							<p class="auth-foot">Azure Blob storage owned by the sandbox group, mounted like a folder.</p>
-						</div>
-						<div class="auth-panel">
-							<p class="auth-title">Snapshot: freeze and continue</p>
-							<pre class="code-tiny"><code class="language-python" data-trim>
-snap = sandbox.begin_create_snapshot(
-    name=&quot;first-draft&quot;).result()
-sandbox.delete()
-
-restored = group.begin_create_sandbox(
-    snapshot_id=snap.id).result()
-restored.set_egress_policy(policy)
-							</code></pre>
-							<div class="ipac-row"><span class="auth-who">Files in <code>/workspace</code></span><span class="eg-result eg-allow">✓</span></div>
-							<div class="ipac-row"><span class="auth-who">Running processes, memory, env vars</span><span class="eg-result eg-allow">✓</span></div>
-							<div class="ipac-row"><span class="auth-who">Egress policy: <strong>set it again</strong></span><span class="eg-result eg-deny">✗</span></div>
-							<p class="auth-foot">Restore took under a second. One snapshot can start many sandboxes.</p>
-						</div>
-					</div>
-					<p class="code-example-link"><a target="_blank" href="https://learn.microsoft.com/azure/container-apps/sandboxes-snapshots-state-management">📎 Lifecycle and snapshots</a> · <a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/create_sandbox.py">📎 create_sandbox.py</a></p>
-					<aside class="notes">
-						Files inside a sandbox are private to it and gone when it's deleted. Two ways to keep an agent's work, both tried with the standalone agent in this repo.
-						Volume: create_sandbox.py --volume agent-output mounts a group volume at /workspace/out, and the agent is told to save final deliverables there. Delete the sandbox, then mount the same volume in a new one (even plain Ubuntu) and the report is there. It's Azure Blob storage mounted with blobfuse; a read-only mount really rejects writes. Volumes are the deliberate way to share data across the boundary.
-						Snapshot: create_sandbox.py --snapshot-after-run first-draft captures the sandbox after the run; --snapshot-id resumes from it. In testing, the snapshot took about 1.6 s and the restore about 0.4 s. A background process kept counting after restore, so memory comes back, not just disk. That also means in-process credentials and environment variables come back.
-						The gotcha, verified: a restore accepts no configuration (no labels, environment, egress policy, volumes, or ports), and the egress policy isn't part of the snapshot. The restored sandbox came back with default Allow and could reach bing.com until set_egress_policy ran. Reapply it immediately; create_sandbox.py does. The volume mount did survive the restore.
-						Fan-out: the docs call out starting many sandboxes from one prepared snapshot instead of repeating setup. Our swarm starts from a disk image instead, but a snapshot is the way to fan out from a warmed-up state.
-						Snapshots belong to the group and outlive their source sandbox, with no automatic retention; clean them up. Disk images should be trusted starting points: code and dependencies, not credentials or another task's data. Retained storage (disk images, snapshots, volumes) will be billed at Premium Blob ZRS rates (coming soon).
-						Demo commands: python create_sandbox.py --volume agent-output --snapshot-after-run first-draft --delete-after-run --prompt "Write report.md: three bullets on why agents need sandboxes. Keep your outline in notes.md." Then: python create_sandbox.py --snapshot-id &lt;id&gt; --delete-after-run --prompt "Add a fourth bullet about cost to the report."
-					</aside>
-				</section>
-
-				<!-- 26 -->
-				<section>
-					<h3>Resource limits: how much can it consume?</h3>
-					<div class="cols">
-						<div>
-							<p class="label">Three layers of fan-out caps</p>
-							<ol class="tight small">
-								<li>Your app's concurrency limit (<code>MAX_RESEARCHERS = 6</code>)</li>
-								<li>The group's <code>maxSandboxCount</code> and defaults such as <code>defaultTimeoutSeconds</code></li>
-								<li>The subscription's <strong>Sandbox Cores</strong> quota: concurrent active cores per region</li>
-							</ol>
-							<p class="small">Sizes: XS (0.25 cores, 0.5 GB) · M default (1 core, 2 GB) · XL (4 cores, 8 GB, 80 GB disk)</p>
-						</div>
-						<div>
-							<p class="label">Close ≠ delete</p>
-							<pre class="code-tiny"><code class="language-python" data-trim>
-with ExitStack() as stack:
-    group = SandboxGroupClient(...)
-    stack.callback(group.close)      # local connections
-    sandbox = group.begin_create_sandbox(
-        ..., auto_suspend_seconds=300,
-    ).result()
-    stack.callback(sandbox.close)    # local connections
-    if args.delete_after_run:
-        stack.callback(sandbox.delete)  # remote sandbox
-							</code></pre>
-							<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/create_sandbox.py">📎 create_sandbox.py</a> (simplified)</p>
-						</div>
-					</div>
-					<div class="callout">Compute caps don't cap model tokens or external API spend.</div>
-					<aside class="notes">
-						Bound CPU, memory, and disk per sandbox; separately bound fan-out, execution time, and retries in the app.
-						Stopped sandboxes don't count against Sandbox Cores; at the quota, new creates and starts are blocked. API calls can be rate-limited (429). Don't cite a default quota number.
-						Cleanup on success and failure, plus lifecycle policies as a backstop: auto-suspend after idle, then auto-delete for sandboxes left stopped.
-						Auto-suspend isn't a hard execution deadline. Without --delete-after-run, the sandbox keeps existing and relies on auto-suspend, so auto-delete is the backstop.
-					</aside>
-				</section>
-
 				<!-- 27 -->
 				<section class="heading-only section-slide">
 					<p class="section-kicker">Part 3 of 4</p>
@@ -2245,156 +2373,412 @@ with ExitStack() as stack:
 
 				<!-- 28 -->
 				<section class="no-code-badge">
-					<h3>Swarm architecture, revisited</h3>
-					<div class="arch arch-recall" role="img" aria-label="The swarm architecture again: the orchestrator container holds the decomposer, three researcher agents, and the collector and synthesizer; each researcher's tool call runs in its own sandbox. Callouts on the sandboxes: each boots from the research-agent disk image built from ACR; egress is denied except Foundry and Application Insights; the sandbox group's managed identity signs Foundry calls through the egress proxy; and each sandbox is created per question and deleted when the result is collected.">
+					<h3>Swarm architecture on Azure</h3>
+					<div class="arch arch-recall" role="img" aria-label="The swarm architecture again, with Azure resources. The orchestrator, on Azure Container Apps, holds the planner, three research questions, the collector, the reviewer, and the report writer; each question is sent to its own sandbox on Azure Container Apps Sandboxes, where a researcher agent does the work. Each sandbox boots from a disk image built from the research-agent image in Azure Container Registry. Sandbox egress reaches only Microsoft Foundry, for models and hosted web search, and Application Insights, for telemetry.">
 						<div class="zone-outline left"></div>
 						<div class="zone-outline right"></div>
-						<div class="zone-title left">Container · orchestrator</div>
-						<div class="zone-title right">Sandboxes</div>
+						<div class="zone-title left"><img class="zone-icon" src="images/azure/container-apps.svg" alt="">Container Apps</div>
+						<div class="zone-title right"><img class="zone-icon" src="images/azure/container-apps.svg" alt="">Container Apps Sandboxes</div>
 
-						<div class="cell left r2"><div class="box app">Decomposer</div></div>
-						<div class="cell left r3"><div class="box">↳ Researcher agent 1</div></div>
-						<div class="cell left r4"><div class="box">↳ Researcher agent 2</div></div>
-						<div class="cell left r5"><div class="box">↳ Researcher agent 3</div></div>
-						<div class="cell left r6"><div class="box app">Collector (fan-in) → Synthesizer</div></div>
+						<div class="cell left r2"><div class="box app">🤖 Planner</div></div>
+						<div class="cell left r3"><div class="box">↳ Research question 1</div></div>
+						<div class="cell left r4"><div class="box">↳ Research question 2</div></div>
+						<div class="cell left r5"><div class="box">↳ Research question 3</div></div>
+						<div class="cell left r6"><div class="box app">🤖 Reviewer</div></div>
+						<div class="cell left r7"><div class="box app">🤖 Report writer</div></div>
 
-						<div class="mid r3 arrow">tool call →<br>← result</div>
-						<div class="mid r4 arrow">tool call →<br>← result</div>
-						<div class="mid r5 arrow">tool call →<br>← result</div>
+						<div class="mid r3 arrow">question →<br>← result</div>
+						<div class="mid r4 arrow">question →<br>← result</div>
+						<div class="mid r5 arrow">question →<br>← result</div>
 
-						<div class="cell right r3"><div class="box sandbox">Sandbox 1<small>Research process</small></div></div>
-						<div class="cell right r4"><div class="box sandbox">Sandbox 2<small>Research process</small></div></div>
-						<div class="cell right r5"><div class="box sandbox">Sandbox 3<small>Research process</small></div></div>
+						<div class="cell right r3"><div class="box sandbox">Sandbox 1<small>🤖 Researcher</small></div></div>
+						<div class="cell right r4"><div class="box sandbox">Sandbox 2<small>🤖 Researcher</small></div></div>
+						<div class="cell right r5"><div class="box sandbox">Sandbox 3<small>🤖 Researcher</small></div></div>
 
-						<div class="recall r2 fragment"><strong>Disk image</strong> <span>research-agent, built from ACR</span></div>
-						<div class="recall r3 fragment"><strong>Egress</strong> <span>Deny, except Foundry + App Insights</span></div>
-						<div class="recall r4 fragment"><strong>Identity</strong> <span>group identity signs Foundry calls</span></div>
-						<div class="recall r5 fragment"><strong>Lifecycle</strong> <span>one per question, deleted after</span></div>
-						<div class="recall r6 fragment"><strong>No volumes or snapshots</strong> <span>results return via the tool call</span></div>
+						<div class="mid2 r3 arrow">← disk image</div>
+						<div class="mid2 r4 arrow">egress →</div>
+						<div class="mid2 r5 arrow">egress →</div>
+
+						<div class="cell azure r3"><div class="box az-box"><img src="images/azure/container-registry.svg" alt=""><span><span class="az-name">Container Registry</span><small>research-agent image</small></span></div></div>
+						<div class="cell azure r4"><div class="box az-box"><img src="images/azure/foundry.svg" alt=""><span><span class="az-name">Microsoft Foundry</span><small>models + web search</small></span></div></div>
+						<div class="cell azure r5"><div class="box az-box"><img src="images/azure/application-insights.svg" alt=""><span><span class="az-name">Application Insights</span><small>telemetry</small></span></div></div>
 					</div>
+
 					<aside class="notes">
-						Same picture as the start of the talk; now every piece on the right has a name.
+						Same picture as the start of the talk, now with the Azure resources the sandboxes use.
 						Disk image: the research-agent image in ACR becomes a sandbox disk image, pulled by the group's managed identity.
 						Egress: default Deny, Transform rules for Foundry and Azure OpenAI, and an allow rule for Application Insights. Web search runs inside Foundry, so the sandbox never talks to a search engine.
 						Identity: the proxy injects a token for the sandbox group's identity; no token is placed in the sandbox.
 						Lifecycle: the orchestrator creates one sandbox per research question and deletes it after collecting the result.
-						No volumes or snapshots: each researcher's result comes back through the tool call, so nothing needs to outlive the sandbox.
+						No volumes or snapshots: each researcher's result comes back to the workflow directly, so nothing needs to outlive the sandbox.
 						Next: how the orchestrator turns a sandbox into a tool, then fans out.
 					</aside>
 				</section>
 
 				<!-- 29 -->
 				<section class="no-code-badge">
-					<h3>Turn compute into an agent tool</h3>
-					<div class="r-stack">
-						<div class="fragment fade-out" data-fragment-index="1">
-							<div class="arch" style="grid-template-rows: 44px repeat(4, auto); grid-template-columns: 1fr 220px 1fr;" role="img" aria-label="Trust boundaries: ACA hosts the trusted orchestrator with researcher agents; Sandboxes host the untrusted research processes. Supporting services: ACR supplies the disk image, Foundry handles model and search calls, Application Insights receives telemetry.">
-								<div class="zone-outline left" style="grid-row: 1 / 6;"></div>
-								<div class="zone-outline right" style="grid-row: 1 / 6;"></div>
-								<div class="zone-title left">ACA app · trusted</div>
-								<div class="zone-title right">Sandboxes · untrusted</div>
-								<div class="cell left r2"><div class="box">Researcher agent 1<small>tools=[run_in_sandbox]</small></div></div>
-								<div class="cell left r3"><div class="box">Researcher agent 2<small>tools=[run_in_sandbox]</small></div></div>
-								<div class="cell left r4"><div class="box">Researcher agent 3<small>tools=[run_in_sandbox]</small></div></div>
-								<div class="mid r2 arrow">create, execute →<br>← collect, delete</div>
-								<div class="mid r3 arrow">create, execute →<br>← collect, delete</div>
-								<div class="mid r4 arrow">create, execute →<br>← collect, delete</div>
-								<div class="cell right r2"><div class="box sandbox">Sandbox 1<small>Research process</small></div></div>
-								<div class="cell right r3"><div class="box sandbox">Sandbox 2<small>Research process</small></div></div>
-								<div class="cell right r4"><div class="box sandbox">Sandbox 3<small>Research process</small></div></div>
-								<div class="cell right r5"><p class="smaller muted" style="margin: 0; text-align: center;">Egress: Foundry + App Insights only</p></div>
-							</div>
-							<div style="display: flex; gap: 12px; justify-content: center; margin-top: 26px;">
-								<div class="box" style="font-size: 0.5em;">ACR image → sandbox disk image</div>
-								<div class="box" style="font-size: 0.5em;">Foundry: models + hosted web search</div>
-								<div class="box" style="font-size: 0.5em;">Application Insights: telemetry</div>
-							</div>
+					<h3>Microsoft Agent Framework</h3>
+					<p class="af-tagline">Open-source SDK for building AI agents and multi-agent workflows · <span class="af-lang">Python</span> <span class="af-lang">.NET</span> <span class="af-lang">Go <small>preview</small></span></p>
+					<div class="af-grid">
+						<div class="af-card">
+							<h4>🤖 Agents</h4>
+							<p>An LLM that calls tools and MCP servers, with Foundry, Azure OpenAI, OpenAI, Anthropic, and more.</p>
+							<p class="af-here">Here: planner, researcher, reviewer, report writer</p>
 						</div>
-						<div class="fragment fade-in-then-out" data-fragment-index="1">
-							<p class="label">Define the agent</p>
-							<pre><code class="language-python" data-trim>
-return Agent(
-    client=build_chat_client(),
-    instructions=RESEARCHER_INSTRUCTIONS,
-    name=agent_id,
-    tools=[run_in_sandbox],
-)
-							</code></pre>
-							<p class="small" style="margin-top: 14px;">The agent can request sandbox execution only because the app registers that tool. Registering it doesn't create a sandbox.</p>
-							<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/orchestrator/agents/researcher_agent.py">📎 orchestrator/agents/researcher_agent.py</a></p>
+						<div class="af-card">
+							<h4>🔀 Workflows</h4>
+							<p>Graph-based workflows that connect agents and functions through explicit paths: fan-out, fan-in, and handoffs.</p>
+							<p class="af-here">Here: the swarm's parallel research waves</p>
 						</div>
-						<div class="fragment" data-fragment-index="2">
-							<p class="label">Implement the tool</p>
+						<div class="af-card">
+							<h4>🧰 Harness agent</h4>
+							<p>Batteries included for long, multi-step tasks: planning, todos, context compaction, file access, memory, and tool approval.</p>
+							<p class="af-here">Here: the standalone sandbox agent</p>
+						</div>
+						<div class="af-card">
+							<h4>🔌 Integrations</h4>
+							<p>Model providers, agent services, tools, context providers, middleware, evaluation, and observability.</p>
+							<p class="af-here">Here: Foundry web search, OpenTelemetry tracing</p>
+						</div>
+					</div>
+					<p class="code-example-link"><a target="_blank" href="https://aka.ms/AgentFramework">📎 aka.ms/AgentFramework</a> · <a target="_blank" href="https://learn.microsoft.com/agent-framework/overview/">📎 Agent Framework overview</a></p>
+					<aside class="notes">
+						The swarm's code is built on Microsoft Agent Framework, an open-source SDK for Python and .NET (Go is in preview). It brings together four areas.
+						Agents: an LLM plus tools and MCP servers, across many model providers. Every 🤖 in the architecture is an Agent Framework agent: the planner, reviewer, and report writer in the orchestrator, and the researcher inside each sandbox (with Foundry's hosted web search tool).
+						Workflows: a typed graph of executors (agents or plain functions) with explicit edges. The swarm is one workflow: the planner fans out to researcher branches, a collector fans in, and the reviewer either loops back to the planner or hands off to the report writer. The next slides show that code.
+						Harness agent: an opinionated agent for long, multi-step tasks, with planning, todo tracking, context compaction, file access, memory, and tool approval. The standalone sandbox agent (sandbox-agent/) is a harness agent with a shell tool.
+						Integrations: model providers, agent services, tools, context providers, middleware, evaluation services, and UI frameworks. Here: Foundry's hosted web search and the OpenTelemetry instrumentation that the trace slides use.
+						Building blocks underneath: model clients, agent sessions for state, context providers for memory, middleware, and MCP clients.
+						aka.ms/AgentFramework redirects to the GitHub repo (microsoft/agent-framework).
+					</aside>
+				</section>
+
+				<!-- 30 -->
+				<section class="no-code-badge">
+					<h3>The swarm as a workflow graph</h3>
+					<div class="cols wg-cols">
+						<div class="wg-code">
 							<pre class="code-small"><code class="language-python" data-trim>
-async def run_in_sandbox(question: str) -> str:
-    sandbox_id = f"agent-{index}-{uuid.uuid4().hex[:8]}"
+builder = WorkflowBuilder(start_executor=planner)
+builder = builder.add_edge(planner, collector)
+for r in researchers:
+    builder = builder.add_edge(planner, r)
+    builder = builder.add_edge(r, collector)
+builder = builder.add_edge(collector, reviewer)
+builder = builder.add_edge(reviewer, planner)
+wf = builder.add_edge(reviewer, report_writer).build()
+							</code></pre>
+							<p class="small">One edge per researcher, so the branches run concurrently.</p>
+							<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/orchestrator/agents/workflow.py">📎 orchestrator/agents/workflow.py</a></p>
+						</div>
+						<svg class="wg-svg" viewBox="0 0 564 450" role="img" aria-label="The workflow graph. The planner agent fans out to researcher_0, researcher_1, and researcher_2, each running in its own sandbox, and also sends a plan to the collector. The researchers fan in to the collector, which passes all findings to the reviewer agent. The reviewer either sends gaps back to the planner for one more wave, or approves and hands off to the report_writer agent."><defs><marker id="wg-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#5b6b78" stroke-width="1.6"/></marker></defs><path class="wg-edge" d="M290 54 L120 100" marker-end="url(#wg-arrow)"/><path class="wg-edge" d="M120 162 L290 206" marker-end="url(#wg-arrow)"/><path class="wg-edge" d="M290 54 L290 100" marker-end="url(#wg-arrow)"/><path class="wg-edge" d="M290 162 L290 206" marker-end="url(#wg-arrow)"/><path class="wg-edge" d="M290 54 L460 100" marker-end="url(#wg-arrow)"/><path class="wg-edge" d="M460 162 L290 206" marker-end="url(#wg-arrow)"/><path class="wg-edge wg-dashed" d="M380 32 L552 32 L552 228 L384 228" marker-end="url(#wg-arrow)"/><path class="wg-edge" d="M290 250 L290 298" marker-end="url(#wg-arrow)"/><path class="wg-edge" d="M290 342 L290 394" marker-end="url(#wg-arrow)"/><path class="wg-edge" d="M200 320 L10 320 L10 32 L196 32" marker-end="url(#wg-arrow)"/><g class="wg-node wg-agent"><rect x="200" y="10" width="180" height="44" rx="10"/><text x="290" y="39" text-anchor="middle">🤖 planner</text></g><g class="wg-node"><rect x="43" y="100" width="154" height="62" rx="10"/><text x="120" y="126" text-anchor="middle">researcher_0</text><text class="wg-sub" x="120" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="213" y="100" width="154" height="62" rx="10"/><text x="290" y="126" text-anchor="middle">researcher_1</text><text class="wg-sub" x="290" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="383" y="100" width="154" height="62" rx="10"/><text x="460" y="126" text-anchor="middle">researcher_2</text><text class="wg-sub" x="460" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="200" y="206" width="180" height="44" rx="10"/><text x="290" y="235" text-anchor="middle">collector</text></g><g class="wg-node wg-agent"><rect x="200" y="298" width="180" height="44" rx="10"/><text x="290" y="327" text-anchor="middle">🤖 reviewer</text></g><g class="wg-node wg-agent"><rect x="180" y="394" width="220" height="44" rx="10"/><text x="290" y="423" text-anchor="middle">🤖 report_writer</text></g><text class="wg-label" x="140" y="76" text-anchor="middle">fan-out</text><text class="wg-label" x="140" y="198" text-anchor="middle">fan-in</text><text class="wg-label wg-note" x="466" y="24" text-anchor="middle">plan →</text><text class="wg-label" x="302" y="376">approved</text><text class="wg-label" x="22" y="274">gaps:</text><text class="wg-label wg-note" x="22" y="296">one more wave</text></svg>
+					</div>
+					<aside class="notes">
+						The whole swarm is one Agent Framework workflow: a typed graph of executors connected by edges. Some executors wrap agents (🤖 planner, reviewer, report_writer); the researchers are plain executors that each run one question in a sandbox.
+						Map each edge to the drawing. planner → each researcher is the fan-out; each researcher → collector is the fan-in. planner → collector carries a ResearchPlan so the collector knows how many answers to wait for. The reviewer has two outgoing edges: back to the planner when the evidence has gaps (at most one more wave), or on to the report writer when it's approved.
+						Why an edge per researcher instead of one fan-out edge group: Agent Framework's fan-out edge runner delivers its messages one after another, which would serialize the branches. Separate edges let them run concurrently.
+						The next two slides zoom into the planner's fan-out and a researcher branch.
+					</aside>
+				</section>
+
+				<!-- 31 -->
+				<section class="no-code-badge wg-zoom">
+					<h3>Planner agent</h3>
+					<svg class="wg-svg wg-mini" viewBox="0 0 564 450" aria-hidden="true"><defs><marker id="wg-arrow-mini" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#5b6b78" stroke-width="1.6"/></marker></defs><path class="wg-edge" d="M290 54 L120 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M120 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 54 L290 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 54 L460 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M460 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge wg-dashed" d="M380 32 L552 32 L552 228 L384 228" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 250 L290 298" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 342 L290 394" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M200 320 L10 320 L10 32 L196 32" marker-end="url(#wg-arrow-mini)"/><g class="wg-node wg-agent wg-hl"><rect x="200" y="10" width="180" height="44" rx="10"/><text x="290" y="39" text-anchor="middle">🤖 planner</text></g><g class="wg-node"><rect x="43" y="100" width="154" height="62" rx="10"/><text x="120" y="126" text-anchor="middle">researcher_0</text><text class="wg-sub" x="120" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="213" y="100" width="154" height="62" rx="10"/><text x="290" y="126" text-anchor="middle">researcher_1</text><text class="wg-sub" x="290" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="383" y="100" width="154" height="62" rx="10"/><text x="460" y="126" text-anchor="middle">researcher_2</text><text class="wg-sub" x="460" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="200" y="206" width="180" height="44" rx="10"/><text x="290" y="235" text-anchor="middle">collector</text></g><g class="wg-node wg-agent"><rect x="200" y="298" width="180" height="44" rx="10"/><text x="290" y="327" text-anchor="middle">🤖 reviewer</text></g><g class="wg-node wg-agent"><rect x="180" y="394" width="220" height="44" rx="10"/><text x="290" y="423" text-anchor="middle">🤖 report_writer</text></g></svg>
+					<pre class="code-small"><code class="language-python" data-trim>
+class ResearchQuestions(BaseModel):
+    questions: list[str] = Field(description=&quot;4-6 standalone research questions&quot;)
+
+PLANNER_INSTRUCTIONS = (
+    &quot;Given a broad research topic, break it into 4-6 specific, &quot;
+    &quot;focused sub-questions that together provide a comprehensive answer. &quot;
+    &quot;Each question is sent by itself to an isolated researcher. &quot;
+    &quot;Researchers cannot see the original topic, other questions, &quot;
+    &quot;or other researchers' answers. Therefore every question MUST: &quot;
+    &quot;- Be independently answerable with no prior findings... &quot;
+    &quot;- Include the relevant subject, location, constraints... &quot;)
+
+planner = Agent(client=build_chat_client(), name=&quot;planner&quot;,
+                instructions=PLANNER_INSTRUCTIONS)
+					</code></pre>
+					<p class="small">Each researcher only sees its own question, so every question has to stand on its own.</p>
+					<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/orchestrator/agents/planner_agent.py">📎 orchestrator/agents/planner_agent.py</a></p>
+					<aside class="notes">
+						The planner agent's prompt. The key constraint is isolation: each researcher only sees its own question, so the prompt makes every question self-contained (subject, location, constraints, decision criteria) and bans references like 'the shortlist' or 'the options' that point at another agent's answer. The output shape comes from the ResearchQuestions Pydantic model, not the prompt: with structured outputs, the model's response is constrained to that JSON schema, so the prompt doesn't need 'return only JSON' instructions and the code doesn't parse or strip code fences. The slide shows an abridged version of PLANNER_INSTRUCTIONS.
+					</aside>
+				</section>
+
+				<!-- 32 -->
+				<section class="no-code-badge wg-zoom">
+					<h3>Fan-out planned questions to research nodes</h3>
+					<svg class="wg-svg wg-mini" viewBox="0 0 564 450" aria-hidden="true"><defs><marker id="wg-arrow-mini" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#5b6b78" stroke-width="1.6"/></marker></defs><path class="wg-edge" d="M290 54 L120 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M120 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 54 L290 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 54 L460 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M460 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge wg-dashed" d="M380 32 L552 32 L552 228 L384 228" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 250 L290 298" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 342 L290 394" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M200 320 L10 320 L10 32 L196 32" marker-end="url(#wg-arrow-mini)"/><g class="wg-node wg-agent wg-hl"><rect x="200" y="10" width="180" height="44" rx="10"/><text x="290" y="39" text-anchor="middle">🤖 planner</text></g><g class="wg-node"><rect x="43" y="100" width="154" height="62" rx="10"/><text x="120" y="126" text-anchor="middle">researcher_0</text><text class="wg-sub" x="120" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="213" y="100" width="154" height="62" rx="10"/><text x="290" y="126" text-anchor="middle">researcher_1</text><text class="wg-sub" x="290" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="383" y="100" width="154" height="62" rx="10"/><text x="460" y="126" text-anchor="middle">researcher_2</text><text class="wg-sub" x="460" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="200" y="206" width="180" height="44" rx="10"/><text x="290" y="235" text-anchor="middle">collector</text></g><g class="wg-node wg-agent"><rect x="200" y="298" width="180" height="44" rx="10"/><text x="290" y="327" text-anchor="middle">🤖 reviewer</text></g><g class="wg-node wg-agent"><rect x="180" y="394" width="220" height="44" rx="10"/><text x="290" y="423" text-anchor="middle">🤖 report_writer</text></g></svg>
+					<pre class="code-small"><code class="language-python" data-trim>
+# Ask the planner agent for questions, as structured output
+result = await self.agent.run(payload.topic,
+                              options={&quot;response_format&quot;: ResearchQuestions})
+questions = validate_questions(result.value)
+
+# Tell the collector how many answers to expect
+await ctx.send_message(
+    ResearchPlan(expected_responses=len(questions), ...),
+    target_id=&quot;research_collector&quot;)
+
+# Send each question to its own researcher node
+for i, question in enumerate(questions):
+    await ctx.send_message(
+        AgentExecutorRequest(messages=[Message(&quot;user&quot;, [question])]),
+        target_id=f&quot;researcher_{i}&quot;)
+					</code></pre>
+					<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/orchestrator/agents/workflow.py">📎 orchestrator/agents/workflow.py</a></p>
+					<aside class="notes">
+						The planner executor runs the planner agent with response_format=ResearchQuestions, so result.value is a typed object instead of text to parse. validate_questions checks what a schema can't: 4 to MAX_RESEARCHERS (6) non-empty questions, a design choice to keep cost and model throttling in check.
+						ctx.send_message sends a typed message along one of the planner's edges. target_id picks which connected executor gets it, and the workflow runtime calls that executor's handler whose parameter type matches: ResearchPlan goes to the collector, AgentExecutorRequest to a researcher. Messages sent in one step are delivered together in the next, so all the researcher branches start at the same time.
+						First the collector learns how many answers to expect (the ResearchPlan), then each question goes to its own researcher_i.
+						On a follow-up wave the reviewer supplies the questions, so the planner skips its agent and dispatches them directly. Simplified from PlannerExecutor in workflow.py.
+					</aside>
+				</section>
+
+				<!-- 33 -->
+				<section class="no-code-badge wg-zoom">
+					<h3>Send each question to a sandbox</h3>
+					<svg class="wg-svg wg-mini" viewBox="0 0 564 450" aria-hidden="true"><defs><marker id="wg-arrow-mini" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#5b6b78" stroke-width="1.6"/></marker></defs><path class="wg-edge" d="M290 54 L120 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M120 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 54 L290 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 54 L460 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M460 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge wg-dashed" d="M380 32 L552 32 L552 228 L384 228" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 250 L290 298" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 342 L290 394" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M200 320 L10 320 L10 32 L196 32" marker-end="url(#wg-arrow-mini)"/><g class="wg-node wg-agent"><rect x="200" y="10" width="180" height="44" rx="10"/><text x="290" y="39" text-anchor="middle">🤖 planner</text></g><g class="wg-node wg-hl"><rect x="43" y="100" width="154" height="62" rx="10"/><text x="120" y="126" text-anchor="middle">researcher_0</text><text class="wg-sub" x="120" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node wg-hl"><rect x="213" y="100" width="154" height="62" rx="10"/><text x="290" y="126" text-anchor="middle">researcher_1</text><text class="wg-sub" x="290" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node wg-hl"><rect x="383" y="100" width="154" height="62" rx="10"/><text x="460" y="126" text-anchor="middle">researcher_2</text><text class="wg-sub" x="460" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="200" y="206" width="180" height="44" rx="10"/><text x="290" y="235" text-anchor="middle">collector</text></g><g class="wg-node wg-agent"><rect x="200" y="298" width="180" height="44" rx="10"/><text x="290" y="327" text-anchor="middle">🤖 reviewer</text></g><g class="wg-node wg-agent"><rect x="180" y="394" width="220" height="44" rx="10"/><text x="290" y="423" text-anchor="middle">🤖 report_writer</text></g></svg>
+					<p class="wg-intro">Each researcher node passes the question directly to a sandbox and returns either the response or an error.</p>
+					<pre class="code-small"><code class="language-python" data-trim>
+class ResearcherExecutor(Executor):
+    @handler
+    async def run(self, request: AgentExecutorRequest,
+                  ctx: WorkflowContext[AgentExecutorResponse]):
+        question = request.messages[-1].text
+        try:
+            text = await self.run_in_sandbox(question)
+        except Exception as ex:
+            text = json.dumps({&quot;question&quot;: question,
+                               &quot;error&quot;: str(ex), ...})
+        await ctx.send_message(AgentExecutorResponse(...))
+					</code></pre>
+					<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/orchestrator/agents/workflow.py">📎 orchestrator/agents/workflow.py</a></p>
+					<aside class="notes">
+						Each research question goes to a plain workflow executor, not an agent. It calls run_in_sandbox directly, so there's no LLM on the orchestrator side of a branch. If the sandbox fails, the executor still sends back an error finding, so the collector gets every answer and the reviewer sees what's missing.
+						An earlier version wrapped this in a dispatcher agent whose only job was to call run_in_sandbox once and echo the JSON back. That cost a model call per question and could garble the result, so the upstream sample (and now this repo) calls it directly.
+					</aside>
+				</section>
+
+				<!-- 34 -->
+				<section class="no-code-badge wg-zoom">
+					<h3>Start sandbox with research agent and tools</h3>
+					<svg class="wg-svg wg-mini" viewBox="0 0 564 450" aria-hidden="true"><defs><marker id="wg-arrow-mini" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#5b6b78" stroke-width="1.6"/></marker></defs><path class="wg-edge" d="M290 54 L120 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M120 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 54 L290 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 54 L460 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M460 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge wg-dashed" d="M380 32 L552 32 L552 228 L384 228" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 250 L290 298" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 342 L290 394" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M200 320 L10 320 L10 32 L196 32" marker-end="url(#wg-arrow-mini)"/><g class="wg-node wg-agent"><rect x="200" y="10" width="180" height="44" rx="10"/><text x="290" y="39" text-anchor="middle">🤖 planner</text></g><g class="wg-node wg-hl"><rect x="43" y="100" width="154" height="62" rx="10"/><text x="120" y="126" text-anchor="middle">researcher_0</text><text class="wg-sub" x="120" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node wg-hl"><rect x="213" y="100" width="154" height="62" rx="10"/><text x="290" y="126" text-anchor="middle">researcher_1</text><text class="wg-sub" x="290" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node wg-hl"><rect x="383" y="100" width="154" height="62" rx="10"/><text x="460" y="126" text-anchor="middle">researcher_2</text><text class="wg-sub" x="460" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="200" y="206" width="180" height="44" rx="10"/><text x="290" y="235" text-anchor="middle">collector</text></g><g class="wg-node wg-agent"><rect x="200" y="298" width="180" height="44" rx="10"/><text x="290" y="327" text-anchor="middle">🤖 reviewer</text></g><g class="wg-node wg-agent"><rect x="180" y="394" width="220" height="44" rx="10"/><text x="290" y="423" text-anchor="middle">🤖 report_writer</text></g></svg>
+					<pre class="code-small"><code class="language-python" data-trim>
+async def run_in_sandbox(question: str) -&gt; str:
+    sandbox_id = f&quot;agent-{index}-{uuid.uuid4().hex[:8]}&quot;
     await sandbox_mgr.create_sandbox(sandbox_id, question)        # create
     try:
         while True:                                               # execute
             await asyncio.sleep(2)
             status = await sandbox_mgr.get_status(sandbox_id)
-            if status.status == "done":
+            if status.status == &quot;done&quot;:
                 result = await sandbox_mgr.get_result(sandbox_id) # collect
                 break
     finally:
         await sandbox_mgr.delete_sandbox(sandbox_id)              # delete
-    return json.dumps({"question": result.question,
-                       "answer": result.answer, ...})
-							</code></pre>
-							<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/orchestrator/agents/researcher_agent.py">📎 researcher_agent.py</a> (simplified: timeouts, retries, errors, and UI events omitted)</p>
-						</div>
-					</div>
+    return json.dumps({&quot;question&quot;: result.question,
+                       &quot;answer&quot;: result.answer, ...})
+					</code></pre>
+					<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/orchestrator/agents/sandbox_researcher.py">📎 sandbox_researcher.py</a></p>
 					<aside class="notes">
-						Architecture first: trust boundaries. The researcher agent lives in the orchestrator; the research process it launches lives in a sandbox.
-						Foundry-hosted search means the sandbox only needs egress to Foundry, not the whole internet.
-						Reveal 1: model client, instructions, and the one registered tool. Reveal 2: the lifecycle behind the tool. The JSON result returns to the agent verbatim.
-						Real code tolerates transient poll errors (e.g., 502 while the port warms up) and times out after 360 s.
-						Other ways to hand compute to an agent: Sandboxes ship an Agent Skill. In Copilot CLI: /plugin marketplace add microsoft/azure-container-apps,
-						then /plugin install sandboxes@Azure-Container-Apps. Works with Claude Code or any skills folder.
+						run_in_sandbox (orchestrator/agents/sandbox_researcher.py): create a sandbox from the research-agent disk image, poll until done, collect the result, and always delete the sandbox. Inside the sandbox, research-agent/app.py runs the researcher agent: Agent Framework with Foundry's hosted web search tool, reaching Foundry only through the egress rules and the proxy-injected token.
+						Real code tolerates transient poll errors (e.g., 502 while the port warms up) and times out after 360 s. Simplified from the source.
+						If you do want an agent to decide when to use a sandbox, make run_in_sandbox an agent tool. Sandboxes also ship an Agent Skill: in Copilot CLI, /plugin marketplace add microsoft/azure-container-apps, then /plugin install sandboxes@Azure-Container-Apps. Works with Claude Code or any skills folder.
 					</aside>
 				</section>
 
-				<!-- 30 -->
-				<section>
-					<h3>Wire the parallel swarm</h3>
-					<div class="cols">
-						<div>
-							<p class="label">Fan-out: one request per question</p>
-							<pre class="code-tiny"><code class="language-python" data-trim>
-questions = questions[:MAX_RESEARCHERS]
-for i, q in enumerate(questions):
-    await ctx.send_message(
-        AgentExecutorRequest(
-            messages=[Message("user", [q])],
-            should_respond=True,
-        ),
-        target_id=f"researcher_{i}",
-    )
-							</code></pre>
-						</div>
-						<div>
-							<p class="label">Graph: decomposer → researchers → collector → synthesizer</p>
-							<pre class="code-tiny"><code class="language-python" data-trim>
-builder = WorkflowBuilder(start_executor=decomposer)
-builder = builder.add_edge(decomposer, collector)
-for r in researchers:
-    builder = builder.add_edge(decomposer, r)  # fan-out
-    builder = builder.add_edge(r, collector)   # fan-in
-wf = builder.add_edge(collector, synthesizer).build()
-							</code></pre>
-						</div>
-					</div>
-					<p class="small" style="margin-top: 18px;">Separate edges per researcher let the branches run concurrently. The collector releases results once every dispatched branch has returned.</p>
+				<!-- 35 -->
+				<section class="no-code-badge wg-zoom">
+					<h3>Research agent inside the sandbox</h3>
+					<svg class="wg-svg wg-mini" viewBox="0 0 564 450" aria-hidden="true"><defs><marker id="wg-arrow-mini" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#5b6b78" stroke-width="1.6"/></marker></defs><path class="wg-edge" d="M290 54 L120 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M120 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 54 L290 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 54 L460 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M460 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge wg-dashed" d="M380 32 L552 32 L552 228 L384 228" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 250 L290 298" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 342 L290 394" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M200 320 L10 320 L10 32 L196 32" marker-end="url(#wg-arrow-mini)"/><g class="wg-node wg-agent"><rect x="200" y="10" width="180" height="44" rx="10"/><text x="290" y="39" text-anchor="middle">🤖 planner</text></g><g class="wg-node wg-hl"><rect x="43" y="100" width="154" height="62" rx="10"/><text x="120" y="126" text-anchor="middle">researcher_0</text><text class="wg-sub" x="120" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node wg-hl"><rect x="213" y="100" width="154" height="62" rx="10"/><text x="290" y="126" text-anchor="middle">researcher_1</text><text class="wg-sub" x="290" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node wg-hl"><rect x="383" y="100" width="154" height="62" rx="10"/><text x="460" y="126" text-anchor="middle">researcher_2</text><text class="wg-sub" x="460" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="200" y="206" width="180" height="44" rx="10"/><text x="290" y="235" text-anchor="middle">collector</text></g><g class="wg-node wg-agent"><rect x="200" y="298" width="180" height="44" rx="10"/><text x="290" y="327" text-anchor="middle">🤖 reviewer</text></g><g class="wg-node wg-agent"><rect x="180" y="394" width="220" height="44" rx="10"/><text x="290" y="423" text-anchor="middle">🤖 report_writer</text></g></svg>
+					<p class="wg-intro">Runs in each sandbox with Foundry's hosted web search, and returns a structured finding.</p>
+					<pre class="code-small"><code class="language-python" data-trim>
+class ResearchFinding(BaseModel):
+    answer: str
+    sources: list[str]
+    confidence: float
+
+agent = Agent(
+    client=FoundryChatClient(project_client=project_client, model=model),
+    name=&quot;ResearchAgent&quot;,
+    instructions=&quot;Use web search to find current, factual information, &quot;
+                 &quot;then synthesize a comprehensive answer that cites sources.&quot;,
+    tools=[FoundryChatClient.get_web_search_tool()],
+)
+response = await agent.run(question, options={&quot;response_format&quot;: ResearchFinding})
+return response.value.model_dump()
+					</code></pre>
+					<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/research-agent/app.py">📎 research-agent/app.py</a></p>
+					<aside class="notes">
+						This is the agent that actually does the research, in research-agent/app.py inside each sandbox. It's an Agent Framework agent with Foundry's hosted web search tool, so the search runs in Foundry and the sandbox never talks to a search engine. The project client gets a placeholder credential: the egress proxy replaces the Authorization header with a token for the sandbox group's managed identity. The proxy also inspects TLS, which is why the sample turns off certificate verification (a sample shortcut). With response_format=ResearchFinding, the Foundry Responses API constrains the answer to that schema even while the agent uses web search; response.value is the typed finding. The small Flask app around it reports status and the result, which run_in_sandbox polls for.
+					</aside>
+				</section>
+
+				<!-- 36 -->
+				<section class="no-code-badge wg-zoom">
+					<h3>Collect answers for each wave</h3>
+					<svg class="wg-svg wg-mini" viewBox="0 0 564 450" aria-hidden="true"><defs><marker id="wg-arrow-mini" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#5b6b78" stroke-width="1.6"/></marker></defs><path class="wg-edge" d="M290 54 L120 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M120 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 54 L290 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 54 L460 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M460 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge wg-dashed" d="M380 32 L552 32 L552 228 L384 228" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 250 L290 298" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 342 L290 394" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M200 320 L10 320 L10 32 L196 32" marker-end="url(#wg-arrow-mini)"/><g class="wg-node wg-agent"><rect x="200" y="10" width="180" height="44" rx="10"/><text x="290" y="39" text-anchor="middle">🤖 planner</text></g><g class="wg-node"><rect x="43" y="100" width="154" height="62" rx="10"/><text x="120" y="126" text-anchor="middle">researcher_0</text><text class="wg-sub" x="120" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="213" y="100" width="154" height="62" rx="10"/><text x="290" y="126" text-anchor="middle">researcher_1</text><text class="wg-sub" x="290" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="383" y="100" width="154" height="62" rx="10"/><text x="460" y="126" text-anchor="middle">researcher_2</text><text class="wg-sub" x="460" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node wg-hl"><rect x="200" y="206" width="180" height="44" rx="10"/><text x="290" y="235" text-anchor="middle">collector</text></g><g class="wg-node wg-agent"><rect x="200" y="298" width="180" height="44" rx="10"/><text x="290" y="327" text-anchor="middle">🤖 reviewer</text></g><g class="wg-node wg-agent"><rect x="180" y="394" width="220" height="44" rx="10"/><text x="290" y="423" text-anchor="middle">🤖 report_writer</text></g></svg>
+					<p class="wg-intro">A plain executor: waits for every planned answer, then sends one dossier to the reviewer.</p>
+					<pre class="code-small"><code class="language-python" data-trim>
+class ResearchCollector(Executor):
+    @handler
+    async def set_plan(self, plan: ResearchPlan, ctx):
+        self.plan = plan
+        await self.release_if_ready(ctx)
+
+    @handler
+    async def collect_response(self, response: AgentExecutorResponse, ctx):
+        self.responses.append(response)
+        await self.release_if_ready(ctx)
+
+    async def release_if_ready(self, ctx):
+        if len(self.responses) &gt;= self.plan.expected_responses:
+            await ctx.send_message(ResearchDossier(findings=..., wave=...))
+					</code></pre>
 					<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/orchestrator/agents/workflow.py">📎 orchestrator/agents/workflow.py</a></p>
 					<aside class="notes">
-						Map back to the architecture arrows. The decomposer also sends a ResearchPlan to the collector so it knows how many responses to await.
-						Full deployment adds an ACA environment and orchestrator Container App: azd up with azure.yaml provisions, builds images, and deploys. Don't run it on stage.
-						The Sandboxes docs show the same fan-out pattern with the async client and asyncio.gather.
-						Platform caps (maxSandboxCount, Sandbox Cores) sit underneath the workflow's own fan-out limit.
+						Two handlers, picked by message type: the ResearchPlan from the planner says how many answers to expect, and each AgentExecutorResponse from a researcher is one answer. The plan and the answers can arrive in either order. Once all the expected answers are in, it sends a single ResearchDossier to the reviewer, including findings from any earlier wave. The real code also holds answers that arrive before the next wave's plan. Simplified from ResearchCollector in workflow.py.
 					</aside>
 				</section>
 
-				<!-- 31 -->
+				<!-- 37 -->
+				<section class="no-code-badge wg-zoom">
+					<h3>Reviewer agent: approve or research more</h3>
+					<svg class="wg-svg wg-mini" viewBox="0 0 564 450" aria-hidden="true"><defs><marker id="wg-arrow-mini" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#5b6b78" stroke-width="1.6"/></marker></defs><path class="wg-edge" d="M290 54 L120 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M120 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 54 L290 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 54 L460 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M460 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge wg-dashed" d="M380 32 L552 32 L552 228 L384 228" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 250 L290 298" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 342 L290 394" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M200 320 L10 320 L10 32 L196 32" marker-end="url(#wg-arrow-mini)"/><g class="wg-node wg-agent"><rect x="200" y="10" width="180" height="44" rx="10"/><text x="290" y="39" text-anchor="middle">🤖 planner</text></g><g class="wg-node"><rect x="43" y="100" width="154" height="62" rx="10"/><text x="120" y="126" text-anchor="middle">researcher_0</text><text class="wg-sub" x="120" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="213" y="100" width="154" height="62" rx="10"/><text x="290" y="126" text-anchor="middle">researcher_1</text><text class="wg-sub" x="290" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="383" y="100" width="154" height="62" rx="10"/><text x="460" y="126" text-anchor="middle">researcher_2</text><text class="wg-sub" x="460" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="200" y="206" width="180" height="44" rx="10"/><text x="290" y="235" text-anchor="middle">collector</text></g><g class="wg-node wg-agent wg-hl"><rect x="200" y="298" width="180" height="44" rx="10"/><text x="290" y="327" text-anchor="middle">🤖 reviewer</text></g><g class="wg-node wg-agent"><rect x="180" y="394" width="220" height="44" rx="10"/><text x="290" y="423" text-anchor="middle">🤖 report_writer</text></g></svg>
+					<pre class="code-small"><code class="language-python" data-trim>
+class ReviewDecision(BaseModel):
+    status: Literal[&quot;approved&quot;, &quot;needs_more_research&quot;]
+    rationale: str
+    follow_up_questions: list[str]
+
+result = await self.agent.run(dossier, options={&quot;response_format&quot;: ReviewDecision})
+decision = validate_review_decision(result.value)
+if decision.status == &quot;needs_more_research&quot; and waves_remaining &gt; 0:
+    await ctx.send_message(FollowUpResearch(decision.follow_up_questions, ...),
+                           target_id=&quot;planner&quot;)
+else:
+    await ctx.send_message(ApprovedDossier(...), target_id=&quot;report_writer&quot;)
+					</code></pre>
+					<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/orchestrator/agents/reviewer_agent.py">📎 reviewer_agent.py</a> · <a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/orchestrator/agents/workflow.py">📎 workflow.py</a></p>
+					<aside class="notes">
+						The reviewer agent reads the whole dossier and returns a ReviewDecision structured output: the Literal type means status can only be approved or needs_more_research. validate_review_decision checks the cross-field rules a schema can't express: 2 to 4 follow-up questions only when more research is needed, and none when approved. The agent decides, but the code enforces the limits: at most MAX_RESEARCH_WAVES (2), so after the second wave it always approves and notes the limitations. Follow-up questions go back to the planner, which dispatches them without calling its own agent; an approval goes on to the report writer. Prompt abridged from reviewer_agent.py.
+					</aside>
+				</section>
+
+				<!-- 38 -->
+				<section class="no-code-badge wg-zoom">
+					<h3>Report writer agent</h3>
+					<svg class="wg-svg wg-mini" viewBox="0 0 564 450" aria-hidden="true"><defs><marker id="wg-arrow-mini" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#5b6b78" stroke-width="1.6"/></marker></defs><path class="wg-edge" d="M290 54 L120 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M120 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 54 L290 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 54 L460 100" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M460 162 L290 206" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge wg-dashed" d="M380 32 L552 32 L552 228 L384 228" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 250 L290 298" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M290 342 L290 394" marker-end="url(#wg-arrow-mini)"/><path class="wg-edge" d="M200 320 L10 320 L10 32 L196 32" marker-end="url(#wg-arrow-mini)"/><g class="wg-node wg-agent"><rect x="200" y="10" width="180" height="44" rx="10"/><text x="290" y="39" text-anchor="middle">🤖 planner</text></g><g class="wg-node"><rect x="43" y="100" width="154" height="62" rx="10"/><text x="120" y="126" text-anchor="middle">researcher_0</text><text class="wg-sub" x="120" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="213" y="100" width="154" height="62" rx="10"/><text x="290" y="126" text-anchor="middle">researcher_1</text><text class="wg-sub" x="290" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="383" y="100" width="154" height="62" rx="10"/><text x="460" y="126" text-anchor="middle">researcher_2</text><text class="wg-sub" x="460" y="150" text-anchor="middle">📦 in a sandbox</text></g><g class="wg-node"><rect x="200" y="206" width="180" height="44" rx="10"/><text x="290" y="235" text-anchor="middle">collector</text></g><g class="wg-node wg-agent"><rect x="200" y="298" width="180" height="44" rx="10"/><text x="290" y="327" text-anchor="middle">🤖 reviewer</text></g><g class="wg-node wg-agent wg-hl"><rect x="180" y="394" width="220" height="44" rx="10"/><text x="290" y="423" text-anchor="middle">🤖 report_writer</text></g></svg>
+					<pre class="code-small"><code class="language-python" data-trim>
+REPORT_WRITER_INSTRUCTIONS = (
+    &quot;Given the original topic, an evidence dossier from multiple research &quot;
+    &quot;agents, and the reviewer's assessment, produce a single comprehensive &quot;
+    &quot;markdown report. Include an executive summary, key findings organized &quot;
+    &quot;by theme, material limitations, and a conclusion. Cite the supplied &quot;
+    &quot;sources where available. Do not invent evidence or sources.&quot;)
+
+prompt = format_dossier(dossier.topic, dossier.findings) + dossier.review_rationale
+result = await self.agent.run(prompt)
+await ctx.yield_output(result.text)  # the final report, streamed to the app
+					</code></pre>
+					<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/orchestrator/agents/report_writer_agent.py">📎 report_writer_agent.py</a> · <a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/orchestrator/agents/workflow.py">📎 workflow.py</a></p>
+					<aside class="notes">
+						The last agent turns the approved dossier and the reviewer's rationale into the final markdown report. yield_output is how a workflow returns results to its caller: the orchestrator receives it as an output event and sends the report to the web UI. The planner and reviewer also yield outputs (the questions and review decisions), which is how the UI shows each step.
+					</aside>
+				</section>
+
+				<!-- 39 -->
+				<section class="no-code-badge">
+					<h3>Observability with OpenTelemetry (OTel)</h3>
+					<p class="otel-intro">OTel standardizes how apps emit traces, metrics, and logs, so debugging works the same across languages and vendors.</p>
+					<div class="otel-grid">
+						<div class="otel-card otel-traces">
+							<h4>Traces</h4>
+							<pre class="otel-sample">0s ───────────────────── 27s
+sandbox.create
+ └─ research-agent.run
+     └─ invoke_agent ResearchAgent</pre>
+							<p>Operations made of <strong>spans</strong> that show how a request moves through services: timing, dependencies, and context propagation.</p>
+						</div>
+						<div class="otel-card otel-metrics">
+							<h4>Metrics</h4>
+							<pre class="otel-sample">operation.duration  p95 26s
+token.usage         24,968
+requests            140/min</pre>
+							<p>Numeric measurements such as latency, request counts, error rates, token usage, or any custom app metric.</p>
+						</div>
+						<div class="otel-card otel-logs">
+							<h4>Logs</h4>
+							<pre class="otel-sample">INFO  Sandbox agent-2 running
+INFO  Agent 3 completed research
+WARN  get_status transient error</pre>
+							<p>Structured log records with a message, severity, timestamp, and contextual attributes.</p>
+						</div>
+					</div>
+					<p class="code-example-link"><a target="_blank" href="https://opentelemetry.io/docs/concepts/signals/">📎 OpenTelemetry signals</a></p>
+					<aside class="notes">
+						Parallel systems fail in parallel. When six sandboxes, a dozen model calls, and a review loop are all in flight, you need one place to see what happened.
+						OpenTelemetry is the vendor-neutral standard for that: your code emits traces, metrics, and logs once, and you can send them to Application Insights, Jaeger, Grafana, or any OTLP backend.
+						The examples are from this swarm: the trace shows a sandbox.create span with the in-sandbox research span under it; the metric names are Agent Framework's gen_ai.client.operation.duration and gen_ai.client.token.usage (shortened); the log lines are real orchestrator messages.
+						This talk focuses on traces, because they're what connect the orchestrator to each sandbox.
+					</aside>
+				</section>
+
+				<!-- 40 -->
+				<section class="no-code-badge">
+					<h3>OpenTelemetry GenAI semantic conventions</h3>
+					<p class="otel-intro">Standard <code>gen_ai.*</code> span names and attributes for agent runs, model calls, and tool calls. A real span from this swarm:</p>
+					<p class="otel-span"><strong>Span:</strong> <code>invoke_agent ResearchAgent</code> <span class="muted">(26.6 s)</span></p>
+					<table class="otel-table">
+						<thead><tr><th>Attribute</th><th>Value</th></tr></thead>
+						<tbody>
+							<tr><td>gen_ai.operation.name</td><td>invoke_agent</td></tr>
+							<tr><td>gen_ai.agent.name</td><td>ResearchAgent</td></tr>
+							<tr><td>gen_ai.request.model</td><td>gpt-5.6-luna</td></tr>
+							<tr><td>gen_ai.tool.definitions</td><td>[{&quot;type&quot;: &quot;web_search&quot;}]</td></tr>
+							<tr><td>gen_ai.usage.input_tokens</td><td>22518</td></tr>
+							<tr><td>gen_ai.usage.output_tokens</td><td>2450</td></tr>
+						</tbody>
+					</table>
+					<p class="code-example-link"><a target="_blank" href="https://github.com/open-telemetry/semantic-conventions-genai">📎 github.com/open-telemetry/semantic-conventions-genai</a></p>
+					<aside class="notes">
+						The GenAI semantic conventions standardize what an agent span looks like, so any backend can show agent runs, model calls, and tool calls the same way, regardless of framework or provider.
+						This span came from Application Insights for a real run of this swarm: the research agent inside a sandbox, invoked on one question, took about 27 seconds and used 22.5K input and 2.4K output tokens. Its child spans include chat gpt-5.6-luna for each model call.
+						The span also carries gen_ai.system_instructions, gen_ai.input.messages, and gen_ai.output.messages, including the web search calls. Those contain prompts and answers, so they're only recorded when sensitive data is enabled (ENABLE_SENSITIVE_DATA, on in this sample).
+						Other operation names in the conventions: chat (a model call) and execute_tool (a local tool call).
+					</aside>
+				</section>
+
+				<!-- 41 -->
+				<section class="no-code-badge">
+					<h3>Using OpenTelemetry with Agent Framework</h3>
+					<p class="otel-intro">Agent Framework has built-in support for <em>emitting</em> OpenTelemetry traces. Azure Monitor handles the <em>export</em> to Application Insights:</p>
+					<pre class="code-small"><code class="language-python" data-trim>
+from azure.monitor.opentelemetry import configure_azure_monitor
+from agent_framework.observability import enable_instrumentation
+
+configure_azure_monitor(
+    connection_string=os.environ[&quot;APPLICATIONINSIGHTS_CONNECTION_STRING&quot;])
+enable_instrumentation()
+					</code></pre>
+					<ul class="otel-list">
+						<li>The same two calls run in the <strong>orchestrator</strong> and in <strong>every sandbox</strong>.</li>
+						<li>For sandboxes: pass the connection string in the sandbox environment, and allow the Application Insights endpoints in its egress policy.</li>
+					</ul>
+					<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/orchestrator/observability.py">📎 orchestrator/observability.py</a> · <a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/research-agent/app.py">📎 research-agent/app.py</a></p>
+					<aside class="notes">
+						enable_instrumentation turns on Agent Framework's spans: workflow and executor spans, invoke_agent, chat, and execute_tool, plus the gen_ai metrics. configure_azure_monitor sets up the global tracer, meter, and logger providers, exports them to Application Insights, and auto-instruments outbound HTTP (requests, urllib3), so the Azure SDK and Foundry calls show up too.
+						The orchestrator also instruments FastAPI (FastAPIInstrumentor.instrument_app) and adds one custom span, sandbox.create, with the sandbox ID and region as attributes.
+						Inside the sandbox, the orchestrator passes APPLICATIONINSIGHTS_CONNECTION_STRING, OTEL_SERVICE_NAME=research-agent, and ENABLE_SENSITIVE_DATA as environment variables. The egress policy allows the ingestion endpoints parsed from the connection string. Because the egress proxy intercepts TLS, research-agent/app.py disables certificate verification for requests: a sample shortcut, don't copy it.
+						Next: how the sandbox's spans end up in the same trace as the orchestrator's.
+					</aside>
+				</section>
+
+				<!-- 42 -->
 				<section>
 					<h3>Carry a trace across the sandbox boundary</h3>
 					<div class="cols">
@@ -2428,7 +2812,7 @@ _PARENT_CTX = extract({
 tracer.start_as_current_span(
     "research-agent.run", context=_PARENT_CTX)
 							</code></pre>
-							<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/research-agent/app.py">📎 research-agent/app.py</a> (simplified)</p>
+							<p class="code-example-link"><a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent/blob/main/research-agent/app.py">📎 research-agent/app.py</a></p>
 						</div>
 					</div>
 					<p class="small" style="margin-top: 16px;">One trace: separate provisioning time from research/model time, find the slow or failed branch, and verify cleanup.</p>
@@ -2440,26 +2824,22 @@ tracer.start_as_current_span(
 					</aside>
 				</section>
 
-				<!-- 32 -->
+				<!-- 43 -->
 				<section>
 					<h3>Demo: follow the distributed trace</h3>
-					<div class="placeholder" role="img" aria-label="Screenshot placeholder: Application Insights transaction trace with overlapping researcher spans">
-						<p><strong>Screenshot placeholder</strong></p>
-						<p>Application Insights transaction trace with overlapping researcher spans and one sandbox span expanded.</p>
-						<p class="muted">Save as <code>images/demo-trace.png</code>.</p>
-					</div>
+					<img class="demo-shot" src="images/demo-trace.png" alt="Application Insights end-to-end transaction for one swarm run. sandbox.create (813 ms) calls begin_create_sandbox and a PUT to the sandbox management endpoint. Under it, research-agent.run (14.2 s) from inside the sandbox contains ResearchAgent invoke_agent (8.9 s) and gpt-5.6-luna chat (8.9 s), with an outgoing call to the Foundry services endpoint (7.7 s). SandboxClient.delete (3.9 s) follows.">
 					<aside class="notes">
-						Open Azure Monitor / Application Insights for the swarm run. Inspect parallel branches and one sandbox's work, then verify the ephemeral sandboxes were deleted.
-						Optional: the sandbox group's RunningCores metric rising during fan-out and dropping to zero after cleanup.
-						Backup: captured trace if ingestion is delayed.
+						Screenshot: Application Insights, End-to-end transaction for one swarm run (operation e3b13023650f7d38ec3781a4fca14614), expanded on one research branch.
+						Read it top to bottom: sandbox.create is the orchestrator's custom span around begin_create_sandbox (about 800 ms including the PUT to the sandbox management endpoint). Then research-agent.run, which came from inside the sandbox: it's in the same trace only because the orchestrator passed TRACEPARENT in. Under it, the Agent Framework spans: ResearchAgent invoke_agent and gpt-5.6-luna chat, with the Foundry call through the egress proxy (7.7 s). Finally SandboxClient.delete cleans up.
+						Live: open Application Insights, Investigate, Transaction search, filter to the last hour, and open the orchestrator request for the run. Scroll to see the other sandbox.create spans overlapping in time (the fan-out).
+						Backup: this screenshot, if ingestion is delayed (it takes 2-3 minutes).
 					</aside>
 				</section>
 
-				<!-- 33 -->
+				<!-- 44 -->
 				<section class="heading-only section-slide">
 					<p class="section-kicker">Part 4 of 4</p>
 					<h2>Wrapping up</h2>
-					<p class="section-sub">Recap, where else sandboxes fit, and takeaways</p>
 					<div class="section-roadmap" aria-label="Talk sections">
 						<span>Introducing the swarm</span>
 						<span>Sandboxes 101</span>
@@ -2469,44 +2849,84 @@ tracer.start_as_current_span(
 					<aside class="notes">The runtime problems we started with, where else sandboxes fit, and what to take away.</aside>
 				</section>
 
-				<!-- 34 -->
+				<!-- 45 -->
 				<section>
-					<h3>Recap: where agent runtimes break</h3>
-					<div class="grid5">
-						<div class="card"><h4>Untrusted code</h4>on a developer's laptop or shared host<p class="muted" style="margin-top: 8px;">→ execution isolation</p></div>
-						<div class="card"><h4>Cold starts</h4>that throttle the agent loop<p class="muted" style="margin-top: 8px;">→ prewarmed, sub-second start</p></div>
-						<div class="card"><h4>Budgets</h4>that burn unattended<p class="muted" style="margin-top: 8px;">→ resource &amp; lifecycle limits</p></div>
-						<div class="card"><h4>Workspaces</h4>that die on every restart<p class="muted" style="margin-top: 8px;">→ stop, resume, snapshot</p></div>
-						<div class="card"><h4>Tooling</h4>stitched together by hand<p class="muted" style="margin-top: 8px;">→ compute as an agent tool</p></div>
+					<h3>Takeaways</h3>
+					<div class="grid3" style="grid-template-columns: repeat(4, 1fr);">
+						<div class="card"><h4>One task</h4>One bounded workspace</div>
+						<div class="card"><h4>Explicit boundaries</h4>Isolation, egress, identity, data</div>
+						<div class="card"><h4>Explicit lifecycle</h4>Create, stop, resume, delete</div>
+						<div class="card"><h4>One trace</h4>Across every sandbox</div>
 					</div>
 					<aside class="notes">
-						Keep this quick: the audience has now seen each fix. Name the pain and point back to where it was addressed:
-						isolation, fast start, limits, lifecycle and suspend/resume, and compute as an agent tool.
+						Four things to take away. One task, one bounded workspace: give each unit of agent work its own sandbox, created on demand and deleted after. Explicit boundaries: decide what each sandbox can run, reach (egress and ingress), authenticate as (the group's managed identity, injected by the proxy), and keep (volumes, snapshots). Explicit lifecycle: create, stop, resume, and delete are API calls, with policies as a backstop. One trace: propagate trace context into every sandbox so the whole run is one trace.
+						These answer the runtime problems from the start of the talk: untrusted code, cold starts, runaway budgets, workspaces that vanish on restart, and tooling stitched together by hand.
 					</aside>
 				</section>
 
-				<!-- 35 -->
+				<!-- 46 -->
 				<section>
-					<h3>Where else Sandboxes fit</h3>
+					<h3>Scenarios for sandboxes</h3>
 					<table class="small" style="width: 100%;">
-						<thead><tr><th>Use case</th><th>What Sandboxes provide</th></tr></thead>
+						<thead><tr><th>Use case</th><th>What sandboxes provide</th></tr></thead>
 						<tbody>
-							<tr style="background: var(--deck-accent-bg);"><td><strong>Agent workflows</strong> ★</td><td>Persistent, isolated workspaces that survive across task boundaries</td></tr>
-							<tr style="background: var(--deck-accent-bg);"><td><strong>AI code execution</strong> ★</td><td>Safely run LLM-generated code in isolated environments with instant startup</td></tr>
+							<tr><td><strong>Agent workflows</strong></td><td>Persistent, isolated workspaces that survive across task boundaries</td></tr>
+							<tr><td><strong>AI code execution</strong></td><td>Safely run LLM-generated code in isolated environments with instant startup</td></tr>
 							<tr><td><strong>Platform building</strong></td><td>Build on the same primitive powering Microsoft services</td></tr>
 							<tr><td><strong>Burst workloads</strong></td><td>Scale from zero to thousands of sandboxes on demand</td></tr>
 							<tr><td><strong>Secure multi-tenant compute</strong></td><td>Strong isolation for untrusted workloads from multiple tenants</td></tr>
 							<tr><td><strong>Interactive user sessions</strong></td><td>Give each user their own isolated compute environment</td></tr>
 						</tbody>
 					</table>
-					<p class="smaller muted" style="margin-top: 10px;">★ Demonstrated in this talk</p>
 					<aside class="notes">
 						Keep this under a minute. The swarm is one instance of the first two rows; the same lifecycle, egress, and identity patterns carry over.
 						Copilot Studio is a real-world agent-workflow example: one sandbox per agent with a data disk for memory.
+						Next: how sandboxes connect to events and other services.
 					</aside>
 				</section>
 
-				<!-- 36 -->
+				<!-- 47 -->
+				<section class="no-code-badge">
+					<h3>Connecting sandboxes to your systems</h3>
+					<div class="ct-flow" role="img" aria-label="An event, such as a new email or a SharePoint upload, fires a trigger. The trigger runs a command in a sandbox or calls a port on it. The agent in the sandbox then acts through a connector on services such as Teams, SharePoint, Jira, Salesforce, and GitHub.">
+						<div class="ct-step ct-event"><p class="eg-title">📬 Event</p><p>New email or SharePoint upload</p></div>
+						<span class="ct-arrow">→</span>
+						<div class="ct-step ct-trigger"><p class="eg-title">⚡ Trigger</p><p>Runs a command or calls a port</p></div>
+						<span class="ct-arrow">→</span>
+						<div class="ct-step eg-sandbox"><p class="eg-title">📦 Sandbox</p><p>Your agent does the work</p></div>
+						<span class="ct-arrow">→</span>
+						<div class="ct-step ct-connector"><p class="eg-title">🔌 Connector</p><p>Teams, SharePoint, Jira, GitHub, 100+ more</p></div>
+					</div>
+					<div class="ct-cards">
+						<div class="card">
+							<h4>🔌 Connectors</h4>
+							<ul class="tight">
+								<li>Attach once to the sandbox group; each sandbox opts in when it's created.</li>
+								<li><strong>MCP</strong> connectors give agents tools to discover. <strong>API</strong> connectors give app code REST endpoints.</li>
+								<li>The group's identity authorizes calls, so there are no OAuth flows or tokens in the sandbox.</li>
+							</ul>
+						</div>
+						<div class="card">
+							<h4>⚡ Triggers <span class="ct-preview">Preview</span></h4>
+							<ul class="tight">
+								<li>Watch a connector event, by polling on a schedule or by webhook.</li>
+								<li>Run a command in a sandbox, or POST to a port on a long-lived sandbox.</li>
+								<li>Authenticates with a managed identity, so there are no shared secrets.</li>
+							</ul>
+						</div>
+					</div>
+					<p class="code-example-link"><a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/connectors">📎 Connectors</a> · <a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/triggers">📎 Triggers</a></p>
+					<aside class="notes">
+						Transition from Scenarios for sandboxes: in every one of those use cases, and in our swarm, your code calls the Sandboxes API to start the work. But sandboxes can also start from events, like an email arriving or a file landing in SharePoint, and act on other services without holding any tokens. That's what turns sandboxes from background compute into something that can react and take actions.
+						Swarm idea: a trigger on a Teams channel could start a research run, and a Teams or SharePoint connector could post the final report back.
+						Connectors: a connector links the sandbox group to an external service (Office 365, SharePoint, Teams, Jira, Salesforce, GitHub, ServiceNow, and 100+ more), created in a connector namespace at connectors.azure.com. Attach it to the group (aca sandboxgroup connector add --connection-id ... --authorization system); each sandbox opts in at create time with --connection-id (up to 10, immutable after create). The group needs an identity attached. MCP connectors are for agents: with --disk copilot, the sandbox gets /root/.copilot/mcp-config.json automatically. API connectors are REST endpoints for app code.
+						Triggers (preview): az connector-namespace trigger create watches a connector event (for example SharePoint GetOnNewFileItems or Outlook OnNewEmail). Polling triggers take a recurrence; webhook and notification triggers push. The action calls the sandbox's executeShellCommand endpoint, or a port on a long-lived sandbox, authenticating with the connector namespace's managed identity.
+						Docs scenarios: email triage that posts important messages to a Teams channel (a fresh sandbox per email), invoice extraction when a PDF lands in SharePoint (one long-lived sandbox), an hourly SharePoint compliance audit, a daily email digest.
+						Not tried in this repo; from the docs as of September 29.
+					</aside>
+				</section>
+
+				<!-- 48 -->
 				<section>
 					<h3>Choose the execution surface</h3>
 					<table class="small" style="width: 100%;">
@@ -2530,28 +2950,23 @@ tracer.start_as_current_span(
 					</aside>
 				</section>
 
-				<!-- 37 -->
+				<!-- 49 -->
 				<section>
-					<h3>Takeaways</h3>
-					<div class="grid3" style="grid-template-columns: repeat(4, 1fr);">
-						<div class="card"><h4>One task</h4>One bounded workspace</div>
-						<div class="card"><h4>Explicit boundaries</h4>Isolation, egress, identity, data</div>
-						<div class="card"><h4>Explicit lifecycle</h4>Create, stop, resume, delete</div>
-						<div class="card"><h4>One trace</h4>Across every sandbox</div>
-					</div>
-					<p class="label" style="margin-top: 30px;">Get started with one sandbox, no swarm required</p>
-					<ul class="tight small">
-						<li>Sample repo: <a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent">github.com/pamelafox/aca-sandboxes-multi-agent</a></li>
-						<li>Docs: <a target="_blank" href="https://learn.microsoft.com/azure/container-apps/sandboxes-overview">Sandboxes overview</a> · latest details: <a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/">sandboxes.azure.com/docs</a></li>
-						<li>Agent Skill: <a target="_blank" href="https://learn.microsoft.com/azure/container-apps/sandboxes-quickstart-agent-skills?tabs=copilot">Sandboxes Agent Skill quickstart</a></li>
-						<li>Try it: <a target="_blank" href="https://portal.azure.com">portal.azure.com</a></li>
+					<h3>Learning resources</h3>
+					<ul class="resources-list">
+						<li>📦 Sample repo: <a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent">github.com/pamelafox/aca-sandboxes-multi-agent</a></li>
+						<li>📖 Sandboxes docs: <a target="_blank" href="https://learn.microsoft.com/azure/container-apps/sandboxes-overview">Sandboxes overview</a> · latest details: <a target="_blank" href="https://sandboxes.azure.com/docs/sandboxes/">sandboxes.azure.com/docs</a></li>
+						<li>🧰 Agent Skill: <a target="_blank" href="https://learn.microsoft.com/azure/container-apps/sandboxes-quickstart-agent-skills?tabs=copilot">Sandboxes Agent Skill quickstart</a></li>
+						<li>🤖 Microsoft Agent Framework: <a target="_blank" href="https://aka.ms/AgentFramework">aka.ms/AgentFramework</a></li>
+						<li>📈 OpenTelemetry GenAI conventions: <a target="_blank" href="https://github.com/open-telemetry/semantic-conventions-genai">semantic-conventions-genai</a></li>
+						<li>🖥️ Try it: <a target="_blank" href="https://portal.azure.com">portal.azure.com</a></li>
 					</ul>
 					<aside class="notes">
-						Remind the audience they can start with one sandbox from the portal, CLI, or SDK without deploying the swarm.
+						You can start with one sandbox from the portal, CLI, or SDK, without deploying the swarm. The repo's create_sandbox.py is the quickest path, and azd up deploys the whole swarm.
 					</aside>
 				</section>
 
-				<!-- 38 -->
+				<!-- 50 -->
 				<section class="heading-only">
 					<h2>Questions?</h2>
 					<p style="font-size: 0.8em; margin-top: 18px;">Repo: <a target="_blank" href="https://github.com/pamelafox/aca-sandboxes-multi-agent">github.com/pamelafox/aca-sandboxes-multi-agent</a></p>

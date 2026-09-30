@@ -10,7 +10,6 @@ explicitly if grounded Foundry search is unavailable.
 """
 
 import asyncio
-import json
 import os
 import ssl
 import threading
@@ -19,6 +18,7 @@ import traceback
 
 import requests
 from flask import Flask, jsonify
+from pydantic import BaseModel, Field
 
 # Sandbox egress proxy does TLS interception — disable SSL verification
 os.environ.setdefault("CURL_CA_BUNDLE", "")
@@ -104,6 +104,13 @@ state_lock = threading.Lock()
 
 
 # ── Agent Framework research (Foundry hosted web search) ───────────────
+class ResearchFinding(BaseModel):
+    """Structured output for one research question."""
+    answer: str = Field(description="Detailed markdown answer with the key findings")
+    sources: list[str] = Field(description="URLs of the sources used")
+    confidence: float = Field(description="Confidence in the answer, from 0 to 1")
+
+
 async def _run_agent_research(question: str) -> dict:
     """Use Microsoft Agent Framework + Foundry's hosted web-search tool.
 
@@ -159,37 +166,18 @@ async def _run_agent_research(question: str) -> dict:
         client=client,
         name="ResearchAgent",
         instructions=(
-            "You are a thorough research agent. For the given question:\n"
-            "1. Use web search to find current, factual information\n"
-            "2. Synthesize findings into a comprehensive answer\n"
-            "3. Return your answer as JSON with these fields:\n"
-            '   "answer": "<detailed markdown answer with key findings>",\n'
-            '   "sources": ["<url1>", "<url2>", ...],\n'
-            '   "confidence": <float 0-1>\n'
-            "Return ONLY valid JSON, no extra text or code fences."
+            "You are a thorough research agent. For the given question, use web search "
+            "to find current, factual information, then synthesize it into a "
+            "comprehensive answer that cites the sources you used."
         ),
         tools=[FoundryChatClient.get_web_search_tool()],
         default_options={"reasoning": {"effort": "low"}},
     )
 
-    response = await agent.run(question)
-    raw = str(response).strip()
-
-    # Strip markdown code fences if present
-    if raw.startswith("```"):
-        raw = raw.split("\n", 1)[1] if "\n" in raw else raw[3:]
-        if raw.endswith("```"):
-            raw = raw[:-3]
-        raw = raw.strip()
-
-    result = json.loads(raw)
-    if not isinstance(result, dict):
-        raise ValueError("Research agent response must be a JSON object")
-    if not isinstance(result.get("answer"), str) or not result["answer"].strip():
-        raise ValueError("Research agent response is missing a non-empty answer")
-    if not isinstance(result.get("sources"), list):
-        raise ValueError("Research agent response is missing a sources array")
-    return result
+    response = await agent.run(question, options={"response_format": ResearchFinding})
+    if response.value is None or not response.value.answer.strip():
+        raise ValueError("Research agent returned no answer")
+    return response.value.model_dump()
 
 
 # ── network connectivity test ──────────────────────────────────────────
